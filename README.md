@@ -4,6 +4,10 @@
 
 写真を撮るとAIが「これはなぁに？」の答えを返し、親子で一緒に学べる図鑑体験を提供します。
 
+### デモURL
+https://lensclip-production.up.railway.app/
+
+
 ## 技術スタック
 
 - **Backend**: Laravel 12 + MySQL
@@ -175,6 +179,39 @@ docs/
 ├── TASKS.md             # タスク一覧
 └── TEST_PLAN.md         # テスト計画
 ```
+
+## Railway へのデプロイ
+
+### 1. Volume の作成と接続
+Railway のダッシュボードで Volume を作成し、Laravel サービスに以下の設定でアタッチしてください。
+- **Mount Path**: `/app/storage/app`
+  - これにより `storage/app/public` 配下の画像データが永続化されます。
+
+### 2, MySQLの作成
+Railway のダッシュボードで MySQL を作成。Laravel側の環境変数は
+```
+DB_CONNECTION=mysql
+DB_HOST=${{ MySQL.MYSQLHOST }}
+DB_PORT=${{ MySQL.MYSQLPORT }}
+DB_DATABASE=${{ MySQL.MYSQLDATABASE }}
+DB_USERNAME=${{ MySQL.MYSQLUSER }}
+DB_PASSWORD=${{ MySQL.MYSQLPASSWORD }}
+```
+
+### 3. Start Command
+サービスの設定（Settings > Deploy > Start Command）に以下を設定してください。
+```bash
+bash railway/start.sh
+```
+
+### 4. 環境変数の設定
+Variables に以下を追加してください。
+- `FILESYSTEM_DISK`: `public`
+- `QUEUE_CONNECTION`: `redis` (Redisサービスを別途追加し、`REDIS_URL` がある場合) または `database`
+- `VISION_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
+- `APP_KEY`: `php artisan key:generate --show` で生成したもの
+- `APP_ENV`: `production` 強制httpsに。
+---
 
 ## ライセンス
 
