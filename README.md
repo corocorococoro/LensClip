@@ -29,10 +29,10 @@ cp .env.example .env
 `.env` ファイルを編集して、以下のAPIキーを設定してください：
 
 ```env
-# Google Cloud Vision API
-VISION_API_KEY=your-vision-api-key
+# Google Cloud Vision / Gemini API (Service Account)
+GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 
-# Google Gemini API
+# Google Gemini API Key (Fallback or Direct)
 GEMINI_API_KEY=your-gemini-api-key
 GEMINI_MODEL=gemini-2.0-flash
 ```
@@ -101,6 +101,45 @@ GEMINI_MODEL=gemini-2.0-flash
 
 ```bash
 ./vendor/bin/sail artisan test
+```
+
+## 困ったときは（トラブルシューティング）
+
+アプリにアクセスできない、または画像が表示されないなどの問題が発生した場合は、以下の手順を試してください：
+
+### 1. Sailの再起動
+コンテナの状態が不安定な場合、一度停止して起動し直すのが最も効果的です。
+```bash
+./vendor/bin/sail stop
+./vendor/bin/sail up -d
+```
+
+### 2. アセット（CSS/JS）の読み込みエラー
+ブラウザ画面が真っ白な場合、Viteサーバーが起動していない可能性があります。
+```bash
+./vendor/bin/sail npm run dev
+```
+
+### 3. 画像が表示されない
+ストレージのシンボリックリンクが切れている可能性があります。
+```bash
+./vendor/bin/sail artisan storage:link
+```
+
+### 4. AI分析が進まない（処理中のまま）
+非同期ジョブを実行するワーカーが起動しているか確認してください。
+```bash
+./vendor/bin/sail artisan queue:work
+```
+
+### 5. ログの確認
+原因が不明な場合は、以下のコマンドでログを確認してください。
+```bash
+# Dockerコンテナのログ
+./vendor/bin/sail logs laravel.test
+
+# Laravelのアプリケーションログ
+./vendor/bin/sail exec laravel.test tail -f storage/logs/laravel.log
 ```
 
 ## 既知の制約
