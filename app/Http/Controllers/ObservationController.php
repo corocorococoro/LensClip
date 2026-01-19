@@ -67,6 +67,7 @@ class ObservationController extends Controller
         // Process image
         $manager = new ImageManager(new Driver());
         $image = $manager->read($tempPath);
+        $image->orient();
 
         // Resize for API cost/speed (max 1024px)
         $image->scaleDown(width: 1024);

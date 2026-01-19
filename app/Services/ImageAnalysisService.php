@@ -274,6 +274,7 @@ class ImageAnalysisService
     {
         $manager = new ImageManager(new Driver());
         $image = $manager->read($imagePath);
+        $image->orient();
 
         $imageWidth = $image->width();
         $imageHeight = $image->height();
