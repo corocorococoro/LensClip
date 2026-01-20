@@ -68,15 +68,68 @@ class ObservationService
 
     /**
      * Delete an observation and its associated files.
+     * Also removes orphan tags (tags with no other observations).
      */
     public function deleteObservation(Observation $observation): void
     {
-        Storage::disk('public')->delete([
+        // Get tag ids before detaching/deleting
+        $tagIds = $observation->tags()->pluck('tags.id')->toArray();
+
+        // Delete files
+        $paths = array_filter([
             $observation->original_path,
             $observation->cropped_path,
             $observation->thumb_path,
         ]);
 
+        if (!empty($paths)) {
+            Storage::disk('public')->delete($paths);
+        }
+
+        // Delete observation (cascades pivot, but let's be explicit if needed, currently delete handles it)
         $observation->delete();
+
+        // Cleanup orphan tags
+        if (!empty($tagIds)) {
+            // Check each tag
+            foreach ($tagIds as $tagId) {
+                // If the tag has no observations left, delete it
+                // Note: SoftDeletes on Observation might affect this count if not handled.
+                // Assuming we want to count only ACTIVE (non-deleted) observations.
+                // Pivot table entries usually remain on SoftDelete unless manually removed,
+                // BUT ObservationController uses strict delete() which triggers SoftDeletes trait.
+                // However, standard pivot relationships don't auto-remove on SoftDelete.
+                // LensClip likely uses standard SoftDeletes.
+                // If we want to genuinely clean up, user must see them gone.
+                // Let's check the Observation model. It uses SoftDeletes.
+                // If we SoftDelete an observation, the pivot row stays.
+                // So the tag count will NOT go to 0 unless we detach first.
+
+                // Wait, if we use SoftDeletes, we usually KEEP the data.
+                // If the user "Deletes" an item in UI, do we mean SoftDelete or ForceDelete?
+                // The Controller calls ->delete(), which is SoftDelete.
+                // If an item is in Trash, should the tag still exist?
+                // Usually YES, because you might restore it.
+                // BUT the user request implies "Cleaning up".
+                // If I have 1 photo of "Tulip" and I delete it, I probably want "Tulip" tag gone from my filter list.
+
+                // Strategy: Only count tags on NON-DELETED observations.
+                // But the pivot row still exists for the soft-deleted one.
+                // So $tag->observations()->count() will include soft-deleted ones?
+                // Eloquent belongsToMany by default excludes soft-deleted related models?
+                // Actually belongsToMany DOES filter out soft-deleted related models by default if the related model has SoftDeletes.
+                // Observation has SoftDeletes.
+                // So $tag->observations()->count() should return only active ones.
+
+                // Let's verify manually:
+                // Tag::find($id)->observations()->count() -> select count(*) ... where deletion_at is null.
+
+                // So simple logic:
+                $count = \App\Models\Tag::find($tagId)->observations()->count();
+                if ($count === 0) {
+                    \App\Models\Tag::destroy($tagId);
+                }
+            }
+        }
     }
 }
