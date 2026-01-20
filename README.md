@@ -88,7 +88,7 @@ GEMINI_MODEL=gemini-2.0-flash
 
 1. http://localhost にアクセス
 2. ユーザー登録 → ログイン
-3. 「撮る」ボタンをタップ → 画像をアップロード
+3. 「しらべる」ボタンをタップ → 画像をアップロード
 4. AI分析待ち → 結果表示
 5. ライブラリで一覧確認
 
@@ -138,10 +138,10 @@ GEMINI_MODEL=gemini-2.0-flash
 原因が不明な場合は、以下のコマンドでログを確認してください。
 ```bash
 # Dockerコンテナのログ
-./vendor/bin/sail logs laravel.test
+./vendor/bin/sail logs app
 
 # Laravelのアプリケーションログ
-./vendor/bin/sail exec laravel.test tail -f storage/logs/laravel.log
+./vendor/bin/sail exec app tail -f storage/logs/laravel.log
 ```
 
 ## 既知の制約
@@ -163,7 +163,7 @@ resources/js/
 ├── Layouts/              # AppLayout（下部ナビ付き）
 ├── Components/           # ObservationCard, ui/（Button, Card等）
 └── Pages/
-    ├── Home.tsx          # ホーム（撮るCTA）
+    ├── Home.tsx          # ホーム（しらべるCTA）
     ├── Library.tsx       # ライブラリ
     └── Observations/     # Processing, Show
 
