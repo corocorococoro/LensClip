@@ -1,0 +1,67 @@
+import { Link } from '@inertiajs/react';
+import type { ObservationSummary } from '@/types/models';
+
+interface ObservationCardProps {
+    observation: ObservationSummary;
+    /** カードサイズ (グリッド用) */
+    size?: 'sm' | 'md';
+}
+
+/**
+ * 観察記録カードコンポーネント
+ * - サムネイル表示 (CLS対策のためwidth/height指定)
+ * - ステータス表示 (processing, failed, ready)
+ * - アクセシビリティ対応 (適切なalt属性)
+ */
+export function ObservationCard({ observation, size = 'md' }: ObservationCardProps) {
+    const href =
+        observation.status === 'processing'
+            ? `/observations/${observation.id}/processing`
+            : `/observations/${observation.id}`;
+
+    // サイズに応じたクラス
+    const sizeClasses = size === 'sm' ? 'rounded-xl' : 'rounded-2xl';
+
+    return (
+        <Link
+            href={href}
+            className={`relative aspect-square ${sizeClasses} overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white block`}
+        >
+            <img
+                src={observation.thumb_url}
+                alt={observation.title || '観察中の画像'}
+                width={200}
+                height={200}
+                loading="lazy"
+                className="w-full h-full object-cover"
+            />
+
+            {/* Processing State */}
+            {observation.status === 'processing' && (
+                <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                    <span className="text-3xl animate-spin" role="status" aria-label="調査中">
+                        ⏳
+                    </span>
+                </div>
+            )}
+
+            {/* Failed State */}
+            {observation.status === 'failed' && (
+                <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
+                    <span className="text-3xl" role="img" aria-label="エラー">
+                        ❌
+                    </span>
+                </div>
+            )}
+
+            {/* Ready State - Show Title */}
+            {observation.status === 'ready' && observation.title && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                    <p className="text-white text-sm font-medium truncate">
+                        {observation.title}
+                    </p>
+                </div>
+            )}
+        </Link>
+    );
+}

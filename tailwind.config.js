@@ -15,6 +15,21 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            colors: {
+                // LensClip ブランドカラー
+                brand: {
+                    coral: '#FF6B6B',
+                    peach: '#FF9E7D',
+                    orange: '#FF823C',
+                    cream: '#FFF0E5',
+                    beige: '#F5EDD6',
+                    dark: '#2D2D2D',
+                    muted: '#7D7D7D',
+                },
+            },
+            animation: {
+                'bounce-short': 'bounce 0.5s ease-in-out',
+            },
         },
     },
 

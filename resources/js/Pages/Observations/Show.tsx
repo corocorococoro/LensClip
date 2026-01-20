@@ -1,37 +1,8 @@
 import AppLayout from '@/Layouts/AppLayout';
+import { Button, Card } from '@/Components/ui';
+import type { Observation, Tag, CollectionSummary } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
-
-interface Tag {
-    id: number;
-    name: string;
-}
-
-interface Collection {
-    id: string;
-    name: string;
-}
-
-interface Observation {
-    id: string;
-    status: string;
-    title: string;
-    summary: string;
-    kid_friendly: string;
-    confidence: number;
-    original_url: string;
-    cropped_url: string | null;
-    thumb_url: string;
-    tags: Tag[];
-    collections: Collection[];
-    ai_json: {
-        fun_facts?: string[];
-        safety_notes?: string[];
-        questions?: string[];
-        category?: string;
-    } | null;
-    created_at: string;
-}
 
 interface Props {
     observation: Observation;
@@ -62,7 +33,9 @@ export default function Show({ observation }: Props) {
                 <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6">
                     <img
                         src={displayImage}
-                        alt={observation.title}
+                        alt={observation.title || '観察画像'}
+                        width={400}
+                        height={400}
                         className="w-full aspect-square object-cover"
                     />
                 </div>
@@ -73,29 +46,38 @@ export default function Show({ observation }: Props) {
                 </h1>
 
                 {/* Confidence Badge */}
-                {observation.confidence && (
+                {observation.confidence > 0 && (
                     <div className="mb-4">
-                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${observation.confidence > 0.8 ? 'bg-green-100 text-green-700' :
-                                observation.confidence > 0.5 ? 'bg-yellow-100 text-yellow-700' :
-                                    'bg-gray-100 text-gray-600'
-                            }`}>
+                        <span
+                            className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${observation.confidence > 0.8
+                                    ? 'bg-green-100 text-green-700'
+                                    : observation.confidence > 0.5
+                                        ? 'bg-yellow-100 text-yellow-700'
+                                        : 'bg-gray-100 text-gray-600'
+                                }`}
+                        >
                             {Math.round(observation.confidence * 100)}% じしん
                         </span>
                     </div>
                 )}
 
                 {/* Kid-friendly Description */}
-                <div className="w-full bg-blue-50 rounded-2xl p-4 mb-4">
+                <Card className="w-full mb-4 bg-blue-50 border-blue-100">
                     <p className="text-lg text-blue-800 text-center leading-relaxed">
                         {observation.kid_friendly || observation.summary}
                     </p>
-                </div>
+                </Card>
 
                 {/* Safety Notes */}
                 {safetyNotes.length > 0 && (
-                    <div className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4">
+                    <div
+                        className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4"
+                        role="alert"
+                    >
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">⚠️</span>
+                            <span className="text-xl" aria-hidden="true">
+                                ⚠️
+                            </span>
                             <span className="font-bold text-amber-700">ちゅうい</span>
                         </div>
                         <ul className="text-sm text-amber-700 space-y-1">
@@ -112,19 +94,25 @@ export default function Show({ observation }: Props) {
                         <button
                             onClick={() => setShowFunFacts(!showFunFacts)}
                             className="w-full p-4 flex items-center justify-between"
+                            aria-expanded={showFunFacts}
+                            aria-controls="fun-facts-content"
                         >
                             <div className="flex items-center gap-2">
-                                <span className="text-xl">💡</span>
+                                <span className="text-xl" aria-hidden="true">
+                                    💡
+                                </span>
                                 <span className="font-bold text-purple-700">まめちしき</span>
                             </div>
-                            <span className="text-purple-600">{showFunFacts ? '▲' : '▼'}</span>
+                            <span className="text-purple-600" aria-hidden="true">
+                                {showFunFacts ? '▲' : '▼'}
+                            </span>
                         </button>
                         {showFunFacts && (
-                            <div className="px-4 pb-4">
+                            <div id="fun-facts-content" className="px-4 pb-4">
                                 <ul className="text-sm text-purple-700 space-y-2">
                                     {funFacts.map((fact, i) => (
                                         <li key={i} className="flex items-start gap-2">
-                                            <span>✨</span>
+                                            <span aria-hidden="true">✨</span>
                                             <span>{fact}</span>
                                         </li>
                                     ))}
@@ -138,7 +126,9 @@ export default function Show({ observation }: Props) {
                 {questions.length > 0 && (
                     <div className="w-full bg-green-50 rounded-2xl p-4 mb-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl">❓</span>
+                            <span className="text-xl" aria-hidden="true">
+                                ❓
+                            </span>
                             <span className="font-bold text-green-700">きいてみよう</span>
                         </div>
                         <ul className="text-sm text-green-700 space-y-1">
@@ -150,10 +140,10 @@ export default function Show({ observation }: Props) {
                 )}
 
                 {/* Tags */}
-                {observation.tags.length > 0 && (
+                {observation.tags && observation.tags.length > 0 && (
                     <div className="w-full mb-6">
                         <div className="flex flex-wrap gap-2 justify-center">
-                            {observation.tags.map((tag) => (
+                            {observation.tags.map((tag: Tag) => (
                                 <Link
                                     key={tag.id}
                                     href={`/library?tag=${tag.name}`}
@@ -168,18 +158,12 @@ export default function Show({ observation }: Props) {
 
                 {/* Actions */}
                 <div className="w-full flex gap-2 mb-8">
-                    <Link
-                        href="/dashboard"
-                        className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-full font-bold text-center transition-colors"
-                    >
+                    <Button href="/dashboard" variant="secondary" className="flex-1">
                         ホームへ
-                    </Link>
-                    <Link
-                        href="/library"
-                        className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-full font-bold text-center transition-colors"
-                    >
+                    </Button>
+                    <Button href="/library" variant="primary" className="flex-1">
                         ライブラリ
-                    </Link>
+                    </Button>
                 </div>
 
                 {/* Delete Button */}
