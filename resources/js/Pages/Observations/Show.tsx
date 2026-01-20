@@ -36,6 +36,7 @@ export default function Show({ observation }: Props) {
                         alt={observation.title || '観察画像'}
                         width={400}
                         height={400}
+                        loading="eager"
                         className="w-full aspect-square object-cover"
                     />
                 </div>
@@ -103,13 +104,19 @@ export default function Show({ observation }: Props) {
                                 </span>
                                 <span className="font-bold text-purple-700">まめちしき</span>
                             </div>
-                            <span className="text-purple-600" aria-hidden="true">
-                                {showFunFacts ? '▲' : '▼'}
+                            <span
+                                className={`text-purple-600 transition-transform duration-300 ${showFunFacts ? 'rotate-180' : ''}`}
+                                aria-hidden="true"
+                            >
+                                ▼
                             </span>
                         </button>
-                        {showFunFacts && (
-                            <div id="fun-facts-content" className="px-4 pb-4">
-                                <ul className="text-sm text-purple-700 space-y-2">
+                        <div
+                            id="fun-facts-content"
+                            className={`grid transition-all duration-300 ease-out ${showFunFacts ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+                        >
+                            <div className="overflow-hidden">
+                                <ul className="text-sm text-purple-700 space-y-2 px-4 pb-4">
                                     {funFacts.map((fact, i) => (
                                         <li key={i} className="flex items-start gap-2">
                                             <span aria-hidden="true">✨</span>
@@ -118,7 +125,7 @@ export default function Show({ observation }: Props) {
                                     ))}
                                 </ul>
                             </div>
-                        )}
+                        </div>
                     </div>
                 )}
 
@@ -147,7 +154,7 @@ export default function Show({ observation }: Props) {
                                 <Link
                                     key={tag.id}
                                     href={`/library?tag=${tag.name}`}
-                                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-600 transition-colors"
+                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-600 transition-colors"
                                 >
                                     #{tag.name}
                                 </Link>
@@ -157,19 +164,17 @@ export default function Show({ observation }: Props) {
                 )}
 
                 {/* Actions */}
-                <div className="w-full flex gap-2 mb-8">
-                    <Button href="/dashboard" variant="secondary" className="flex-1">
-                        ホームへ
-                    </Button>
-                    <Button href="/library" variant="primary" className="flex-1">
-                        ライブラリ
+                <div className="w-full mb-8">
+                    <Button href="/dashboard" variant="primary" fullWidth size="lg">
+                        📷 ほかのものをしらべる
                     </Button>
                 </div>
 
                 {/* Delete Button */}
                 <button
                     onClick={handleDelete}
-                    className="text-red-400 hover:text-red-600 text-sm transition-colors"
+                    aria-label="この発見を削除"
+                    className="text-red-400 hover:text-red-600 text-sm py-2 px-4 transition-colors"
                 >
                     この発見を削除
                 </button>

@@ -67,7 +67,7 @@ export default function Home({ stats, recent }: Props) {
                 <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={processing}
-                    aria-label="写真を撮影する"
+                    aria-label="カメラでしらべる"
                     className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-2xl flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 >
                     {processing ? (
@@ -82,11 +82,11 @@ export default function Home({ stats, recent }: Props) {
                             <span className="text-5xl" aria-hidden="true">
                                 📷
                             </span>
-                            <span className="text-sm mt-2 font-bold">とる</span>
+                            <span className="text-sm mt-2 font-bold">しらべる</span>
                         </>
                     )}
                 </button>
-                <p className="text-gray-500 text-sm mb-4">タップしてしゃしんをとろう！</p>
+                <p className="text-gray-500 text-sm mb-4">タップしてなにかしらべてみよう！</p>
 
                 {/* Error Display */}
                 {errors.image && (
