@@ -21,6 +21,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     intl \
     zip \
     bcmath \
+    exif \
     pdo_mysql \
     opcache
 
