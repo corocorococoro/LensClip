@@ -183,8 +183,8 @@ export default function Welcome({
                     </div>
 
                     <div className="flex gap-6 text-[10px] sm:text-xs font-medium text-[#94A3B8]">
-                        <Link href="#" className="hover:text-[#FF6B6B]">利用規約</Link>
-                        <Link href="#" className="hover:text-[#FF6B6B]">プライバシーポリシー</Link>
+                        <Link href={route('terms')} className="hover:text-[#FF6B6B]">利用規約</Link>
+                        <Link href={route('privacy-policy')} className="hover:text-[#FF6B6B]">プライバシーポリシー</Link>
                     </div>
 
                     <p className="text-[10px] text-[#CBD5E1]">

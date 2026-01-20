@@ -20,6 +20,15 @@ Route::get('/', function () {
     ]);
 });
 
+// Legal pages
+Route::get('/terms', function () {
+    return Inertia::render('Terms');
+})->name('terms');
+
+Route::get('/privacy-policy', function () {
+    return Inertia::render('PrivacyPolicy');
+})->name('privacy-policy');
+
 // Authenticated routes
 Route::middleware(['auth', 'verified'])->group(function () {
     // Home / Dashboard
