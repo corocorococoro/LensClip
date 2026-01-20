@@ -80,6 +80,18 @@ class Observation extends Model
         return $query->where('user_id', $userId);
     }
 
+    public function scopeSearch($query, $keyword)
+    {
+        return $query->where('title', 'like', '%' . $keyword . '%');
+    }
+
+    public function scopeWithTag($query, $tagName)
+    {
+        return $query->whereHas('tags', function ($q) use ($tagName) {
+            $q->where('name', $tagName);
+        });
+    }
+
     public function scopeReady($query)
     {
         return $query->where('status', 'ready');
@@ -88,11 +100,6 @@ class Observation extends Model
     public function scopeProcessing($query)
     {
         return $query->where('status', 'processing');
-    }
-
-    public function scopeFailed($query)
-    {
-        return $query->where('status', 'failed');
     }
 
     // AI JSON helpers
