@@ -1,6 +1,6 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import AppLayout from '@/Layouts/AppLayout';
 import { PageProps } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -9,35 +9,55 @@ export default function Edit({
     mustVerifyEmail,
     status,
 }: PageProps<{ mustVerifyEmail: boolean; status?: string }>) {
+    const handleLogout = (e: React.FormEvent) => {
+        e.preventDefault();
+        router.post(route('logout'));
+    };
+
     return (
-        <AuthenticatedLayout
-            header={
-                <h2 className="text-xl font-semibold leading-tight text-gray-800 dark:text-gray-200">
-                    Profile
-                </h2>
-            }
-        >
+        <AppLayout>
             <Head title="Profile" />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-                        <UpdateProfileInformationForm
-                            mustVerifyEmail={mustVerifyEmail}
-                            status={status}
-                            className="max-w-xl"
-                        />
-                    </div>
+            <div className="space-y-6">
+                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F5EDD6]">
+                    <UpdateProfileInformationForm
+                        mustVerifyEmail={mustVerifyEmail}
+                        status={status}
+                        className="max-w-xl"
+                    />
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-                        <UpdatePasswordForm className="max-w-xl" />
-                    </div>
+                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F5EDD6]">
+                    <UpdatePasswordForm className="max-w-xl" />
+                </div>
 
-                    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-                        <DeleteUserForm className="max-w-xl" />
+                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F5EDD6]">
+                    <div className="max-w-xl">
+                        <header>
+                            <h2 className="text-lg font-medium text-gray-900">
+                                ログアウト
+                            </h2>
+
+                            <p className="mt-1 text-sm text-gray-600">
+                                アカウントからログアウトします。
+                            </p>
+                        </header>
+
+                        <form onSubmit={handleLogout} className="mt-6">
+                            <button
+                                type="submit"
+                                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#FF6B6B] to-[#FF823C] text-white rounded-xl font-bold shadow-lg hover:translate-y-[-2px] transition-all active:scale-95"
+                            >
+                                ログアウト
+                            </button>
+                        </form>
                     </div>
                 </div>
+
+                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F5EDD6]">
+                    <DeleteUserForm className="max-w-xl" />
+                </div>
             </div>
-        </AuthenticatedLayout>
+        </AppLayout>
     );
 }

@@ -40,7 +40,6 @@ export default function Dashboard({ auth, scraps }) {
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">コレクション</h2>}
         >
             <Head title="Dashboard" />
 

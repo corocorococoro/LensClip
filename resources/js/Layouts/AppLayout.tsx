@@ -18,14 +18,20 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-purple-50 pb-20">
             {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-[#F5EDD6]">
                 <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-                    <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        {title || 'LensClip'}
-                    </h1>
+                    <Link href="/dashboard" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#FF6B6B] to-[#FF9E7D] rounded-lg shadow-sm flex items-center justify-center">
+                            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                <circle cx="12" cy="13" r="4" />
+                            </svg>
+                        </div>
+                        <span className="text-xl font-bold tracking-tight text-[#2D2D2D]">LensClip</span>
+                    </Link>
                     <Link
                         href="/profile"
-                        className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm"
+                        className="w-10 h-10 rounded-full bg-[#FFF0E5] text-[#FF823C] border border-[#F5EDD6] flex items-center justify-center text-xl shadow-sm hover:scale-105 active:scale-95 transition-transform"
                     >
                         👤
                     </Link>
@@ -47,8 +53,8 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                 key={item.href}
                                 href={item.href}
                                 className={`flex flex-col items-center py-2 px-4 rounded-xl transition-all ${isActive
-                                        ? 'text-blue-600 bg-blue-50'
-                                        : 'text-gray-500 hover:text-gray-700'
+                                    ? 'text-blue-600 bg-blue-50'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 <span className="text-2xl">{item.icon}</span>
