@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
-import { Head, Link, router } from '@inertiajs/react';
-import { useRef, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import { useRef, useEffect } from 'react';
 
 interface Observation {
     id: string;
@@ -18,22 +18,30 @@ interface Props {
 
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [uploading, setUploading] = useState(false);
+    const { data, setData, post, processing, errors, reset } = useForm({
+        image: null as File | null,
+    });
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        setUploading(true);
-
-        const formData = new FormData();
-        formData.append('image', file);
-
-        router.post('/observations', formData, {
-            forceFormData: true,
-            onFinish: () => setUploading(false),
-        });
+        setData('image', file);
     };
+
+    // Automatically submit when file is selected
+    useEffect(() => {
+        if (data.image) {
+            post('/observations', {
+                forceFormData: true,
+                onSuccess: () => reset(),
+                onError: (errors) => {
+                    if (!errors.image) {
+                        alert('おくりものに しっぱいしちゃった。もういちど やってみてね！');
+                    }
+                }
+            });
+        }
+    }, [data.image]);
 
     return (
         <AppLayout title="ホーム">
@@ -55,10 +63,10 @@ export default function Home({ stats, recent }: Props) {
                 {/* Capture Button */}
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
+                    disabled={processing}
                     className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-2xl flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 >
-                    {uploading ? (
+                    {processing ? (
                         <>
                             <span className="text-4xl animate-spin">⏳</span>
                             <span className="text-sm mt-2 font-bold">おくりちゅう...</span>
@@ -70,7 +78,15 @@ export default function Home({ stats, recent }: Props) {
                         </>
                     )}
                 </button>
-                <p className="text-gray-500 text-sm mb-8">タップしてしゃしんをとろう！</p>
+                <p className="text-gray-500 text-sm mb-4">タップしてしゃしんをとろう！</p>
+
+                {/* Error Display */}
+                {errors.image && (
+                    <div className="w-full mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 animate-bounce-short">
+                        <span className="text-2xl">⚠️</span>
+                        <p className="text-sm font-bold">{errors.image}</p>
+                    </div>
+                )}
 
                 {/* Hidden File Input */}
                 <input
@@ -111,7 +127,7 @@ export default function Home({ stats, recent }: Props) {
                 )}
 
                 {/* Empty State */}
-                {recent.length === 0 && stats.total === 0 && (
+                {recent.length === 0 && stats.total === 0 && !errors.image && (
                     <div className="text-center py-10">
                         <div className="text-6xl mb-4">🔍</div>
                         <p className="text-gray-500">

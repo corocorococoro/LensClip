@@ -62,6 +62,7 @@ class ImageAnalysisService
         ];
 
         // Step 1: Vision API - Object Localization
+        Log::info('ImageAnalysisService: Starting Vision object localization');
         $visionResult = $this->callVisionObjectLocalization($imageContent);
         $result['vision_objects'] = $visionResult;
 
@@ -69,9 +70,15 @@ class ImageAnalysisService
         $selectedBbox = $this->selectBestBbox($visionResult, $originalPath);
 
         if ($selectedBbox) {
+            Log::info('ImageAnalysisService: Bbox selected, cropping image', [
+                'name' => $selectedBbox['name'],
+                'score' => $selectedBbox['score']
+            ]);
             $result['crop_bbox'] = $selectedBbox;
             $croppedPath = $this->cropImage($originalPath, $selectedBbox, $observation);
             $result['cropped_path'] = $croppedPath;
+        } else {
+            Log::info('ImageAnalysisService: No bbox selected, using original image');
         }
 
         // Step 3: Gemini - Use cropped image if available, otherwise original
@@ -79,7 +86,16 @@ class ImageAnalysisService
             ? Storage::disk('public')->get($result['cropped_path'])
             : $imageContent;
 
+        Log::info('ImageAnalysisService: Sending image to Gemini');
         $geminiResult = $this->callGemini($imageForGemini);
+
+        Log::info('ImageAnalysisService: Gemini analysis completed', [
+            'title' => $geminiResult['title'] ?? 'N/A',
+            'category' => $geminiResult['category'] ?? 'N/A',
+            'confidence' => $geminiResult['confidence'] ?? 0,
+            'tag_count' => count($geminiResult['tags'] ?? []),
+        ]);
+
         $result['ai_json'] = $geminiResult;
 
         return $result;
@@ -359,7 +375,7 @@ EOT;
                 ]
             );
 
-            Log::info('Gemini API Status: ' . $response->status());
+            Log::info('Gemini API Response Status: ' . $response->status());
 
             if (!$response->successful()) {
                 Log::error('Gemini API error', ['body' => $response->body()]);

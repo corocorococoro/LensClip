@@ -32,21 +32,27 @@ class AnalyzeObservationJob implements ShouldQueue
      */
     public function handle(ImageAnalysisService $analysisService): void
     {
+        Log::withContext([
+            'observation_id' => $this->observationId,
+            'job_id' => $this->job?->getJobId(),
+        ]);
+
         $observation = Observation::find($this->observationId);
 
         if (!$observation) {
-            Log::warning('AnalyzeObservationJob: Observation not found', ['id' => $this->observationId]);
+            Log::warning('AnalyzeObservationJob: Observation not found');
             return;
         }
 
         // Skip if not in processing status
         if ($observation->status !== 'processing') {
             Log::info('AnalyzeObservationJob: Skipping, status is not processing', [
-                'id' => $this->observationId,
                 'status' => $observation->status
             ]);
             return;
         }
+
+        Log::info('AnalyzeObservationJob: Starting analysis');
 
         try {
             $result = $analysisService->analyze($observation);

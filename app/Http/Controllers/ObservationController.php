@@ -8,6 +8,7 @@ use App\Models\Collection;
 use App\Models\Observation;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -94,6 +95,15 @@ class ObservationController extends Controller
             'thumb_path' => $thumbPath,
         ]);
 
+        Log::withContext([
+            'observation_id' => $observation->id,
+            'user_id' => auth()->id(),
+        ]);
+
+        Log::info('Observation created, dispatching analysis job', [
+            'original_path' => $originalPath,
+        ]);
+
         // Dispatch analysis job
         AnalyzeObservationJob::dispatch($observation->id);
 
@@ -127,6 +137,11 @@ class ObservationController extends Controller
     public function show(Observation $observation)
     {
         $this->authorize('view', $observation);
+
+        Log::withContext([
+            'observation_id' => $observation->id,
+            'user_id' => auth()->id(),
+        ]);
 
         $observation->load('tags', 'collections');
 

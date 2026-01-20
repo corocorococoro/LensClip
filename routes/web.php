@@ -63,6 +63,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
     Route::post('/collections/{collection}/observations', [CollectionController::class, 'addObservation'])->name('collections.addObservation');
     Route::delete('/collections/{collection}/observations/{observation}', [CollectionController::class, 'removeObservation'])->name('collections.removeObservation');
+
+    // Logs
+    Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])->name('logs.index');
 });
 
 Route::middleware('auth')->group(function () {
