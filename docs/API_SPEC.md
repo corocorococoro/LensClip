@@ -14,7 +14,7 @@
 ### Observations
 | Method | Path | 説明 |
 |--------|------|------|
-| GET | `/observations` | 一覧（検索/フィルタ対応） |
+| GET | `/library` | 一覧（検索/フィルタ対応） |
 | POST | `/observations` | 新規作成（画像アップロード） |
 | GET | `/observations/{id}` | 詳細取得 |
 | POST | `/observations/{id}/retry` | 失敗時リトライ |
@@ -27,17 +27,6 @@
 | GET | `/tags` | ユーザーのタグ一覧 |
 | POST | `/tags` | タグ作成 |
 | DELETE | `/tags/{id}` | タグ削除 |
-
-### Collections
-| Method | Path | 説明 |
-|--------|------|------|
-| GET | `/collections` | コレクション一覧 |
-| POST | `/collections` | コレクション作成 |
-| GET | `/collections/{id}` | コレクション詳細 |
-| PATCH | `/collections/{id}` | コレクション更新 |
-| DELETE | `/collections/{id}` | コレクション削除 |
-| POST | `/collections/{id}/observations` | Observation追加 |
-| DELETE | `/collections/{id}/observations/{obs_id}` | Observation削除 |
 
 ---
 
@@ -98,13 +87,12 @@ Content-Type: multipart/form-data
 }
 ```
 
-### GET /observations
+### GET /library
 **クエリパラメータ**
 | Param | Type | 説明 |
 |-------|------|------|
 | q | string | タイトル検索 |
 | tag | string | タグ名フィルタ |
-| collection | uuid | コレクションフィルタ |
 | page | int | ページ番号 |
 | per_page | int | 1ページあたり件数（default: 20, max: 50） |
 

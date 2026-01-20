@@ -58,12 +58,6 @@ class Observation extends Model
         return $this->belongsToMany(Tag::class, 'observation_tag');
     }
 
-    public function collections()
-    {
-        return $this->belongsToMany(Collection::class, 'collection_observation')
-            ->withPivot('position');
-    }
-
     // Accessors for image URLs
     public function getOriginalUrlAttribute()
     {

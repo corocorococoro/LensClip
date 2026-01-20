@@ -15,7 +15,6 @@ flowchart TD
     subgraph Main["メイン画面（認証後）"]
         Home[Home<br/>📸 撮る CTA]
         Library[Library<br/>📚 ライブラリ]
-        Collections[Collections<br/>📁 コレクション]
     end
 
     Home -->|カメラ/アップロード| Capture[Capture<br/>プレビュー確認]
@@ -25,15 +24,12 @@ flowchart TD
     Failed -->|リトライ| Processing
     Failed -->|戻る| Home
 
-    Result -->|保存| SaveDialog[SaveDialog<br/>タグ/コレクション選択]
+    Result -->|保存| SaveDialog[SaveDialog<br/>タグ選択]
     SaveDialog --> Library
     Result -->|戻る| Home
 
     Library -->|写真タップ| Detail[Detail<br/>詳細表示]
     Detail --> Library
-
-    Collections -->|コレクション選択| CollectionDetail[CollectionDetail<br/>写真一覧]
-    CollectionDetail -->|写真タップ| Detail
 ```
 
 ## 状態管理
@@ -85,13 +81,7 @@ flowchart TD
 - タグフィルタ（横スクロール chips）
 - 無限スクロール or ページネーション
 
-### Collections
-- コレクション一覧（カバー画像 + 名前）
-- 新規作成ボタン
-- コレクション詳細（写真グリッド）
-
 ## ナビゲーション
 モバイル下部固定ナビ:
 - 🏠 Home
 - 📚 Library
-- 📁 Collections

@@ -28,7 +28,6 @@ export interface Observation extends ObservationSummary {
     confidence: number;
     original_url: string;
     cropped_url: string | null;
-    collections: CollectionSummary[];
     ai_json: ObservationAIJson | null;
     created_at: string;
     error_message?: string;
@@ -42,21 +41,9 @@ export interface ObservationAIJson {
     category?: string;
 }
 
-// コレクション（リスト用・軽量版）
-export interface CollectionSummary {
-    id: string;
-    name: string;
-}
-
-// コレクション（詳細用・フル版）
-export interface Collection extends CollectionSummary {
-    cover_url: string | null;
-    observations_count: number;
-    observations: ObservationSummary[];
-}
-
 // ホームページの統計
 export interface HomeStats {
     today: number;
     total: number;
 }
+

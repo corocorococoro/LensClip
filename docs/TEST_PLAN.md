@@ -55,7 +55,7 @@ public function user_can_retry_failed_observation()
 public function observations_can_be_filtered_by_tag()
 {
     // Given: タグ付きObservationが複数ある
-    // When: GET /observations?tag=植物
+    // When: GET /library?tag=植物
     // Then: 該当タグのObservationのみ返る
 }
 
@@ -63,7 +63,7 @@ public function observations_can_be_filtered_by_tag()
 public function observations_can_be_searched_by_title()
 {
     // Given: title="チューリップ" のObservation
-    // When: GET /observations?q=チューリップ
+    // When: GET /library?q=チューリップ
     // Then: 該当Observationが返る
 }
 ```
@@ -88,21 +88,6 @@ public function delete_all_requires_confirmation()
 {
     // When: DELETE /observations (confirmなし)
     // Then: 422 エラー
-}
-```
-
----
-
-### 5. コレクション操作
-**ファイル**: `tests/Feature/CollectionTest.php`
-
-```php
-/** @test */
-public function user_can_create_collection_and_add_observations()
-{
-    // Given: 複数のObservation
-    // When: コレクション作成→Observation追加
-    // Then: コレクション内にObservationが含まれる
 }
 ```
 
@@ -170,7 +155,6 @@ public function clips_bbox_at_image_edges()
 3. **送信** → Processing表示 → 結果表示
 4. **保存** → ライブラリに表示
 5. **検索** → フィルタ結果表示
-6. **コレクション** → 作成 → Observation追加
 
 ### 確認観点
 - [ ] モバイルでのタッチ操作

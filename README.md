@@ -91,14 +91,12 @@ GEMINI_MODEL=gemini-2.0-flash
 3. 「撮る」ボタンをタップ → 画像をアップロード
 4. AI分析待ち → 結果表示
 5. ライブラリで一覧確認
-6. コレクション作成 → 整理
 
 ## 主要機能
 
 - 📷 **撮影・アップロード**: カメラまたはファイル選択
 - 🔍 **AI分析**: Vision APIで主対象をCrop → Gemini APIで同定・説明
 - 📚 **ライブラリ**: グリッド表示、検索、タグフィルタ
-- 📁 **コレクション**: 発見を整理
 - 🏷️ **タグ**: AI自動付与＋手動追加
 
 ## テスト実行
@@ -154,21 +152,20 @@ GEMINI_MODEL=gemini-2.0-flash
 
 ## ディレクトリ構成
 
-```
 app/
-├── Http/Controllers/     # ObservationController, CollectionController等
+├── Http/Controllers/     # ObservationController, TagController等
 ├── Jobs/                 # AnalyzeObservationJob（非同期AI処理）
-├── Models/               # Observation, Tag, Collection
-├── Policies/             # ObservationPolicy, CollectionPolicy
+├── Models/               # Observation, Tag
+├── Policies/             # ObservationPolicy
 └── Services/             # ImageAnalysisService（Vision + Gemini）
 
 resources/js/
 ├── Layouts/              # AppLayout（下部ナビ付き）
+├── Components/           # ObservationCard, ui/（Button, Card等）
 └── Pages/
     ├── Home.tsx          # ホーム（撮るCTA）
     ├── Library.tsx       # ライブラリ
-    ├── Observations/     # Processing, Show
-    └── Collections/      # Index, Show
+    └── Observations/     # Processing, Show
 
 docs/
 ├── PRD.md               # 製品要件定義

@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\ObservationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
@@ -59,15 +58,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
     Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
 
-    // Collections
-    Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
-    Route::post('/collections', [CollectionController::class, 'store'])->name('collections.store');
-    Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
-    Route::patch('/collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
-    Route::delete('/collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
-    Route::post('/collections/{collection}/observations', [CollectionController::class, 'addObservation'])->name('collections.addObservation');
-    Route::delete('/collections/{collection}/observations/{observation}', [CollectionController::class, 'removeObservation'])->name('collections.removeObservation');
-
     // Logs
     Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])->name('logs.index');
 });
@@ -79,3 +69,4 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
+

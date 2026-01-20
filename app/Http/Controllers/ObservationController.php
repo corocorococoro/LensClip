@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreObservationRequest;
 use App\Jobs\AnalyzeObservationJob;
-use App\Models\Collection;
 use App\Models\Observation;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -38,12 +37,7 @@ class ObservationController extends Controller
             });
         }
 
-        // Filter by collection
-        if ($request->filled('collection')) {
-            $query->whereHas('collections', function ($q) use ($request) {
-                $q->where('collections.id', $request->collection);
-            });
-        }
+
 
         $observations = $query->paginate($request->get('per_page', 20));
 
@@ -53,7 +47,7 @@ class ObservationController extends Controller
         return Inertia::render('Library', [
             'observations' => $observations,
             'tags' => $tags,
-            'filters' => $request->only(['q', 'tag', 'collection']),
+            'filters' => $request->only(['q', 'tag']),
         ]);
     }
 
@@ -143,7 +137,7 @@ class ObservationController extends Controller
             'user_id' => auth()->id(),
         ]);
 
-        $observation->load('tags', 'collections');
+        $observation->load('tags');
 
         // Return JSON for polling
         if (request()->wantsJson()) {

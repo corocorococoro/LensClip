@@ -10,7 +10,6 @@ interface AppLayoutProps {
 const navItems = [
     { href: '/dashboard', label: 'ホーム', icon: '🏠' },
     { href: '/library', label: 'ライブラリ', icon: '📚' },
-    { href: '/collections', label: 'コレクション', icon: '📁' },
 ] as const;
 
 /**
@@ -79,8 +78,8 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                                 href={item.href}
                                 aria-current={isActive ? 'page' : undefined}
                                 className={`flex flex-col items-center py-2 px-4 rounded-xl transition-all ${isActive
-                                        ? 'text-blue-600 bg-blue-50'
-                                        : 'text-gray-500 hover:text-gray-700'
+                                    ? 'text-blue-600 bg-blue-50'
+                                    : 'text-gray-500 hover:text-gray-700'
                                     }`}
                             >
                                 <span className="text-2xl" aria-hidden="true">

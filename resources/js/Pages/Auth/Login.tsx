@@ -1,8 +1,5 @@
-import Checkbox from '@/Components/Checkbox';
+import { Button } from '@/Components/ui';
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -30,79 +27,91 @@ export default function Login({
 
     return (
         <GuestLayout>
-            <Head title="Log in" />
+            <Head title="ログイン" />
+
+            <h1 className="text-2xl font-bold text-brand-dark text-center mb-6">
+                ログイン
+            </h1>
 
             {status && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm font-medium text-green-700 text-center">
                     {status}
                 </div>
             )}
 
-            <form onSubmit={submit}>
+            <form onSubmit={submit} className="space-y-4">
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
+                    <label
+                        htmlFor="email"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                        メールアドレス
+                    </label>
+                    <input
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="username"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('email', e.target.value)}
                     />
-
-                    <InputError message={errors.email} className="mt-2" />
+                    <InputError message={errors.email} className="mt-1" />
                 </div>
 
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div>
+                    <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                        パスワード
+                    </label>
+                    <input
                         id="password"
                         type="password"
                         name="password"
                         value={data.password}
-                        className="mt-1 block w-full"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    <InputError message={errors.password} className="mt-1" />
                 </div>
 
-                <div className="mt-4 block">
-                    <label className="flex items-center">
-                        <Checkbox
-                            name="remember"
-                            checked={data.remember}
-                            onChange={(e) =>
-                                setData(
-                                    'remember',
-                                    (e.target.checked || false) as false,
-                                )
-                            }
-                        />
-                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
-                            Remember me
-                        </span>
+                <div className="flex items-center">
+                    <input
+                        id="remember"
+                        type="checkbox"
+                        name="remember"
+                        checked={data.remember}
+                        onChange={(e) => setData('remember', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-brand-coral focus:ring-brand-coral"
+                    />
+                    <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
+                        ログイン状態を保持する
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
+                <Button type="submit" disabled={processing} loading={processing} fullWidth size="lg">
+                    ログイン
+                </Button>
+
+                <div className="flex items-center justify-between text-sm">
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
+                            className="text-brand-muted hover:text-brand-coral transition-colors"
                         >
-                            Forgot your password?
+                            パスワードを忘れた方
                         </Link>
                     )}
-
-                    <PrimaryButton className="ms-4" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
+                    <Link
+                        href={route('register')}
+                        className="text-brand-coral hover:text-brand-orange font-medium transition-colors"
+                    >
+                        新規登録はこちら
+                    </Link>
                 </div>
             </form>
         </GuestLayout>

@@ -6,9 +6,7 @@
 erDiagram
     users ||--o{ observations : owns
     users ||--o{ tags : owns
-    users ||--o{ collections : owns
     observations }o--o{ tags : has
-    collections }o--o{ observations : contains
 
     users {
         id bigint PK
@@ -50,21 +48,6 @@ erDiagram
     observation_tag {
         observation_id uuid FK
         tag_id bigint FK
-    }
-
-    collections {
-        id uuid PK
-        user_id bigint FK
-        name varchar
-        cover_observation_id uuid FK nullable
-        created_at timestamp
-        updated_at timestamp
-    }
-
-    collection_observation {
-        collection_id uuid FK
-        observation_id uuid FK
-        position int nullable
     }
 ```
 
@@ -113,21 +96,6 @@ erDiagram
 
 **インデックス**
 - `(observation_id, tag_id)` PRIMARY
-
-### collections
-| Column | Type | Constraints | 説明 |
-|--------|------|-------------|------|
-| id | uuid | PK | |
-| user_id | bigint | FK | 所有者 |
-| name | varchar | NOT NULL | コレクション名 |
-| cover_observation_id | uuid | FK, nullable | カバー画像 |
-
-### collection_observation
-| Column | Type | Constraints | 説明 |
-|--------|------|-------------|------|
-| collection_id | uuid | FK | |
-| observation_id | uuid | FK | |
-| position | int | nullable | 並び順 |
 
 ## マイグレーション方針
 既存の `scraps` テーブルは削除し、新しい `observations` テーブルに移行する。

@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
-import type { Observation, Tag, CollectionSummary } from '@/types/models';
+import type { Observation, Tag } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -50,10 +50,10 @@ export default function Show({ observation }: Props) {
                     <div className="mb-4">
                         <span
                             className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${observation.confidence > 0.8
-                                    ? 'bg-green-100 text-green-700'
-                                    : observation.confidence > 0.5
-                                        ? 'bg-yellow-100 text-yellow-700'
-                                        : 'bg-gray-100 text-gray-600'
+                                ? 'bg-green-100 text-green-700'
+                                : observation.confidence > 0.5
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-gray-100 text-gray-600'
                                 }`}
                         >
                             {Math.round(observation.confidence * 100)}% じしん
