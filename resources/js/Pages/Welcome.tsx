@@ -124,10 +124,10 @@ export default function Welcome({
                         {/* Card 2 */}
                         <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F5EDD6] border border-[#F5EDD6] text-left transform rotate-[1deg] transition-transform hover:rotate-0">
                             <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
-                                <img src="/images/lp/ladybug.webp" className="w-full h-full object-cover" alt="ななほしてんと" />
+                                <img src="/images/lp/ladybug.webp" className="w-full h-full object-cover" alt="ななほしてんとう" />
                                 <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#FF6B6B]">むし</div>
                             </div>
-                            <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ななほしてんと</h4>
+                            <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ななほしてんとう</h4>
                             <p className="text-sm text-[#FF823C] font-bold px-2 flex items-start gap-1">
                                 <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
                                 <span>親子で観察：せなかの ほしを かぞえてみよう！</span>
