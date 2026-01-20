@@ -16,7 +16,7 @@ export default function Edit({
 
     return (
         <AppLayout>
-            <Head title="Profile" />
+            <Head title="プロフィール" />
 
             <div className="space-y-6">
                 <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F5EDD6]">
