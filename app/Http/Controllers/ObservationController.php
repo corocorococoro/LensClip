@@ -179,7 +179,7 @@ class ObservationController extends Controller
 
         $request->validate([
             'tags' => 'array',
-            'tags.*' => 'string|max:50',
+            'tags.*' => 'nullable|string|max:50',
         ]);
 
         // Tag logic could also be moved to TagService, but kept simple here for now
