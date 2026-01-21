@@ -14,3 +14,7 @@ trigger: always_on
 - Laravel Sail + Docker を前提にローカル環境を構築する
 - composer / artisan / npm は原則 Sail 経由で実行する（例: ./vendor/bin/sail artisan）
 - DBはMySQL（Sail標準）を優先。RedisもSailで起動してqueueをredisにする
+
+## 検証ルール（必須）
+- フロントエンド（.tsx/.ts）を変更したら、必ず `npm run build` を実行してTypeScriptビルドが通ることを確認する
+- `npm run dev` は型エラーを見逃すことがあるため、本番ビルドで検証すること
