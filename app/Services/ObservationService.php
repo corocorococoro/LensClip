@@ -21,6 +21,9 @@ class ObservationService
     {
         $tempPath = $file->getPathname();
 
+        // Extract GPS from EXIF before processing (WebP will strip EXIF)
+        $gps = $this->extractGpsFromExif($tempPath);
+
         // Process image
         $manager = new ImageManager(new Driver());
         $image = $manager->read($tempPath);
@@ -49,6 +52,8 @@ class ObservationService
             'status' => 'processing',
             'original_path' => $originalPath,
             'thumb_path' => $thumbPath,
+            'latitude' => $gps['latitude'] ?? null,
+            'longitude' => $gps['longitude'] ?? null,
         ]);
 
         Log::withContext([
@@ -58,12 +63,94 @@ class ObservationService
 
         Log::info('Observation created, dispatching analysis job', [
             'original_path' => $originalPath,
+            'has_gps' => !empty($gps),
         ]);
 
         // Dispatch analysis job
         AnalyzeObservationJob::dispatch($observation->id);
 
         return $observation;
+    }
+
+    /**
+     * Extract GPS coordinates from EXIF data.
+     */
+    protected function extractGpsFromExif(string $imagePath): array
+    {
+        try {
+            $exif = @exif_read_data($imagePath);
+
+            if (!$exif || !isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+                return [];
+            }
+
+            $latitude = $this->convertGpsToDecimal(
+                $exif['GPSLatitude'],
+                $exif['GPSLatitudeRef'] ?? 'N'
+            );
+
+            $longitude = $this->convertGpsToDecimal(
+                $exif['GPSLongitude'],
+                $exif['GPSLongitudeRef'] ?? 'E'
+            );
+
+            if ($latitude === null || $longitude === null) {
+                return [];
+            }
+
+            return [
+                'latitude' => $latitude,
+                'longitude' => $longitude,
+            ];
+        } catch (\Exception $e) {
+            Log::debug('Failed to extract GPS from EXIF', ['error' => $e->getMessage()]);
+            return [];
+        }
+    }
+
+    /**
+     * Convert GPS coordinates from EXIF format to decimal degrees.
+     */
+    protected function convertGpsToDecimal(array $coords, string $ref): ?float
+    {
+        if (count($coords) !== 3) {
+            return null;
+        }
+
+        $degrees = $this->evalFraction($coords[0]);
+        $minutes = $this->evalFraction($coords[1]);
+        $seconds = $this->evalFraction($coords[2]);
+
+        if ($degrees === null || $minutes === null || $seconds === null) {
+            return null;
+        }
+
+        $decimal = $degrees + ($minutes / 60) + ($seconds / 3600);
+
+        // South and West are negative
+        if (in_array(strtoupper($ref), ['S', 'W'])) {
+            $decimal *= -1;
+        }
+
+        return round($decimal, 7);
+    }
+
+    /**
+     * Evaluate a fraction string (e.g., "35/1") to float.
+     */
+    protected function evalFraction(string $fraction): ?float
+    {
+        $parts = explode('/', $fraction);
+
+        if (count($parts) === 2 && is_numeric($parts[0]) && is_numeric($parts[1]) && $parts[1] != 0) {
+            return (float) $parts[0] / (float) $parts[1];
+        }
+
+        if (is_numeric($fraction)) {
+            return (float) $fraction;
+        }
+
+        return null;
     }
 
     /**

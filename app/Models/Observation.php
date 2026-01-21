@@ -28,6 +28,9 @@ class Observation extends Model
         'kid_friendly',
         'confidence',
         'error_message',
+        'gemini_model',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [
@@ -35,6 +38,8 @@ class Observation extends Model
         'vision_objects' => 'array',
         'ai_json' => 'array',
         'confidence' => 'float',
+        'latitude' => 'float',
+        'longitude' => 'float',
     ];
 
     protected $appends = [

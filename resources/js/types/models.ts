@@ -31,6 +31,9 @@ export interface Observation extends ObservationSummary {
     ai_json: ObservationAIJson | null;
     created_at: string;
     error_message?: string;
+    gemini_model?: string;
+    latitude?: number | null;
+    longitude?: number | null;
 }
 
 // AI解析結果
@@ -39,6 +42,19 @@ export interface ObservationAIJson {
     safety_notes?: string[];
     questions?: string[];
     category?: string;
+    candidate_cards?: CandidateCard[];
+}
+
+// 候補カード（タップ切替用）
+export interface CandidateCard {
+    name: string;
+    confidence: number;
+    summary: string;
+    kid_friendly: string;
+    look_for?: string[];
+    fun_facts?: string[];
+    questions?: string[];
+    tags?: string[];
 }
 
 // ホームページの統計

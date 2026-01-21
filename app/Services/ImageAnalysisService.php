@@ -102,6 +102,7 @@ class ImageAnalysisService
         ]);
 
         $result['ai_json'] = $geminiResult;
+        $result['gemini_model'] = $this->geminiModel;
 
         return $result;
     }
@@ -340,21 +341,46 @@ class ImageAnalysisService
         $prompt = <<<EOT
 あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
 
+**重要**: 可能性のある候補を最大3つまで挙げ、それぞれについてカード情報を生成してください。
+候補は確信度の高い順に並べてください。
+
 以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
 
 {
-  "title": "名前（ひらがな/カタカナ推奨）",
-  "alt_names": ["別名があれば"],
-  "summary": "簡潔な説明（大人向け、100文字以内）",
-  "kid_friendly": "子供向けのやさしい説明（50文字以内、ひらがな多め）",
+  "title": "第1候補の名前（ひらがな/カタカナ推奨）",
+  "summary": "第1候補の簡潔な説明（大人向け、100文字以内）",
+  "kid_friendly": "第1候補の子供向けのやさしい説明（50文字以内、ひらがな多め）",
   "category": "plant|animal|insect|food|tool|vehicle|place|other",
-  "tags": ["関連タグ"],
   "confidence": 0.0-1.0,
-  "candidates": [{"name": "候補名", "confidence": 0.0-1.0}],
+  "tags": ["関連タグ"],
   "safety_notes": ["危険や注意事項があれば"],
   "fun_facts": ["豆知識"],
-  "questions": ["子供に聞いてみたい質問"]
+  "questions": ["子供に聞いてみたい質問"],
+  "candidate_cards": [
+    {
+      "name": "第1候補の名前",
+      "confidence": 0.0-1.0,
+      "summary": "簡潔な説明（大人向け、80文字以内）",
+      "kid_friendly": "子供向け説明（40文字以内）",
+      "look_for": ["見分けポイント1", "見分けポイント2"],
+      "fun_facts": ["この候補の豆知識"],
+      "questions": ["この候補に関する質問"],
+      "tags": ["タグ"]
+    },
+    {
+      "name": "第2候補の名前（あれば）",
+      "confidence": 0.0-1.0,
+      ...
+    },
+    {
+      "name": "第3候補の名前（あれば）",
+      "confidence": 0.0-1.0,
+      ...
+    }
+  ]
 }
+
+候補が1つしか考えられない場合は、candidate_cardsに1つだけ入れてください。
 EOT;
 
         try {
@@ -420,11 +446,32 @@ EOT;
             'kid_friendly' => 'これはテストだよ！',
             'category' => 'other',
             'tags' => ['テスト'],
-            'confidence' => 0.5,
-            'candidates' => [],
+            'confidence' => 0.8,
             'safety_notes' => [],
             'fun_facts' => ['これはモックデータです。'],
             'questions' => ['なにがうつってる？'],
+            'candidate_cards' => [
+                [
+                    'name' => 'テスト画像',
+                    'confidence' => 0.8,
+                    'summary' => 'APIキーが設定されていないためモックを表示しています。',
+                    'kid_friendly' => 'これはテストだよ！',
+                    'look_for' => ['モックデータです'],
+                    'fun_facts' => ['これは1番目の候補です'],
+                    'questions' => ['なにがうつってる？'],
+                    'tags' => ['テスト'],
+                ],
+                [
+                    'name' => 'べつのもの',
+                    'confidence' => 0.5,
+                    'summary' => '2番目の候補のテストデータです。',
+                    'kid_friendly' => 'これかもしれないよ！',
+                    'look_for' => ['かたちがにてる'],
+                    'fun_facts' => ['これは2番目の候補です'],
+                    'questions' => ['どっちだとおもう？'],
+                    'tags' => ['テスト'],
+                ],
+            ],
         ];
     }
 }

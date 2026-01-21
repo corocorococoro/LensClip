@@ -67,6 +67,7 @@ class AnalyzeObservationJob implements ShouldQueue
                 'summary' => $result['ai_json']['summary'] ?? null,
                 'kid_friendly' => $result['ai_json']['kid_friendly'] ?? null,
                 'confidence' => $result['ai_json']['confidence'] ?? null,
+                'gemini_model' => $result['gemini_model'] ?? null,
             ]);
 
             // Sync tags from AI result

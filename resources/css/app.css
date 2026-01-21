@@ -3,6 +3,7 @@
 @tailwind utilities;
 
 @layer base {
+
     /* タッチ操作の最適化 (ダブルタップズーム遅延を防止) */
     html {
         touch-action: manipulation;
@@ -20,6 +21,7 @@
 }
 
 @layer utilities {
+
     /* 数値用の等幅フォント */
     .tabular-nums {
         font-variant-numeric: tabular-nums;
@@ -28,5 +30,15 @@
     /* スクロール時のヘッダー対応 */
     .scroll-mt-header {
         scroll-margin-top: 4rem;
+    }
+
+    /* スクロールバー非表示 (横スクロール用) */
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
     }
 }

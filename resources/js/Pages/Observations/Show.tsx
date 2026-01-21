@@ -1,6 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
-import type { Observation, Tag } from '@/types/models';
+import type { Observation, Tag, CandidateCard } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 
@@ -9,13 +9,24 @@ interface Props {
 }
 
 export default function Show({ observation }: Props) {
-    const [showFunFacts, setShowFunFacts] = useState(false);
     const [retrying, setRetrying] = useState(false);
+    const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
 
     const aiJson = observation.ai_json || {};
-    const funFacts = aiJson.fun_facts || [];
+    const candidateCards = aiJson.candidate_cards || [];
+    const hasCandidates = candidateCards.length > 1;
+
+    // アクティブな候補カード（存在しない場合はフォールバック）
+    const activeCard: CandidateCard | null = candidateCards[activeCandidateIndex] || null;
+
+    // フォールバック: candidate_cardsがない場合は従来データを使用
+    const displayTitle = activeCard?.name || observation.title || '???';
+    const displayKidFriendly = activeCard?.kid_friendly || observation.kid_friendly || observation.summary;
+    const displayConfidence = activeCard?.confidence ?? observation.confidence ?? 0;
+    const funFacts = activeCard?.fun_facts || aiJson.fun_facts || [];
     const safetyNotes = aiJson.safety_notes || [];
-    const questions = aiJson.questions || [];
+    const questions = activeCard?.questions || aiJson.questions || [];
+    const lookFor = activeCard?.look_for || [];
 
     const displayImage = observation.cropped_url || observation.original_url;
 
@@ -28,6 +39,10 @@ export default function Show({ observation }: Props) {
         if (confirm('この発見を削除しますか？')) {
             router.delete(`/observations/${observation.id}`);
         }
+    };
+
+    const handleCandidateSelect = (index: number) => {
+        setActiveCandidateIndex(index);
     };
 
     return (
@@ -47,24 +62,54 @@ export default function Show({ observation }: Props) {
                     />
                 </div>
 
-                {/* Title */}
-                <h1 className="text-3xl font-bold text-gray-800 mb-2 text-center">
-                    {observation.title || '???'}
+                {/* Title with fade transition */}
+                <h1
+                    key={activeCandidateIndex}
+                    className="text-3xl font-bold text-gray-800 mb-2 text-center"
+                >
+                    {displayTitle}
                 </h1>
 
                 {/* Confidence Badge */}
-                {observation.status === 'ready' && observation.confidence > 0 && (
+                {observation.status === 'ready' && displayConfidence > 0 && (
                     <div className="mb-4">
                         <span
-                            className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${observation.confidence > 0.8
-                                ? 'bg-green-100 text-green-700'
-                                : observation.confidence > 0.5
-                                    ? 'bg-yellow-100 text-yellow-700'
+                            className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${displayConfidence > 0.8
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : displayConfidence > 0.5
+                                    ? 'bg-amber-100 text-amber-700'
                                     : 'bg-gray-100 text-gray-600'
                                 }`}
                         >
-                            {Math.round(observation.confidence * 100)}% じしん
+                            {Math.round(displayConfidence * 100)}% じしん
                         </span>
+                    </div>
+                )}
+
+                {/* Candidate Selector - これかも？ */}
+                {observation.status === 'ready' && hasCandidates && (
+                    <div className="w-full bg-violet-50 border border-violet-100 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="text-lg" aria-hidden="true">🤔</span>
+                            <span className="font-bold text-violet-700">これかも？</span>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+                            {candidateCards.map((card, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => handleCandidateSelect(index)}
+                                    className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-150 ${index === activeCandidateIndex
+                                        ? 'bg-violet-600 text-white shadow-md'
+                                        : 'bg-white text-violet-700 border border-violet-200 hover:bg-violet-100'
+                                        }`}
+                                >
+                                    {card.name}
+                                    <span className="ml-1 text-xs opacity-70">
+                                        {Math.round(card.confidence * 100)}%
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
 
@@ -89,23 +134,39 @@ export default function Show({ observation }: Props) {
 
                 {/* Kid-friendly Description */}
                 {observation.status === 'ready' && (
-                    <Card className="w-full mb-4 bg-blue-50 border-blue-100">
-                        <p className="text-lg text-blue-800 text-center leading-relaxed">
-                            {observation.kid_friendly || observation.summary}
+                    <Card
+                        key={`card-${activeCandidateIndex}`}
+                        className="w-full mb-4 bg-sky-50 border-sky-100"
+                    >
+                        <p className="text-lg text-sky-800 text-center leading-relaxed">
+                            {displayKidFriendly}
                         </p>
                     </Card>
                 )}
 
-                {/* Safety Notes */}
+                {/* Look For - 見分けポイント */}
+                {lookFor.length > 0 && (
+                    <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl" aria-hidden="true">👀</span>
+                            <span className="font-bold text-slate-700">みわけポイント</span>
+                        </div>
+                        <ul className="text-sm text-slate-600 space-y-1">
+                            {lookFor.map((point, i) => (
+                                <li key={i}>• {point}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {/* Safety Notes - Always visible, prominent */}
                 {safetyNotes.length > 0 && (
                     <div
                         className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4"
                         role="alert"
                     >
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">
-                                ⚠️
-                            </span>
+                            <span className="text-xl" aria-hidden="true">⚠️</span>
                             <span className="font-bold text-amber-700">ちゅうい</span>
                         </div>
                         <ul className="text-sm text-amber-700 space-y-1">
@@ -116,56 +177,32 @@ export default function Show({ observation }: Props) {
                     </div>
                 )}
 
-                {/* Fun Facts */}
+                {/* Fun Facts - Now always visible (no toggle) */}
                 {funFacts.length > 0 && (
-                    <div className="w-full bg-purple-50 rounded-2xl overflow-hidden mb-4">
-                        <button
-                            onClick={() => setShowFunFacts(!showFunFacts)}
-                            className="w-full p-4 flex items-center justify-between"
-                            aria-expanded={showFunFacts}
-                            aria-controls="fun-facts-content"
-                        >
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl" aria-hidden="true">
-                                    💡
-                                </span>
-                                <span className="font-bold text-purple-700">まめちしき</span>
-                            </div>
-                            <span
-                                className={`text-purple-600 transition-transform duration-300 ${showFunFacts ? 'rotate-180' : ''}`}
-                                aria-hidden="true"
-                            >
-                                ▼
-                            </span>
-                        </button>
-                        <div
-                            id="fun-facts-content"
-                            className={`grid transition-all duration-300 ease-out ${showFunFacts ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
-                        >
-                            <div className="overflow-hidden">
-                                <ul className="text-sm text-purple-700 space-y-2 px-4 pb-4">
-                                    {funFacts.map((fact, i) => (
-                                        <li key={i} className="flex items-start gap-2">
-                                            <span aria-hidden="true">✨</span>
-                                            <span>{fact}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                    <div className="w-full bg-fuchsia-50 border border-fuchsia-100 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xl" aria-hidden="true">💡</span>
+                            <span className="font-bold text-fuchsia-700">まめちしき</span>
                         </div>
+                        <ul className="text-sm text-fuchsia-700 space-y-2">
+                            {funFacts.map((fact, i) => (
+                                <li key={i} className="flex items-start gap-2">
+                                    <span aria-hidden="true">✨</span>
+                                    <span>{fact}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
                 )}
 
-                {/* Questions */}
+                {/* Questions - Always visible */}
                 {questions.length > 0 && (
-                    <div className="w-full bg-green-50 rounded-2xl p-4 mb-4">
+                    <div className="w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">
-                                ❓
-                            </span>
-                            <span className="font-bold text-green-700">きいてみよう</span>
+                            <span className="text-xl" aria-hidden="true">❓</span>
+                            <span className="font-bold text-emerald-700">きいてみよう</span>
                         </div>
-                        <ul className="text-sm text-green-700 space-y-1">
+                        <ul className="text-sm text-emerald-700 space-y-1">
                             {questions.map((q, i) => (
                                 <li key={i}>• {q}</li>
                             ))}
@@ -196,6 +233,24 @@ export default function Show({ observation }: Props) {
                         📷 ほかのものをしらべる
                     </Button>
                 </div>
+
+                {/* Metadata - subtle display */}
+                {observation.status === 'ready' && (
+                    <div className="w-full text-center text-xs text-gray-400 mb-4 space-y-0.5">
+                        <div>
+                            {new Date(observation.created_at).toLocaleDateString('ja-JP', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                            })}
+                        </div>
+                        {observation.gemini_model && (
+                            <div className="opacity-60">
+                                AI: {observation.gemini_model}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Delete Button */}
                 <button
