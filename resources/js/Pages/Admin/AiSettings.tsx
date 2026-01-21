@@ -1,4 +1,5 @@
 import AdminLayout from '@/Layouts/AdminLayout';
+import { PageProps } from '@/types';
 import { Head, useForm, usePage } from '@inertiajs/react';
 
 interface Props {
@@ -7,7 +8,7 @@ interface Props {
 }
 
 export default function AiSettings({ currentModel, allowedModels }: Props) {
-    const { flash } = usePage<{ flash: { success?: string } }>().props;
+    const { flash } = usePage<PageProps<{ flash: { success?: string } }>>().props;
 
     const { data, setData, put, processing, errors } = useForm({
         model: currentModel,
