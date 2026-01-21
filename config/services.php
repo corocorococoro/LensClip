@@ -44,4 +44,10 @@ return [
             'gemini-2.5-pro' => '高精度モデル。処理時間は長め。',
         ],
     ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
+    ],
 ];

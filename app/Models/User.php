@@ -65,4 +65,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(Scrap::class);
     }
+
+    /**
+     * Get all auth identities (Google, etc).
+     */
+    public function authIdentities()
+    {
+        return $this->hasMany(AuthIdentity::class);
+    }
 }

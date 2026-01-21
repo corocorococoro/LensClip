@@ -6,6 +6,7 @@
 erDiagram
     users ||--o{ observations : owns
     users ||--o{ tags : owns
+    users ||--o{ auth_identities : has
     observations }o--o{ tags : has
 
     users {
@@ -13,7 +14,18 @@ erDiagram
         name varchar
         email varchar UK
         role varchar "user|admin"
-        password varchar
+        password varchar nullable
+        created_at timestamp
+        updated_at timestamp
+    }
+
+    auth_identities {
+        id bigint PK
+        user_id bigint FK
+        provider varchar "google"
+        issuer varchar "iss claim"
+        subject varchar "sub claim"
+        email_at_link varchar nullable
         created_at timestamp
         updated_at timestamp
     }
@@ -32,6 +44,9 @@ erDiagram
         summary text nullable
         kid_friendly text nullable
         confidence float nullable
+        gemini_model varchar nullable
+        latitude decimal nullable
+        longitude decimal nullable
         error_message varchar nullable
         created_at timestamp
         updated_at timestamp
