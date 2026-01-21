@@ -66,15 +66,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
     Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
     Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
-
-    // Logs
-    Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])->name('logs.index');
 });
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Admin routes (auth + admin middleware)
+Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', fn() => redirect()->route('admin.logs'));
+    Route::get('/logs', [\App\Http\Controllers\Admin\LogController::class, 'index'])->name('logs');
+    Route::get('/settings/ai', [\App\Http\Controllers\Admin\AiSettingsController::class, 'index'])->name('settings.ai');
+    Route::put('/settings/ai', [\App\Http\Controllers\Admin\AiSettingsController::class, 'update'])->name('settings.ai.update');
 });
 
 require __DIR__ . '/auth.php';

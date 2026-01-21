@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import { ReactNode } from 'react';
+import { PageProps } from '@/types';
 
 interface AppLayoutProps {
     children: ReactNode;
@@ -24,7 +25,9 @@ const navItems = [
  * - touch-action は CSS で設定済み
  */
 export default function AppLayout({ children, title }: AppLayoutProps) {
-    const { url } = usePage();
+    const { auth, ziggy } = usePage<PageProps>().props;
+    const url = ziggy.location;
+    const isAdmin = auth?.user?.role === 'admin';
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-purple-50 pb-20">
@@ -51,13 +54,23 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
                             LensClip
                         </span>
                     </Link>
-                    <Link
-                        href="/profile"
-                        aria-label="プロフィール設定"
-                        className="w-10 h-10 rounded-full bg-brand-cream text-brand-orange border border-brand-beige flex items-center justify-center text-xl shadow-sm hover:scale-105 active:scale-95 transition-transform"
-                    >
-                        <span aria-hidden="true">👤</span>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        {isAdmin && (
+                            <Link
+                                href="/admin"
+                                className="px-3 py-1.5 text-xs font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                                管理
+                            </Link>
+                        )}
+                        <Link
+                            href="/profile"
+                            aria-label="プロフィール設定"
+                            className="w-10 h-10 rounded-full bg-brand-cream text-brand-orange border border-brand-beige flex items-center justify-center text-xl shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                        >
+                            <span aria-hidden="true">👤</span>
+                        </Link>
+                    </div>
                 </div>
             </header>
 

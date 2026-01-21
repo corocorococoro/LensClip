@@ -202,5 +202,6 @@ $h = min($height - $y, $bbox['h'] + 2 * $margin * $height);
 ```env
 GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 GEMINI_API_KEY=your-gemini-api-key
-GEMINI_MODEL=gemini-2.0-flash
 ```
+
+> **Note**: Geminiモデルは管理画面 (`/admin/settings/ai`) から変更可能。デフォルトは `gemini-2.0-flash`。

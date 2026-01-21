@@ -35,4 +35,13 @@ return [
         ],
     ],
 
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash-lite'),
+        'allowed_models' => [
+            'gemini-2.5-flash-lite' => '軽量・高速版。コスト効率重視。',
+            'gemini-2.5-flash' => 'バランスの取れた高速モデル。',
+            'gemini-2.5-pro' => '高精度モデル。処理時間は長め。',
+        ],
+    ],
 ];

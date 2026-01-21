@@ -12,6 +12,7 @@ erDiagram
         id bigint PK
         name varchar
         email varchar UK
+        role varchar "user|admin"
         password varchar
         created_at timestamp
         updated_at timestamp
@@ -48,6 +49,14 @@ erDiagram
     observation_tag {
         observation_id uuid FK
         tag_id bigint FK
+    }
+
+    settings {
+        id bigint PK
+        key varchar UK
+        value text nullable
+        created_at timestamp
+        updated_at timestamp
     }
 ```
 
@@ -96,6 +105,16 @@ erDiagram
 
 **インデックス**
 - `(observation_id, tag_id)` PRIMARY
+
+### settings
+| Column | Type | Constraints | 説明 |
+|--------|------|-------------|------|
+| id | bigint | PK | |
+| key | varchar | UNIQUE | 設定キー |
+| value | text | nullable | 設定値 |
+
+**用途**
+- `gemini_model`: 使用するGeminiモデル名
 
 ## マイグレーション方針
 既存の `scraps` テーブルは削除し、新しい `observations` テーブルに移行する。

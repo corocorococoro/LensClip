@@ -33,12 +33,11 @@ cp .env.example .env
 `.env` ファイルを編集して、以下のAPIキーを設定してください：
 
 ```env
-# Google Cloud Vision / Gemini API (Service Account)
+# Google Cloud Vision API (Service Account)
 GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 
-# Google Gemini API Key (Fallback or Direct)
+# Google Gemini API Key
 GEMINI_API_KEY=your-gemini-api-key
-GEMINI_MODEL=gemini-2.0-flash
 ```
 
 ### 3. Docker環境を起動
@@ -104,6 +103,30 @@ GEMINI_MODEL=gemini-2.0-flash
 ```bash
 ./vendor/bin/sail artisan test
 ```
+
+## 管理者設定
+
+### 管理者に昇格する
+
+特定のユーザーを管理者に昇格するには、以下のコマンドを実行します：
+
+```bash
+./vendor/bin/sail artisan user:promote your-email@example.com
+```
+
+### 管理画面へのアクセス
+
+管理者としてログインすると以下のURLにアクセスできます：
+
+- `/admin/logs` - アプリケーションログの閲覧
+- `/admin/settings/ai` - Geminiモデルの切り替え
+
+### 管理者機能
+
+| 機能 | URL | 説明 |
+|------|-----|------|
+| ログ閲覧 | `/admin/logs` | レベル・日付でフィルタ、スタックトレース表示 |
+| AI設定 | `/admin/settings/ai` | Geminiモデルの切り替え（即時反映） |
 
 ## 困ったときは（トラブルシューティング）
 

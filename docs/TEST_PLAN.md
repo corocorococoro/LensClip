@@ -93,6 +93,58 @@ public function delete_all_requires_confirmation()
 
 ---
 
+### 5. 管理者アクセス制御
+**ファイル**: `tests/Feature/AdminAccessTest.php`
+
+```php
+/** @test */
+public function unauthenticated_user_cannot_access_admin()
+{
+    // When: GET /admin/logs (未認証)
+    // Then: ログイン画面へリダイレクト
+}
+
+/** @test */
+public function regular_user_cannot_access_admin()
+{
+    // Given: role=user のユーザー
+    // When: GET /admin/logs
+    // Then: 403 Forbidden
+}
+
+/** @test */
+public function admin_can_access_admin_pages()
+{
+    // Given: role=admin のユーザー
+    // When: GET /admin/logs
+    // Then: 200 OK
+}
+```
+
+---
+
+### 6. AI設定変更
+**ファイル**: `tests/Feature/AiSettingsTest.php`
+
+```php
+/** @test */
+public function admin_can_update_gemini_model()
+{
+    // Given: role=admin のユーザー
+    // When: PUT /admin/settings/ai {model: 'gemini-1.5-flash'}
+    // Then: 設定が保存される
+}
+
+/** @test */
+public function invalid_model_is_rejected()
+{
+    // When: PUT /admin/settings/ai {model: 'invalid-model'}
+    // Then: 422 エラー
+}
+```
+
+---
+
 ## Unit テスト
 
 ### 1. bbox選定ロジック

@@ -43,7 +43,12 @@ class ImageAnalysisService
         }
 
         $this->geminiApiKey = config('services.gemini.api_key') ?? env('GEMINI_API_KEY');
-        $this->geminiModel = config('services.gemini.model') ?? env('GEMINI_MODEL', 'gemini-2.0-flash');
+
+        // Read from database settings first, then fall back to config/env
+        $this->geminiModel = \App\Models\Setting::get(
+            'gemini_model',
+            config('services.gemini.model') ?? env('GEMINI_MODEL', 'gemini-2.0-flash')
+        );
     }
 
     /**

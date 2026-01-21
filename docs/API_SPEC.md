@@ -28,6 +28,13 @@
 | POST | `/tags` | タグ作成 |
 | DELETE | `/tags/{id}` | タグ削除 |
 
+### Admin（管理者専用）
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | `/admin/logs` | アプリケーションログ閲覧 |
+| GET | `/admin/settings/ai` | AI設定ページ |
+| PUT | `/admin/settings/ai` | Geminiモデル変更 |
+
 ---
 
 ## 詳細仕様
