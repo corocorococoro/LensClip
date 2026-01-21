@@ -10,6 +10,7 @@ interface Props {
 
 export default function Show({ observation }: Props) {
     const [showFunFacts, setShowFunFacts] = useState(false);
+    const [retrying, setRetrying] = useState(false);
 
     const aiJson = observation.ai_json || {};
     const funFacts = aiJson.fun_facts || [];
@@ -17,6 +18,11 @@ export default function Show({ observation }: Props) {
     const questions = aiJson.questions || [];
 
     const displayImage = observation.cropped_url || observation.original_url;
+
+    const handleRetry = () => {
+        setRetrying(true);
+        router.post(`/observations/${observation.id}/retry`);
+    };
 
     const handleDelete = () => {
         if (confirm('この発見を削除しますか？')) {
@@ -47,7 +53,7 @@ export default function Show({ observation }: Props) {
                 </h1>
 
                 {/* Confidence Badge */}
-                {observation.confidence > 0 && (
+                {observation.status === 'ready' && observation.confidence > 0 && (
                     <div className="mb-4">
                         <span
                             className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${observation.confidence > 0.8
@@ -62,12 +68,33 @@ export default function Show({ observation }: Props) {
                     </div>
                 )}
 
+                {/* Failed State */}
+                {observation.status === 'failed' && (
+                    <div className="w-full bg-red-50 border border-red-200 rounded-2xl p-6 mb-6 text-center">
+                        <div className="text-4xl mb-3">😢</div>
+                        <h2 className="text-lg font-bold text-red-700 mb-2">しらべられなかった…</h2>
+                        <p className="text-sm text-red-600 mb-4">
+                            {observation.error_message || 'もういちどためしてね'}
+                        </p>
+                        <Button
+                            onClick={handleRetry}
+                            loading={retrying}
+                            variant="primary"
+                            disabled={retrying}
+                        >
+                            {retrying ? 'リトライちゅう…' : '🔄 もういちどしらべる'}
+                        </Button>
+                    </div>
+                )}
+
                 {/* Kid-friendly Description */}
-                <Card className="w-full mb-4 bg-blue-50 border-blue-100">
-                    <p className="text-lg text-blue-800 text-center leading-relaxed">
-                        {observation.kid_friendly || observation.summary}
-                    </p>
-                </Card>
+                {observation.status === 'ready' && (
+                    <Card className="w-full mb-4 bg-blue-50 border-blue-100">
+                        <p className="text-lg text-blue-800 text-center leading-relaxed">
+                            {observation.kid_friendly || observation.summary}
+                        </p>
+                    </Card>
+                )}
 
                 {/* Safety Notes */}
                 {safetyNotes.length > 0 && (
