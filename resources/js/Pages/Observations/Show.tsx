@@ -72,7 +72,7 @@ export default function Show({ observation }: Props) {
 
                 {/* Confidence Badge */}
                 {observation.status === 'ready' && displayConfidence > 0 && (
-                    <div className="mb-4">
+                    <div className="mb-2">
                         <span
                             className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${displayConfidence > 0.8
                                 ? 'bg-emerald-100 text-emerald-700'
@@ -84,6 +84,20 @@ export default function Show({ observation }: Props) {
                             {Math.round(displayConfidence * 100)}% じしん
                         </span>
                     </div>
+                )}
+
+                {/* Image Search Link - 画像で確認 */}
+                {observation.status === 'ready' && displayTitle && displayTitle !== '???' && (
+                    <a
+                        href={`https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(displayTitle)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors mb-4"
+                    >
+                        <span aria-hidden="true">🔍</span>
+                        画像で確認
+                        <span aria-hidden="true" className="text-xs">↗</span>
+                    </a>
                 )}
 
                 {/* Candidate Selector - これかも？ */}
