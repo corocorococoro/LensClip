@@ -5,7 +5,7 @@
 写真を撮るとAIが「これはなぁに？」の答えを返し、親子で一緒に学べる図鑑体験を提供します。
 
 ### デモURL
-https://lensclip-production.up.railway.app/
+https://lensclip.up.railway.app/
 
 
 ## 技術スタック
