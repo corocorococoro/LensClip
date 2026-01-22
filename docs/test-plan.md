@@ -131,7 +131,7 @@ public function admin_can_access_admin_pages()
 public function admin_can_update_gemini_model()
 {
     // Given: role=admin のユーザー
-    // When: PUT /admin/settings/ai {model: 'gemini-1.5-flash'}
+    // When: PUT /admin/settings/ai {model: 'gemini-2.5-flash'}
     // Then: 設定が保存される
 }
 

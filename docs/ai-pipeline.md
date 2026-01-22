@@ -204,4 +204,5 @@ GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
-> **Note**: Geminiモデルは管理画面 (`/admin/settings/ai`) から変更可能。デフォルトは `gemini-2.0-flash`。
+> **Note**: Geminiモデルは管理画面 (`/admin/settings/ai`) から変更可能。  
+> 許可モデル・デフォルトは [ai-models.md](ai-models.md) を参照（唯一の一次ソース）。

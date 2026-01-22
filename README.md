@@ -191,13 +191,23 @@ resources/js/
     └── Observations/     # Processing, Show
 
 docs/
+├── index.md             # ドキュメント台帳
 ├── PRD.md               # 製品要件定義
 ├── UX_FLOW.md           # 画面遷移
 ├── API_SPEC.md          # API仕様
 ├── DB_SCHEMA.md         # DBスキーマ
 ├── AI_PIPELINE.md       # AIパイプライン
+├── ai-models.md         # AIモデル許可リスト
+├── TEST_PLAN.md         # テスト計画
 ├── TASKS.md             # タスク一覧
-└── TEST_PLAN.md         # テスト計画
+└── decisions/           # 決定ログ (ADR)
+
+rules/
+├── project-governance.md      # ガバナンス・SSOT
+├── product-ui-principles.md   # プロダクト・UI方針
+├── security-invariants.md     # セキュリティ絶対ルール
+├── engineering-standards.md   # 実装規約
+└── ai-responsibility-split.md # AI責務分離
 ```
 
 ## Railway へのデプロイ

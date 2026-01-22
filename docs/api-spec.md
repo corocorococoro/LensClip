@@ -17,7 +17,9 @@
 | GET | `/library` | 一覧（検索/フィルタ対応） |
 | POST | `/observations` | 新規作成（画像アップロード） |
 | GET | `/observations/{id}` | 詳細取得 |
+| GET | `/observations/{id}/processing` | 処理中画面（ポーリング用） |
 | POST | `/observations/{id}/retry` | 失敗時リトライ |
+| PATCH | `/observations/{id}/tags` | タグ更新 |
 | DELETE | `/observations/{id}` | 単体削除 |
 | DELETE | `/observations` | 全削除（確認必須） |
 
