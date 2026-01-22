@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreTagRequest;
 use App\Models\Tag;
-use Illuminate\Http\Request;
 
 class TagController extends Controller
 {
@@ -23,15 +23,13 @@ class TagController extends Controller
     /**
      * Store a new tag.
      */
-    public function store(Request $request)
+    public function store(StoreTagRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:50',
-        ]);
+        $validated = $request->validated();
 
         $tag = Tag::firstOrCreate(
-            ['user_id' => auth()->id(), 'name' => $request->name],
-            ['user_id' => auth()->id(), 'name' => $request->name]
+            ['user_id' => auth()->id(), 'name' => $validated['name']],
+            ['user_id' => auth()->id(), 'name' => $validated['name']]
         );
 
         return response()->json($tag, 201);

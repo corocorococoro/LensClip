@@ -1,9 +1,9 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ObservationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -15,7 +15,7 @@ Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
+        'laravelVersion' => \Illuminate\Foundation\Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
 });
@@ -32,25 +32,7 @@ Route::get('/privacy-policy', function () {
 // Authenticated routes
 Route::middleware(['auth', 'verified'])->group(function () {
     // Home / Dashboard
-    Route::get('/dashboard', function () {
-        $today = \App\Models\Observation::forUser(auth()->id())
-            ->whereDate('created_at', today())
-            ->count();
-        $total = \App\Models\Observation::forUser(auth()->id())->count();
-        $recent = \App\Models\Observation::forUser(auth()->id())
-            ->ready()
-            ->latest()
-            ->take(3)
-            ->get();
-
-        return Inertia::render('Home', [
-            'stats' => [
-                'today' => $today,
-                'total' => $total,
-            ],
-            'recent' => $recent,
-        ]);
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Observations
     Route::get('/library', [ObservationController::class, 'index'])->name('library');

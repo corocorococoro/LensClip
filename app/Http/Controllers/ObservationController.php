@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DestroyAllObservationsRequest;
 use App\Http\Requests\StoreObservationRequest;
+use App\Http\Requests\UpdateObservationTagsRequest;
 use App\Jobs\AnalyzeObservationJob;
 use App\Models\Observation;
 use App\Models\Tag;
@@ -151,12 +153,8 @@ class ObservationController extends Controller
     /**
      * Remove all observations for the user.
      */
-    public function destroyAll(Request $request)
+    public function destroyAll(DestroyAllObservationsRequest $request)
     {
-        $request->validate([
-            'confirm' => 'required|boolean|accepted',
-        ]);
-
         $observations = Observation::forUser(auth()->id())->get();
 
         foreach ($observations as $observation) {
@@ -173,27 +171,18 @@ class ObservationController extends Controller
     /**
      * Update observation tags.
      */
-    public function updateTags(Request $request, Observation $observation)
+    public function updateTags(UpdateObservationTagsRequest $request, Observation $observation)
     {
         $this->authorize('update', $observation);
 
-        $request->validate([
-            'tags' => 'array',
-            'tags.*' => 'nullable|string|max:50',
-        ]);
-
-        // Tag logic could also be moved to TagService, but kept simple here for now
-        // or strictly moved as per plan. Let's keep it here for now as it's simple enough
-        // but cleaner to refactor if we want to be strict.
-        // Given the plan says "TagService", let's stick to the plan for syncing if complex.
-        // Actually, preventing over-engineering: standard sync is fine here.
-        // But let's clean up the logic slightly.
+        $validated = $request->validated();
 
         $tagIds = [];
-        foreach ($request->tags as $name) {
+        foreach ($validated['tags'] ?? [] as $name) {
             $name = trim($name);
-            if (empty($name))
+            if (empty($name)) {
                 continue;
+            }
 
             $tag = Tag::firstOrCreate(
                 ['user_id' => auth()->id(), 'name' => $name],

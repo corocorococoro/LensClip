@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Engineering Standards
 
 > **実装規約のみ記載**。具体的な API 項目は `docs/API_SPEC.md`、DB 項目は `docs/DB_SCHEMA.md` を参照。
@@ -52,14 +56,37 @@
 
 ## テスト規約
 
-1. **Feature テスト**
+1. **Sail 経由でテスト実行**
+   ```bash
+   ./vendor/bin/sail artisan test
+   ```
+   - ローカル PHP バージョンではなく Sail コンテナで実行する
+
+2. **Feature テスト**
    - 重要フロー（アップロード → Job → 結果）をカバー
    - 認証・認可の境界テスト必須
 
-2. **Unit テスト**
+3. **Unit テスト**
    - 複雑なロジック（bbox 選定アルゴリズム等）をカバー
 
-テスト観点の詳細は `docs/TEST_PLAN.md` を参照。
+テスト観点の詳細は `docs/test-plan.md` を参照。
+
+## コード規約
+
+1. **FormRequest 必須**
+   - Controller 内の `$request->validate()` は禁止
+   - FormRequest を使用する（動的ルールの場合は例外）
+
+2. **デッドコード禁止**
+   - ルートから参照されていない Controller は残さない
+   - 使われていない Service / Model は削除する
+
+3. **ファイル命名規則**
+   - `docs/`: kebab-case（例: `api-spec.md`）
+   - PHP クラス: PascalCase（Laravel 標準）
+
+4. **静的解析の偽陽性**
+   - 無視する場合は日本語コメントで理由を残す
 
 ---
 

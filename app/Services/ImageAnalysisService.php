@@ -24,7 +24,7 @@ class ImageAnalysisService
     public function __construct()
     {
         // Initialize Vision client with service account
-        $credentialsPath = env('GOOGLE_APPLICATION_CREDENTIALS');
+        $credentialsPath = config('services.google.credentials_path');
 
         if (!empty($credentialsPath) && file_exists(base_path($credentialsPath))) {
             try {
