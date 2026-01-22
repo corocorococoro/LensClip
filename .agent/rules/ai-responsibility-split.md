@@ -1,7 +1,7 @@
 # AI Responsibility Split
 
 > **責務分離の不変原則のみ記載**。  
-> 処理フローの詳細は `docs/AI_PIPELINE.md`、モデル一覧は `docs/ai-models.md` を参照。
+> 処理フローの詳細は `docs/ai-pipeline.md`、モデル一覧は `docs/ai-models.md` を参照。
 
 ## 責務分離
 

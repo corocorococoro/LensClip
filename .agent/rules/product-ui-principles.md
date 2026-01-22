@@ -1,6 +1,6 @@
 # Product & UI Principles
 
-> **方針のみ記載**。具体的な画面構成・文言は `docs/UX_FLOW.md` を参照。
+> **方針のみ記載**。具体的な画面構成・文言は `docs/ux-flow.md` を参照。
 
 ## ターゲット
 

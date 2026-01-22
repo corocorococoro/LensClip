@@ -4,7 +4,7 @@ trigger: always_on
 
 # Engineering Standards
 
-> **実装規約のみ記載**。具体的な API 項目は `docs/API_SPEC.md`、DB 項目は `docs/DB_SCHEMA.md` を参照。
+> **実装規約のみ記載**。具体的な API 項目は `docs/api-spec.md`、DB 項目は `docs/db-schema.md` を参照。
 
 ## 技術スタック
 
