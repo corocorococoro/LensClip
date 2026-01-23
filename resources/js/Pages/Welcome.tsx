@@ -33,44 +33,68 @@ export default function Welcome({
 
             <main className="pt-16 pb-20">
                 {/* Hero Section */}
-                <section className="px-6 pt-16 pb-12 text-center max-w-screen-md mx-auto">
-                    <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-[#FFF0E5] text-[#FF823C] text-xs font-bold tracking-wider uppercase">
-                        AIで、いつもの散歩をもっと楽しく
-                    </div>
-                    <h1 className="text-4xl md:text-5xl font-extrabold text-[#2D2D2D] leading-[1.2] mb-6">
-                        “これなに？”が<br />増える時期に。
-                    </h1>
-                    <p className="text-lg text-[#6B6B6B] leading-relaxed mb-10">
-                        散歩や公園が、毎日の<br className="sm:hidden" />“ちいさな学び”に変わる。
-                    </p>
-                    <div className="flex flex-col items-center gap-4">
-                        <Link
-                            href={route('register')}
-                            className="w-full sm:w-64 py-4 px-8 bg-gradient-to-r from-[#FF6B6B] to-[#FF823C] text-white rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(255,107,107,0.3)] hover:translate-y-[-2px] transition-all active:scale-95 text-center"
-                        >
-                            無料ではじめる
-                        </Link>
+                <section className="relative pt-16 pb-20 text-center overflow-hidden isolate">
+                    {/* Background Image */}
+                    <div className="absolute inset-0 -z-10">
+                        <picture>
+                            {/* PC: WebP */}
+                            <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.webp" type="image/webp" />
+                            {/* PC: PNG */}
+                            <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.png" />
 
-                        <div className="flex items-center gap-8 mt-4">
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="w-10 h-10 rounded-full bg-[#F0F9FF] border border-[#BAE6FD] flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                            {/* SP: WebP */}
+                            <source srcSet="/images/lp/hero_bg_sp.webp" type="image/webp" />
+
+                            {/* SP: PNG (Fallback & Default) */}
+                            <img
+                                src="/images/lp/hero_bg_sp.png"
+                                alt=""
+                                className="w-full h-full object-cover opacity-100"
+                            />
+                        </picture>
+                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/50 to-[#FFFDFB]"></div>
+                    </div>
+
+                    {/* Content Container */}
+                    <div className="max-w-screen-md mx-auto px-6 relative z-10">
+                        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/80 backdrop-blur-sm text-[#FF823C] text-xs font-bold tracking-wider uppercase shadow-sm border border-white/40">
+                            子どもの目は、世界をひろげる。
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-extrabold text-[#2D2D2D] leading-[1.2] mb-6 drop-shadow-sm">
+                            「気になる」を宝物に。
+                        </h1>
+                        <p className="text-lg text-[#6B6B6B] leading-relaxed mb-10 font-medium drop-shadow-sm">
+                            子供の好奇心を育てる、親子で楽しむ図鑑アプリ
+                        </p>
+                        <div className="flex flex-col items-center gap-4">
+                            <Link
+                                href={route('register')}
+                                className="w-full sm:w-64 py-4 px-8 bg-gradient-to-r from-[#FF6B6B] to-[#FF823C] text-white rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(255,107,107,0.3)] hover:translate-y-[-2px] transition-all active:scale-95 text-center"
+                            >
+                                無料ではじめる
+                            </Link>
+
+                            <div className="flex items-center gap-8 mt-4 bg-white/60 backdrop-blur-md px-6 py-3 rounded-full shadow-sm border border-white/50">
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="w-10 h-10 rounded-full bg-[#F0F9FF] border border-[#BAE6FD] flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#94A3B8]">みつける</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-[#94A3B8]">みつける</span>
-                            </div>
-                            <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="w-10 h-10 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="w-10 h-10 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#94A3B8]">しらべる</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-[#94A3B8]">しらべる</span>
-                            </div>
-                            <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="w-10 h-10 rounded-full bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                                <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="w-10 h-10 rounded-full bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center">
+                                        <svg className="w-5 h-5 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#94A3B8]">のこす</span>
                                 </div>
-                                <span className="text-[10px] font-bold text-[#94A3B8]">のこす</span>
                             </div>
                         </div>
                     </div>
@@ -83,7 +107,7 @@ export default function Welcome({
                             <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F5EDD6] flex items-center justify-center text-xl font-bold text-[#FF9E7D]">1</div>
                             <div>
                                 <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">みつける</h3>
-                                <p className="text-[#7D7D7D]">散歩や公園で、気になったものを撮るだけ。</p>
+                                <p className="text-[#7D7D7D]">散歩中、気になったものを撮るだけ。</p>
                             </div>
                         </div>
                         <div className="flex gap-6 items-start">
