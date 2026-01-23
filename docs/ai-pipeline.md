@@ -200,7 +200,6 @@ $h = min($height - $y, $bbox['h'] + 2 * $margin * $height);
 
 ## 環境変数
 ```env
-GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 GEMINI_API_KEY=your-gemini-api-key
 ```
 

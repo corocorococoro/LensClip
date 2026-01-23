@@ -3,12 +3,6 @@
 namespace App\Services;
 
 use App\Models\Observation;
-use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
-use Google\Cloud\Vision\V1\Feature;
-use Google\Cloud\Vision\V1\Feature\Type;
-use Google\Cloud\Vision\V1\Image;
-use Google\Cloud\Vision\V1\AnnotateImageRequest;
-use Google\Cloud\Vision\V1\BatchAnnotateImagesRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -17,37 +11,18 @@ use Intervention\Image\Drivers\Gd\Driver;
 
 class ImageAnalysisService
 {
-    protected ?ImageAnnotatorClient $visionClient = null;
     protected ?string $geminiApiKey;
     protected string $geminiModel;
 
     public function __construct()
     {
-        // Initialize Vision client with service account
-        $credentialsPath = config('services.google.credentials_path');
+        // API Key is centralized in config/services.php (gemini.api_key)
+        $this->geminiApiKey = config('services.gemini.api_key');
 
-        if (!empty($credentialsPath) && file_exists(base_path($credentialsPath))) {
-            try {
-                $jsonKey = json_decode(file_get_contents(base_path($credentialsPath)), true);
-                if (!$jsonKey) {
-                    throw new \Exception("Invalid JSON in credentials file");
-                }
-                $credentials = new \Google\Auth\Credentials\ServiceAccountCredentials(
-                    'https://www.googleapis.com/auth/cloud-vision',
-                    $jsonKey
-                );
-                $this->visionClient = new ImageAnnotatorClient(['credentials' => $credentials]);
-            } catch (\Exception $e) {
-                Log::warning('Failed to initialize Vision Client: ' . $e->getMessage());
-            }
-        }
-
-        $this->geminiApiKey = config('services.gemini.api_key') ?? env('GEMINI_API_KEY');
-
-        // Read from database settings first, then fall back to config/env
+        // Read from database settings first, then fall back to config
         $this->geminiModel = \App\Models\Setting::get(
             'gemini_model',
-            config('services.gemini.model') ?? env('GEMINI_MODEL', 'gemini-2.0-flash')
+            config('services.gemini.model', 'gemini-2.5-flash-lite')
         );
     }
 
@@ -108,80 +83,79 @@ class ImageAnalysisService
     }
 
     /**
-     * Call Vision API for Object Localization using service account
+     * Call Vision API for Object Localization using REST API (API Key)
      */
     protected function callVisionObjectLocalization(string $imageContent): ?array
     {
-        if (!$this->visionClient) {
-            Log::info('Vision client not initialized, skipping object localization');
+        if (!$this->geminiApiKey) {
+            Log::warning('Gemini API Key not configured, skipping Vision API');
             return null;
         }
 
         try {
-            // Build Image
-            $image = new Image();
-            $image->setContent($imageContent);
+            // Retry with exponential backoff (100ms, 200ms, 400ms)
+            $response = Http::retry(3, 100)->post("https://vision.googleapis.com/v1/images:annotate?key={$this->geminiApiKey}", [
+                'requests' => [
+                    [
+                        'image' => [
+                            'content' => base64_encode($imageContent)
+                        ],
+                        'features' => [
+                            [
+                                'type' => 'OBJECT_LOCALIZATION',
+                                'maxResults' => 10
+                            ],
+                            [
+                                'type' => 'SAFE_SEARCH_DETECTION'
+                            ]
+                        ]
+                    ]
+                ]
+            ]);
 
-            // Build features
-            $objectLocalizationFeature = new Feature();
-            $objectLocalizationFeature->setType(Type::OBJECT_LOCALIZATION);
-            $objectLocalizationFeature->setMaxResults(10);
+            if (!$response->successful()) {
+                Log::error('Vision API Error', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                return null;
+            }
 
-            $safeSearchFeature = new Feature();
-            $safeSearchFeature->setType(Type::SAFE_SEARCH_DETECTION);
+            $data = $response->json();
+            $responses = $data['responses'] ?? [];
 
-            // Build request
-            $request = new AnnotateImageRequest();
-            $request->setImage($image);
-            $request->setFeatures([$objectLocalizationFeature, $safeSearchFeature]);
-
-            $batchRequest = new BatchAnnotateImagesRequest();
-            $batchRequest->setRequests([$request]);
-
-            // Call API
-            $response = $this->visionClient->batchAnnotateImages($batchRequest);
-            $responses = $response->getResponses();
-
-            if (count($responses) === 0) {
-                Log::warning('Vision API returned no responses');
+            if (empty($responses)) {
                 return null;
             }
 
             $annotatedImage = $responses[0];
-
-            if ($annotatedImage->getError()) {
-                throw new \Exception("Vision API Error: " . $annotatedImage->getError()->getMessage());
+            if (isset($annotatedImage['error'])) {
+                throw new \Exception("Vision API Error: " . ($annotatedImage['error']['message'] ?? 'Unknown error'));
             }
 
             // Check SafeSearch
-            $safeSearch = $annotatedImage->getSafeSearchAnnotation();
+            $safeSearch = $annotatedImage['safeSearchAnnotation'] ?? null;
             if ($safeSearch) {
                 $this->checkSafeSearch($safeSearch);
             }
 
             // Extract localized objects
-            $localizedObjects = $annotatedImage->getLocalizedObjectAnnotations();
-            if (!$localizedObjects || count($localizedObjects) === 0) {
+            $localizedObjects = $annotatedImage['localizedObjectAnnotations'] ?? [];
+            if (empty($localizedObjects)) {
                 return null;
             }
 
-            // Convert to array format
+            // Convert to array format (consistent with PHP client structure logic)
             $objects = [];
             foreach ($localizedObjects as $obj) {
-                $vertices = [];
-                $boundingPoly = $obj->getBoundingPoly();
-                if ($boundingPoly) {
-                    foreach ($boundingPoly->getNormalizedVertices() as $vertex) {
-                        $vertices[] = [
-                            'x' => $vertex->getX(),
-                            'y' => $vertex->getY(),
-                        ];
-                    }
-                }
+                $vertices = $obj['boundingPoly']['normalizedVertices'] ?? [];
+
+                // REST API returns normalizedVertices directly as array of {x: ..., y: ...}
+                // No need to convert from object getX/getY
 
                 $objects[] = [
-                    'name' => $obj->getName(),
-                    'score' => $obj->getScore(),
+                    'name' => $obj['name'] ?? 'Unknown',
+                    'score' => $obj['score'] ?? 0,
                     'boundingPoly' => [
                         'normalizedVertices' => $vertices,
                     ],
@@ -199,17 +173,14 @@ class ImageAnalysisService
     /**
      * Check SafeSearch results
      */
-    protected function checkSafeSearch($safeSearch): void
+    protected function checkSafeSearch(array $safeSearch): void
     {
-        $forbidden = [
-            \Google\Cloud\Vision\V1\Likelihood::LIKELY,
-            \Google\Cloud\Vision\V1\Likelihood::VERY_LIKELY,
-        ];
+        $forbidden = ['LIKELY', 'VERY_LIKELY'];
 
-        if (
-            in_array($safeSearch->getAdult(), $forbidden) ||
-            in_array($safeSearch->getViolence(), $forbidden)
-        ) {
+        $adult = $safeSearch['adult'] ?? 'UNKNOWN';
+        $violence = $safeSearch['violence'] ?? 'UNKNOWN';
+
+        if (in_array($adult, $forbidden) || in_array($violence, $forbidden)) {
             throw new \Exception('画像の安全性を確認できませんでした。別の写真を撮ってください。');
         }
     }
@@ -378,7 +349,8 @@ english_nameは必ず各候補に含めてください。色や形の場合も�
 EOT;
 
         try {
-            $response = Http::timeout(30)->post(
+            // Retry with exponential backoff (100ms, 200ms, 400ms)
+            $response = Http::retry(3, 100)->timeout(30)->post(
                 "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}",
                 [
                     'contents' => [

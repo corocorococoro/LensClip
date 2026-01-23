@@ -33,9 +33,6 @@ cp .env.example .env
 `.env` ファイルを編集して、以下のAPIキーを設定してください：
 
 ```env
-# Google Cloud Vision API (Service Account)
-GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-
 # Google Gemini API Key
 GEMINI_API_KEY=your-gemini-api-key
 ```
@@ -238,7 +235,7 @@ bash railway/start.sh
 Variables に以下を追加してください。
 - `FILESYSTEM_DISK`: `public`
 - `QUEUE_CONNECTION`: `redis` (Redisサービスを別途追加し、`REDIS_URL` がある場合) または `database`
-- `VISION_API_KEY`, `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
+- `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
 - `APP_KEY`: `php artisan key:generate --show` で生成したもの
 - `APP_ENV`: `production` 強制httpsに。
 ---

@@ -8,19 +8,15 @@ use Illuminate\Support\Facades\Storage;
 
 class TtsService
 {
-    protected string $credentialsPath;
+    protected ?string $apiKey;
     protected string $voice;
     protected float $speakingRate;
     protected int $ttlDays;
 
     public function __construct()
     {
-        $path = config('services.google.credentials_path');
-        if ($path && !str_starts_with($path, '/') && !preg_match('/^[A-Za-z]:\\\\/', $path)) {
-            $path = base_path($path);
-        }
-
-        $this->credentialsPath = $path;
+        // API Key is centralized in config/services.php (gemini.api_key)
+        $this->apiKey = config('services.gemini.api_key');
         $this->voice = config('services.tts.voice', 'en-US-Neural2-J');
         $this->speakingRate = (float) config('services.tts.speaking_rate', 0.9);
         $this->ttlDays = (int) config('services.tts.ttl_days', 7);
@@ -99,13 +95,19 @@ class TtsService
     /**
      * Call Google Cloud TTS API
      */
+    /**
+     * Call Google Cloud TTS API using API Key
+     */
     protected function callGoogleTts(string $text, float $rate): string
     {
-        $accessToken = $this->getAccessToken();
+        if (!$this->apiKey) {
+            throw new \Exception('Google API Key (GEMINI_API_KEY) not configured');
+        }
 
-        $response = Http::withToken($accessToken)
+        // Retry with exponential backoff (100ms, 200ms, 400ms)
+        $response = Http::retry(3, 100)
             ->timeout(30)
-            ->post('https://texttospeech.googleapis.com/v1/text:synthesize', [
+            ->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . $this->apiKey, [
                 'input' => [
                     'text' => $text,
                 ],
@@ -135,46 +137,6 @@ class TtsService
         }
 
         return base64_decode($audioContent);
-    }
-
-    /**
-     * Get access token from service account credentials
-     */
-    protected function getAccessToken(): string
-    {
-        if (!$this->credentialsPath || !file_exists($this->credentialsPath)) {
-            throw new \Exception('Google credentials not configured');
-        }
-
-        $credentials = json_decode(file_get_contents($this->credentialsPath), true);
-
-        // Create JWT
-        $now = time();
-        $header = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-        $payload = base64_encode(json_encode([
-            'iss' => $credentials['client_email'],
-            'scope' => 'https://www.googleapis.com/auth/cloud-platform',
-            'aud' => 'https://oauth2.googleapis.com/token',
-            'iat' => $now,
-            'exp' => $now + 3600,
-        ]));
-
-        $signatureInput = "{$header}.{$payload}";
-        $privateKey = openssl_pkey_get_private($credentials['private_key']);
-        openssl_sign($signatureInput, $signature, $privateKey, OPENSSL_ALGO_SHA256);
-        $jwt = "{$signatureInput}." . base64_encode($signature);
-
-        // Exchange JWT for access token
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
-            'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-            'assertion' => $jwt,
-        ]);
-
-        if (!$response->successful()) {
-            throw new \Exception('Failed to get access token');
-        }
-
-        return $response->json()['access_token'];
     }
 
     /**
