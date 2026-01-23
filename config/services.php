@@ -51,4 +51,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
         'credentials_path' => env('GOOGLE_APPLICATION_CREDENTIALS'),
     ],
+
+    'tts' => [
+        'voice' => env('TTS_VOICE', 'en-US-Neural2-J'),
+        'speaking_rate' => env('TTS_SPEAKING_RATE', 0.9),
+        'ttl_days' => env('TTS_TTL_DAYS', 7),
+    ],
 ];

@@ -344,6 +344,8 @@ class ImageAnalysisService
 **重要**: 可能性のある候補を最大3つまで挙げ、それぞれについてカード情報を生成してください。
 候補は確信度の高い順に並べてください。
 
+**必須**: 各候補には必ず「english_name」を含めてください（対象の英語名。例: apple, tulip, cat）。
+
 以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
 
 {
@@ -359,6 +361,7 @@ class ImageAnalysisService
   "candidate_cards": [
     {
       "name": "第1候補の名前",
+      "english_name": "english name (required, lowercase)",
       "confidence": 0.0-1.0,
       "summary": "簡潔な説明（大人向け、80文字以内）",
       "kid_friendly": "子供向け説明（40文字以内）",
@@ -366,21 +369,12 @@ class ImageAnalysisService
       "fun_facts": ["この候補の豆知識"],
       "questions": ["この候補に関する質問"],
       "tags": ["タグ"]
-    },
-    {
-      "name": "第2候補の名前（あれば）",
-      "confidence": 0.0-1.0,
-      ...
-    },
-    {
-      "name": "第3候補の名前（あれば）",
-      "confidence": 0.0-1.0,
-      ...
     }
   ]
 }
 
 候補が1つしか考えられない場合は、candidate_cardsに1つだけ入れてください。
+english_nameは必ず各候補に含めてください。色や形の場合も英語で表現してください（例: red, square）。
 EOT;
 
         try {
@@ -426,6 +420,16 @@ EOT;
                 throw new \Exception('Gemini response parse error');
             }
 
+            // Ensure english_name exists in candidate_cards (AI may omit it)
+            if (isset($json['candidate_cards']) && is_array($json['candidate_cards'])) {
+                foreach ($json['candidate_cards'] as $index => $card) {
+                    if (!isset($card['english_name']) || empty($card['english_name'])) {
+                        // Use name as fallback (will be in Japanese, but better than nothing)
+                        $json['candidate_cards'][$index]['english_name'] = $card['name'] ?? 'unknown';
+                    }
+                }
+            }
+
             return $json;
 
         } catch (\Exception $e) {
@@ -453,6 +457,7 @@ EOT;
             'candidate_cards' => [
                 [
                     'name' => 'テスト画像',
+                    'english_name' => 'test image',
                     'confidence' => 0.8,
                     'summary' => 'APIキーが設定されていないためモックを表示しています。',
                     'kid_friendly' => 'これはテストだよ！',
@@ -463,6 +468,7 @@ EOT;
                 ],
                 [
                     'name' => 'べつのもの',
+                    'english_name' => 'something else',
                     'confidence' => 0.5,
                     'summary' => '2番目の候補のテストデータです。',
                     'kid_friendly' => 'これかもしれないよ！',

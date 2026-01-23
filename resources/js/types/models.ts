@@ -48,6 +48,7 @@ export interface ObservationAIJson {
 // 候補カード（タップ切替用）
 export interface CandidateCard {
     name: string;
+    english_name?: string;
     confidence: number;
     summary: string;
     kid_friendly: string;

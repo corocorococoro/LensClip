@@ -2,7 +2,28 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
 import type { Observation, Tag, CandidateCard } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import axios from 'axios';
+
+const SpeakerIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.508c-1.141 0-2.318 0-2.402.933H2.02v6.134h.086c.084.933 1.261.933 2.402.933h1.932l4.5 4.5c.945.945 2.56.276 2.56-1.06V4.06zM18.515 12a6.47 6.47 0 00-1.743-4.407.75.75 0 00-1.09 1.026 4.97 4.97 0 011.333 3.381 4.97 4.97 0 01-1.333 3.381.75.75 0 101.09 1.026A6.47 6.47 0 0018.515 12z" />
+        <path d="M20.636 12a9.467 9.467 0 00-2.614-6.533.75.75 0 00-1.085 1.033 7.967 7.967 0 012.199 5.5 7.967 7.967 0 01-2.199 5.5.75.75 0 101.085 1.033A9.467 9.467 0 0020.636 12z" />
+    </svg>
+);
+
+const SpinnerIcon = ({ className }: { className?: string }) => (
+    <svg className={`animate-spin ${className}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+    </svg>
+);
+
+const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path fillRule="evenodd" d="M10.5 3.75a6.75 6.75 0 100 13.5 6.75 6.75 0 000-13.5zM2.25 10.5a8.25 8.25 0 1114.59 5.28l4.69 4.69a.75.75 0 11-1.06 1.06l-4.69-4.69A8.25 8.25 0 012.25 10.5z" clipRule="evenodd" />
+    </svg>
+);
 
 interface Props {
     observation: Observation;
@@ -11,6 +32,8 @@ interface Props {
 export default function Show({ observation }: Props) {
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
+    const [ttsLoading, setTtsLoading] = useState(false);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     const aiJson = observation.ai_json || {};
     const candidateCards = aiJson.candidate_cards || [];
@@ -45,13 +68,35 @@ export default function Show({ observation }: Props) {
         setActiveCandidateIndex(index);
     };
 
+    const playTts = useCallback(async (text: string) => {
+        // Stop any currently playing audio
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+        }
+
+        setTtsLoading(true);
+        try {
+            const res = await axios.post('/tts', { text });
+            const { url } = res.data;
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            await audio.play();
+        } catch (error) {
+            console.error('TTS playback failed:', error);
+        } finally {
+            setTtsLoading(false);
+        }
+    }, []);
+
     return (
         <AppLayout title={observation.title || 'けっか'}>
             <Head title={observation.title || 'けっか'} />
 
             <div className="flex flex-col items-center">
                 {/* Main Image */}
-                <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6">
+                {/* Main Image */}
+                <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6 group">
                     <img
                         src={displayImage}
                         alt={observation.title || '観察画像'}
@@ -60,45 +105,73 @@ export default function Show({ observation }: Props) {
                         loading="eager"
                         className="w-full aspect-square object-cover"
                     />
+                    {/* Image Search Overlay */}
+                    {observation.status === 'ready' && displayTitle && displayTitle !== '???' && (
+                        <a
+                            href={`https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(displayTitle)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm pl-2.5 pr-3 py-1.5 rounded-full text-xs font-medium text-slate-600 shadow-sm hover:bg-white hover:text-indigo-600 transition-all flex items-center gap-1.5 opacity-90 hover:opacity-100 hover:shadow-md"
+                            title="Google画像検索で確認する"
+                        >
+                            <MagnifyingGlassIcon className="w-3.5 h-3.5" />
+                            画像で確認
+                        </a>
+                    )}
                 </div>
 
                 {/* Title with fade transition */}
-                <h1
-                    key={activeCandidateIndex}
-                    className="text-3xl font-bold text-gray-800 mb-2 text-center"
-                >
-                    {displayTitle}
-                </h1>
-
-                {/* Confidence Badge */}
-                {observation.status === 'ready' && displayConfidence > 0 && (
-                    <div className="mb-2">
+                {/* Title & Badge */}
+                <div className="flex items-center justify-center gap-3 mb-1">
+                    <h1 className="text-3xl font-bold text-gray-800">
+                        {displayTitle}
+                    </h1>
+                    {observation.status === 'ready' && displayConfidence > 0 && (
                         <span
-                            className={`px-3 py-1 rounded-full text-sm font-medium tabular-nums ${displayConfidence > 0.8
+                            className={`px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${displayConfidence > 0.8
                                 ? 'bg-emerald-100 text-emerald-700'
                                 : displayConfidence > 0.5
                                     ? 'bg-amber-100 text-amber-700'
-                                    : 'bg-gray-100 text-gray-600'
+                                    : 'bg-red-100 text-red-700'
                                 }`}
                         >
-                            {Math.round(displayConfidence * 100)}% じしん
+                            {Math.round(displayConfidence * 100)}%
                         </span>
+                    )}
+                </div>
+
+                {/* English Word + TTS */}
+                {observation.status === 'ready' && activeCard?.english_name && (
+                    <div className="flex items-center justify-center gap-2 mb-6">
+                        <span className="text-lg text-slate-500 font-medium">
+                            {activeCard.english_name
+                                .split(/[\s-]+/)
+                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                .join(' ')}
+                        </span>
+                        <button
+                            onClick={() => playTts(activeCard.english_name!)}
+                            disabled={ttsLoading}
+                            className={`p-1.5 rounded-full transition-all duration-200 ${ttsLoading
+                                ? 'text-gray-400 cursor-wait'
+                                : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 active:scale-95'
+                                }`}
+                            aria-label={`${activeCard.english_name}を読み上げる`}
+                            title="発音を聞く"
+                        >
+                            {ttsLoading ? (
+                                <SpinnerIcon className="w-4 h-4" />
+                            ) : (
+                                <SpeakerIcon className="w-4 h-4" />
+                            )}
+                        </button>
                     </div>
                 )}
 
-                {/* Image Search Link - 画像で確認 */}
-                {observation.status === 'ready' && displayTitle && displayTitle !== '???' && (
-                    <a
-                        href={`https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(displayTitle)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors mb-4"
-                    >
-                        <span aria-hidden="true">🔍</span>
-                        画像で確認
-                        <span aria-hidden="true" className="text-xs">↗</span>
-                    </a>
-                )}
+
+
+
+
 
                 {/* Candidate Selector - これかも？ */}
                 {observation.status === 'ready' && hasCandidates && (
