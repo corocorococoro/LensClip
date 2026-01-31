@@ -1,5 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
+import LocationMap from '@/Components/LocationMap';
 import type { Observation, Tag, CandidateCard } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, useCallback } from 'react';
@@ -312,6 +313,15 @@ export default function Show({ observation }: Props) {
                             ))}
                         </div>
                     </div>
+                )}
+
+                {/* Location Map */}
+                {observation.status === 'ready' && observation.latitude != null && observation.longitude != null && (
+                    <LocationMap
+                        latitude={observation.latitude}
+                        longitude={observation.longitude}
+                        className="mb-6"
+                    />
                 )}
 
                 {/* Actions */}
