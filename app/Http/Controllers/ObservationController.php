@@ -63,7 +63,9 @@ class ObservationController extends Controller
     {
         $observation = $this->observationService->createObservation(
             $request->user(),
-            $request->file('image')
+            $request->file('image'),
+            $request->validated('latitude'),
+            $request->validated('longitude')
         );
 
         // Return JSON for API calls, redirect for Inertia

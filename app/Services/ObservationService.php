@@ -17,12 +17,21 @@ class ObservationService
     /**
      * Create a new observation with image processing.
      */
-    public function createObservation(User $user, UploadedFile $file): Observation
-    {
+    public function createObservation(
+        User $user,
+        UploadedFile $file,
+        ?float $latitude = null,
+        ?float $longitude = null
+    ): Observation {
         $tempPath = $file->getPathname();
 
         // Extract GPS from EXIF before processing (WebP will strip EXIF)
         $gps = $this->extractGpsFromExif($tempPath);
+
+        // Use EXIF GPS if available, otherwise fall back to provided coordinates
+        // (browsers often strip EXIF for privacy, so we accept coordinates from frontend)
+        $finalLatitude = $gps['latitude'] ?? $latitude;
+        $finalLongitude = $gps['longitude'] ?? $longitude;
 
         // Process image
         $manager = new ImageManager(new Driver());
@@ -52,8 +61,8 @@ class ObservationService
             'status' => 'processing',
             'original_path' => $originalPath,
             'thumb_path' => $thumbPath,
-            'latitude' => $gps['latitude'] ?? null,
-            'longitude' => $gps['longitude'] ?? null,
+            'latitude' => $finalLatitude,
+            'longitude' => $finalLongitude,
         ]);
 
         Log::withContext([

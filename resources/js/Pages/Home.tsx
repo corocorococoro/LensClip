@@ -3,7 +3,7 @@ import { Card, EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import type { ObservationSummary, HomeStats } from '@/types/models';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 
 interface Props {
     stats: HomeStats;
@@ -12,14 +12,46 @@ interface Props {
 
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { data, setData, post, processing, errors, reset } = useForm({
-        image: null as File | null,
+    const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const { data, setData, post, processing, errors, reset } = useForm<{
+        image: File | null;
+        latitude: number | null;
+        longitude: number | null;
+    }>({
+        image: null,
+        latitude: null,
+        longitude: null,
     });
+
+    // Request location permission on mount
+    useEffect(() => {
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    setLocation({
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                    });
+                },
+                () => {
+                    // Location permission denied or error - continue without location
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        }
+    }, []);
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setData('image', file);
+
+        // Set image and location data together
+        setData((prev) => ({
+            ...prev,
+            image: file,
+            latitude: location?.latitude ?? null,
+            longitude: location?.longitude ?? null,
+        }));
     };
 
     // useCallback でメモ化し、依存配列を正しく設定
