@@ -26,6 +26,8 @@ class StoreObservationRequest extends FormRequest
                 'max:10240', // 10MB
                 'mimes:jpeg,png,webp,gif',
             ],
+            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 
