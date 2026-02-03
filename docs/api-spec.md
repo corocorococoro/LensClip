@@ -46,6 +46,9 @@
 ```
 Content-Type: multipart/form-data
 - image: File (required, max 10MB, image/*)
+- latitude: float (optional, decimal degrees)
+- longitude: float (optional, decimal degrees)
+
 ```
 
 **レスポンス（201 Created）**
@@ -74,6 +77,8 @@ Content-Type: multipart/form-data
   "original_url": "/storage/observations/xxx.webp",
   "cropped_url": "/storage/observations/xxx_cropped.webp",
   "thumb_url": "/storage/observations/xxx_thumb.webp",
+  "latitude": 35.6895,
+  "longitude": 139.6917,
   "created_at": "2026-01-16T10:00:00Z"
 }
 ```

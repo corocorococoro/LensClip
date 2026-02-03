@@ -97,6 +97,8 @@ erDiagram
 | created_at | timestamp | | 作成日時 |
 | updated_at | timestamp | | 更新日時 |
 | deleted_at | timestamp | nullable | 論理削除 |
+| latitude | decimal | nullable | 緯度 |
+| longitude | decimal | nullable | 経度 |
 
 **インデックス**
 - `(user_id, created_at)` - ユーザー別時系列
