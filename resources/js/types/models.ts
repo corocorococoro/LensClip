@@ -19,6 +19,34 @@ export interface ObservationSummary {
     thumb_url: string;
     status: ObservationStatus;
     tags?: Tag[];
+    created_at?: string;
+    category?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+}
+
+// 表示モード
+export type LibraryViewMode = 'date' | 'category' | 'map';
+
+// カテゴリ定義
+export interface CategoryDefinition {
+    id: string;
+    name: string;
+    color: string;
+}
+
+// 日付グループ
+export interface DateGroup {
+    yearMonth: string;
+    label: string;
+    observations: ObservationSummary[];
+}
+
+// カテゴリグループ
+export interface CategoryGroup {
+    category: CategoryDefinition;
+    count: number;
+    observations: ObservationSummary[];
 }
 
 // 観察記録（詳細用・フル版）
