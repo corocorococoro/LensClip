@@ -82,13 +82,15 @@ export default function Library({
     }
 
     return (
-        <AppLayout title="ライブラリ">
+        <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
             <Head title="ライブラリ" />
 
-            {/* Header with View Mode Switcher */}
-            <div className="flex items-center justify-between mb-4">
-                <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
-            </div>
+            {/* Header with View Mode Switcher - hide in map view (switcher is inside map) */}
+            {viewMode !== 'map' && (
+                <div className="flex items-center justify-between mb-4">
+                    <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
+                </div>
+            )}
 
             {/* Search - hide in map view */}
             {viewMode !== 'map' && (
@@ -227,7 +229,7 @@ export default function Library({
 
             {/* Map View */}
             {viewMode === 'map' && (
-                <LibraryMap observations={observations.data} />
+                <LibraryMap observations={observations.data} onModeChange={handleViewModeChange} />
             )}
         </AppLayout>
     );
