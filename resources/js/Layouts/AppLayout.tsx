@@ -136,11 +136,11 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
             </header>
 
             {/* Main Content */}
-            <main className={fullScreen ? 'h-[calc(100dvh-3.5rem)] overflow-hidden' : 'max-w-lg mx-auto px-4 py-6'}>{children}</main>
+            <main className={fullScreen ? 'h-[calc(100dvh-3.5rem-4rem)] overflow-hidden' : 'max-w-lg mx-auto px-4 py-6'}>{children}</main>
 
             {/* Bottom Navigation (Fixed to bottom like Twitter) */}
             <nav
-                className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out safe-area-bottom ${isFooterVisible ? 'translate-y-0' : 'translate-y-full'
+                className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out safe-area-bottom ${isFooterVisible || fullScreen ? 'translate-y-0' : 'translate-y-full'
                     }`}
                 aria-label="メインナビゲーション"
             >
