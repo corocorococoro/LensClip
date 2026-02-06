@@ -1,7 +1,7 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
 import LocationMap from '@/Components/LocationMap';
-import type { Observation, Tag, CandidateCard } from '@/types/models';
+import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
@@ -28,13 +28,34 @@ const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
 
 interface Props {
     observation: Observation;
+    categories: CategoryDefinition[];
 }
 
-export default function Show({ observation }: Props) {
+export default function Show({ observation, categories }: Props) {
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
     const [ttsLoading, setTtsLoading] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(false);
+    const [categoryUpdating, setCategoryUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const currentCategory = categories?.find(c => c.id === observation.category) || categories?.[categories.length - 1];
+
+    const handleCategoryChange = (newCategoryId: string) => {
+        setCategoryUpdating(true);
+        router.patch(`/observations/${observation.id}/category`, {
+            category: newCategoryId,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setEditingCategory(false);
+                setCategoryUpdating(false);
+            },
+            onError: () => {
+                setCategoryUpdating(false);
+            },
+        });
+    };
 
     const aiJson = observation.ai_json || {};
     const candidateCards = aiJson.candidate_cards || [];
@@ -169,8 +190,63 @@ export default function Show({ observation }: Props) {
                     </div>
                 )}
 
-
-
+                {/* Category Badge - Editable */}
+                {observation.status === 'ready' && currentCategory && (
+                    <div className="mb-4">
+                        {!editingCategory ? (
+                            <button
+                                onClick={() => setEditingCategory(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80"
+                                style={{
+                                    backgroundColor: currentCategory.color + '20',
+                                    color: currentCategory.color,
+                                }}
+                                title="カテゴリを変更"
+                            >
+                                <span
+                                    className="w-2 h-2 rounded-full"
+                                    style={{ backgroundColor: currentCategory.color }}
+                                />
+                                {currentCategory.name}
+                                <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        ) : (
+                            <div className="flex flex-wrap gap-2 justify-center">
+                                {categories.map((cat) => (
+                                    <button
+                                        key={cat.id}
+                                        onClick={() => handleCategoryChange(cat.id)}
+                                        disabled={categoryUpdating}
+                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                            cat.id === observation.category
+                                                ? 'ring-2 ring-offset-1'
+                                                : 'opacity-70 hover:opacity-100'
+                                        } ${categoryUpdating ? 'cursor-wait' : ''}`}
+                                        style={{
+                                            backgroundColor: cat.color + '20',
+                                            color: cat.color,
+                                            ...(cat.id === observation.category ? { '--tw-ring-color': cat.color } as React.CSSProperties : {}),
+                                        }}
+                                    >
+                                        <span
+                                            className="w-2 h-2 rounded-full"
+                                            style={{ backgroundColor: cat.color }}
+                                        />
+                                        {cat.name}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => setEditingCategory(false)}
+                                    className="px-3 py-1.5 rounded-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    キャンセル
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
 
 
 

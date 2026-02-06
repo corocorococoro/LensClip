@@ -20,6 +20,7 @@
 | GET | `/observations/{id}/processing` | 処理中画面（ポーリング用） |
 | POST | `/observations/{id}/retry` | 失敗時リトライ |
 | PATCH | `/observations/{id}/tags` | タグ更新 |
+| PATCH | `/observations/{id}/category` | カテゴリ更新 |
 | DELETE | `/observations/{id}` | 単体削除 |
 | DELETE | `/observations` | 全削除（確認必須） |
 
@@ -101,14 +102,43 @@ Content-Type: multipart/form-data
 }
 ```
 
+### PATCH /observations/{id}/category
+カテゴリを手動で変更する（AIの判定ミスを親が修正可能）
+
+**リクエスト**
+```json
+{
+  "category": "plant"
+}
+```
+
+**バリデーション**
+- `category`: required, `config/categories.php` の `id` に一致するもののみ許可
+- 許可値: `animal`, `insect`, `plant`, `food`, `vehicle`, `place`, `tool`, `other`
+
+**レスポンス（200 OK）**
+```json
+{
+  "category": "plant"
+}
+```
+
+**認可**: 所有者のみ（ObservationPolicy `update`）
+
 ### GET /library
 **クエリパラメータ**
 | Param | Type | 説明 |
 |-------|------|------|
 | q | string | タイトル検索 |
 | tag | string | タグ名フィルタ |
+| view | string | 表示モード: `date`(default), `category`, `map` |
+| category | string | カテゴリフィルタ（view=category 時に使用） |
 | page | int | ページ番号 |
 | per_page | int | 1ページあたり件数（default: 20, max: 50） |
+
+**view=category 時の追加レスポンス**
+- `categories`: カテゴリ定義一覧（`config/categories.php` から生成）
+- `categoryCounts`: カテゴリ別の observation 件数
 
 ### POST /observations/{id}/retry
 失敗したObservationの再分析をキューに投入

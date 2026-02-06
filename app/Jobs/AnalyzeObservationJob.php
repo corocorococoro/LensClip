@@ -57,6 +57,13 @@ class AnalyzeObservationJob implements ShouldQueue
         try {
             $result = $analysisService->analyze($observation);
 
+            // カテゴリをconfigの許可リストで検証
+            $aiCategory = $result['ai_json']['category'] ?? 'other';
+            $allowedCategories = array_column(config('categories'), 'id');
+            if (!in_array($aiCategory, $allowedCategories)) {
+                $aiCategory = 'other';
+            }
+
             $observation->update([
                 'status' => 'ready',
                 'cropped_path' => $result['cropped_path'] ?? null,
@@ -68,6 +75,7 @@ class AnalyzeObservationJob implements ShouldQueue
                 'kid_friendly' => $result['ai_json']['kid_friendly'] ?? null,
                 'confidence' => $result['ai_json']['confidence'] ?? null,
                 'gemini_model' => $result['gemini_model'] ?? null,
+                'category' => $aiCategory,
             ]);
 
             // Sync tags from AI result

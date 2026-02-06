@@ -4,7 +4,11 @@
       "Bash(npm run build:*)",
       "Bash(npx tsc:*)",
       "Bash(npx vite build:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(xargs:*)",
+      "Bash(./vendor/bin/sail artisan migrate:*)",
+      "Bash(./vendor/bin/sail npm run build:*)",
+      "Bash(./vendor/bin/sail artisan test:*)"
     ]
   }
 }

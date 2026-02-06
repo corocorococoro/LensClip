@@ -31,6 +31,7 @@ class Observation extends Model
         'gemini_model',
         'latitude',
         'longitude',
+        'category',
     ];
 
     protected $casts = [
@@ -49,7 +50,6 @@ class Observation extends Model
         'fun_facts',
         'safety_notes',
         'questions',
-        'category',
     ];
 
     // Relationships
@@ -123,8 +123,9 @@ class Observation extends Model
         return $this->ai_json['questions'] ?? [];
     }
 
-    public function getCategoryAttribute()
+    // Scopes (category)
+    public function scopeForCategory($query, string $category)
     {
-        return $this->ai_json['category'] ?? 'other';
+        return $query->where('category', $category);
     }
 }

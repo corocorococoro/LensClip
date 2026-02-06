@@ -12,6 +12,9 @@ export interface Tag {
 // 観察記録のステータス
 export type ObservationStatus = 'processing' | 'ready' | 'failed';
 
+// カテゴリID
+export type CategoryId = 'animal' | 'insect' | 'plant' | 'food' | 'vehicle' | 'place' | 'tool' | 'other';
+
 // 観察記録（リスト用・軽量版）
 export interface ObservationSummary {
     id: string;
@@ -20,7 +23,7 @@ export interface ObservationSummary {
     status: ObservationStatus;
     tags?: Tag[];
     created_at?: string;
-    category?: string;
+    category?: CategoryId;
     latitude?: number | null;
     longitude?: number | null;
 }
@@ -30,7 +33,7 @@ export type LibraryViewMode = 'date' | 'category' | 'map';
 
 // カテゴリ定義
 export interface CategoryDefinition {
-    id: string;
+    id: CategoryId;
     name: string;
     color: string;
 }
@@ -69,7 +72,7 @@ export interface ObservationAIJson {
     fun_facts?: string[];
     safety_notes?: string[];
     questions?: string[];
-    category?: string;
+    category?: CategoryId;
     candidate_cards?: CandidateCard[];
 }
 

@@ -44,6 +44,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/observations/{observation}', [ObservationController::class, 'destroy'])->name('observations.destroy');
     Route::delete('/observations', [ObservationController::class, 'destroyAll'])->name('observations.destroyAll');
     Route::patch('/observations/{observation}/tags', [ObservationController::class, 'updateTags'])->name('observations.updateTags');
+    Route::patch('/observations/{observation}/category', [ObservationController::class, 'updateCategory'])->name('observations.updateCategory');
 
     // Tags
     Route::get('/tags', [TagController::class, 'index'])->name('tags.index');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\DestroyAllObservationsRequest;
 use App\Http\Requests\StoreObservationRequest;
+use App\Http\Requests\UpdateObservationCategoryRequest;
 use App\Http\Requests\UpdateObservationTagsRequest;
 use App\Jobs\AnalyzeObservationJob;
 use App\Models\Observation;
@@ -24,22 +25,6 @@ class ObservationController extends Controller
     {
         $this->observationService = $observationService;
     }
-
-    /**
-     * カテゴリ定義
-     */
-    private const CATEGORIES = [
-        ['id' => 'food_drink', 'name' => '食事と飲み物', 'color' => '#a78bfa'],
-        ['id' => 'people_family', 'name' => '人々と家族', 'color' => '#7dd3fc'],
-        ['id' => 'body_health', 'name' => '身体と健康', 'color' => '#f0abfc'],
-        ['id' => 'animals_nature', 'name' => '動物と自然', 'color' => '#86efac'],
-        ['id' => 'home_furniture', 'name' => '住まいと家具', 'color' => '#fda4af'],
-        ['id' => 'school_study', 'name' => '学校と勉強', 'color' => '#fdba74'],
-        ['id' => 'transport_travel', 'name' => '交通と旅行', 'color' => '#fcd34d'],
-        ['id' => 'sports_hobby', 'name' => 'スポーツと趣味', 'color' => '#6ee7b7'],
-        ['id' => 'clothes_fashion', 'name' => '服とファッション', 'color' => '#c4b5fd'],
-        ['id' => 'other', 'name' => 'その他', 'color' => '#cbd5e1'],
-    ];
 
     /**
      * Display a listing of the observations.
@@ -64,7 +49,7 @@ class ObservationController extends Controller
 
         // Filter by category
         if ($request->filled('category')) {
-            $query->where('ai_json->category', $request->category);
+            $query->forCategory($request->category);
         }
 
         // Get user's tags for filter
@@ -81,7 +66,7 @@ class ObservationController extends Controller
                 'tags' => $tags,
                 'filters' => $request->only(['q', 'tag', 'view', 'category']),
                 'viewMode' => $viewMode,
-                'categories' => self::CATEGORIES,
+                'categories' => $this->getCategoriesForFrontend(),
                 'categoryCounts' => $categoryCounts,
             ]);
         }
@@ -145,8 +130,9 @@ class ObservationController extends Controller
      */
     private function buildCategoryCounts($observations): array
     {
+        $categories = config('categories');
         $counts = [];
-        foreach (self::CATEGORIES as $cat) {
+        foreach ($categories as $cat) {
             $counts[$cat['id']] = 0;
         }
 
@@ -160,6 +146,18 @@ class ObservationController extends Controller
         }
 
         return $counts;
+    }
+
+    /**
+     * Get categories formatted for frontend (id, name, color).
+     */
+    private function getCategoriesForFrontend(): array
+    {
+        return collect(config('categories'))->map(fn($c) => [
+            'id' => $c['id'],
+            'name' => $c['name'],
+            'color' => $c['color'],
+        ])->all();
     }
 
     /**
@@ -215,6 +213,7 @@ class ObservationController extends Controller
 
         return Inertia::render('Observations/Show', [
             'observation' => $observation,
+            'categories' => $this->getCategoriesForFrontend(),
         ]);
     }
 
@@ -303,6 +302,22 @@ class ObservationController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json(['tags' => $observation->tags->pluck('name')]);
+        }
+
+        return back();
+    }
+
+    /**
+     * Update observation category.
+     */
+    public function updateCategory(UpdateObservationCategoryRequest $request, Observation $observation)
+    {
+        $this->authorize('update', $observation);
+
+        $observation->update($request->validated());
+
+        if ($request->wantsJson()) {
+            return response()->json(['category' => $observation->category]);
         }
 
         return back();

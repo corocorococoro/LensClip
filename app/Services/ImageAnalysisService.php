@@ -309,6 +309,11 @@ class ImageAnalysisService
 
         $imageBase64 = base64_encode($imageContent);
 
+        // カテゴリリストをconfigから動的生成
+        $categories = config('categories');
+        $categoryIds = implode('|', array_column($categories, 'id'));
+        $categoryHint = collect($categories)->map(fn($c) => "{$c['id']}({$c['description']})")->implode(' / ');
+
         $prompt = <<<EOT
 あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
 
@@ -323,7 +328,7 @@ class ImageAnalysisService
   "title": "第1候補の名前（ひらがな/カタカナ推奨）",
   "summary": "第1候補の簡潔な説明（大人向け、100文字以内）",
   "kid_friendly": "第1候補の子供向けのやさしい説明（50文字以内、ひらがな多め）",
-  "category": "plant|animal|insect|food|tool|vehicle|place|other",
+  "category": "{$categoryIds} のいずれか。分類の参考: {$categoryHint}",
   "confidence": 0.0-1.0,
   "tags": ["関連タグ"],
   "safety_notes": ["危険や注意事項があれば"],

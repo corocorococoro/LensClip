@@ -30,6 +30,9 @@ class ObservationFactory extends Factory
             'title' => $this->faker->words(3, true),
             'summary' => $this->faker->sentence(),
             'confidence' => 0.95,
+            'category' => $this->faker->randomElement([
+                'animal', 'insect', 'plant', 'food', 'vehicle', 'place', 'tool', 'other',
+            ]),
         ];
     }
 }

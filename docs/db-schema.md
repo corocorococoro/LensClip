@@ -44,6 +44,7 @@ erDiagram
         summary text nullable
         kid_friendly text nullable
         confidence float nullable
+        category varchar "default: other"
         gemini_model varchar nullable
         latitude decimal nullable
         longitude decimal nullable
@@ -93,6 +94,7 @@ erDiagram
 | summary | text | nullable | AI生成説明 |
 | kid_friendly | text | nullable | 子供向け説明 |
 | confidence | float | nullable | 確信度 0.0-1.0 |
+| category | varchar(50) | NOT NULL, DEFAULT 'other' | カテゴリ（`config/categories.php` 参照） |
 | error_message | varchar | nullable | 失敗時メッセージ |
 | created_at | timestamp | | 作成日時 |
 | updated_at | timestamp | | 更新日時 |
@@ -103,6 +105,10 @@ erDiagram
 **インデックス**
 - `(user_id, created_at)` - ユーザー別時系列
 - `(user_id, status)` - ステータスフィルタ
+- `(user_id, category)` - カテゴリフィルタ
+
+**カテゴリ値**
+`config/categories.php` で定義。現在の許可値: `animal`, `insect`, `plant`, `food`, `vehicle`, `place`, `tool`, `other`
 
 ### tags
 | Column | Type | Constraints | 説明 |
