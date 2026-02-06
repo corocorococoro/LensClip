@@ -5,6 +5,8 @@ import { PageProps } from '@/types';
 interface AppLayoutProps {
     children: ReactNode;
     title?: string;
+    /** 全画面モード（地図表示用） */
+    fullScreen?: boolean;
 }
 
 // 静的配列をコンポーネント外にホイスト (毎レンダリング再生成防止)
@@ -28,7 +30,7 @@ import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 // ... (imports)
 
-export default function AppLayout({ children, title }: AppLayoutProps) {
+export default function AppLayout({ children, title, fullScreen = false }: AppLayoutProps) {
     const { auth, ziggy } = usePage<PageProps>().props;
     const url = ziggy.location;
     const isAdmin = auth?.user?.role === 'admin';
@@ -89,7 +91,7 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
     }, [location]);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-purple-50 pb-24">
+        <div className={`min-h-screen ${fullScreen ? 'h-screen overflow-hidden' : 'pb-24'} bg-gradient-to-br from-sky-50 via-white to-purple-50`}>
             {/* Header */}
             <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-brand-beige safe-area-top">
                 <div className="max-w-lg mx-auto px-4 py-2 flex items-center justify-between">
@@ -134,11 +136,11 @@ export default function AppLayout({ children, title }: AppLayoutProps) {
             </header>
 
             {/* Main Content */}
-            <main className="max-w-lg mx-auto px-4 py-6">{children}</main>
+            <main className={fullScreen ? 'h-[calc(100dvh-3.5rem-4rem)] overflow-hidden' : 'max-w-lg mx-auto px-4 py-6'}>{children}</main>
 
             {/* Bottom Navigation (Fixed to bottom like Twitter) */}
             <nav
-                className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out safe-area-bottom ${isFooterVisible ? 'translate-y-0' : 'translate-y-full'
+                className={`fixed bottom-0 left-0 right-0 z-50 transition-transform duration-300 ease-in-out safe-area-bottom ${isFooterVisible || fullScreen ? 'translate-y-0' : 'translate-y-full'
                     }`}
                 aria-label="メインナビゲーション"
             >

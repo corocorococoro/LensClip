@@ -26,10 +26,28 @@ class ObservationController extends Controller
     }
 
     /**
+     * カテゴリ定義
+     */
+    private const CATEGORIES = [
+        ['id' => 'food_drink', 'name' => '食事と飲み物', 'color' => '#a78bfa'],
+        ['id' => 'people_family', 'name' => '人々と家族', 'color' => '#7dd3fc'],
+        ['id' => 'body_health', 'name' => '身体と健康', 'color' => '#f0abfc'],
+        ['id' => 'animals_nature', 'name' => '動物と自然', 'color' => '#86efac'],
+        ['id' => 'home_furniture', 'name' => '住まいと家具', 'color' => '#fda4af'],
+        ['id' => 'school_study', 'name' => '学校と勉強', 'color' => '#fdba74'],
+        ['id' => 'transport_travel', 'name' => '交通と旅行', 'color' => '#fcd34d'],
+        ['id' => 'sports_hobby', 'name' => 'スポーツと趣味', 'color' => '#6ee7b7'],
+        ['id' => 'clothes_fashion', 'name' => '服とファッション', 'color' => '#c4b5fd'],
+        ['id' => 'other', 'name' => 'その他', 'color' => '#cbd5e1'],
+    ];
+
+    /**
      * Display a listing of the observations.
      */
     public function index(Request $request)
     {
+        $viewMode = $request->get('view', 'date');
+
         $query = Observation::forUser(auth()->id())
             ->with('tags')
             ->latest();
@@ -44,16 +62,104 @@ class ObservationController extends Controller
             $query->withTag($request->tag);
         }
 
-        $observations = $query->paginate($request->get('per_page', 20));
+        // Filter by category
+        if ($request->filled('category')) {
+            $query->where('ai_json->category', $request->category);
+        }
 
         // Get user's tags for filter
         $tags = Tag::forUser(auth()->id())->orderBy('name')->get();
 
+        // Build response based on view mode
+        if ($viewMode === 'category') {
+            // Category view - return all with category counts
+            $observations = $query->get();
+            $categoryCounts = $this->buildCategoryCounts($observations);
+
+            return Inertia::render('Library', [
+                'observations' => ['data' => $observations],
+                'tags' => $tags,
+                'filters' => $request->only(['q', 'tag', 'view', 'category']),
+                'viewMode' => $viewMode,
+                'categories' => self::CATEGORIES,
+                'categoryCounts' => $categoryCounts,
+            ]);
+        }
+
+        if ($viewMode === 'map') {
+            // Map view - return all observations with location
+            $observations = $query->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->get();
+
+            return Inertia::render('Library', [
+                'observations' => ['data' => $observations],
+                'tags' => $tags,
+                'filters' => $request->only(['q', 'tag', 'view']),
+                'viewMode' => $viewMode,
+            ]);
+        }
+
+        // Date view (default) - group by year/month
+        $observations = $query->get();
+        $dateGroups = $this->buildDateGroups($observations);
+
         return Inertia::render('Library', [
-            'observations' => $observations,
+            'observations' => ['data' => $observations],
             'tags' => $tags,
-            'filters' => $request->only(['q', 'tag']),
+            'filters' => $request->only(['q', 'tag', 'view']),
+            'viewMode' => $viewMode,
+            'dateGroups' => $dateGroups,
         ]);
+    }
+
+    /**
+     * Build date groups from observations.
+     */
+    private function buildDateGroups($observations): array
+    {
+        $groups = [];
+        foreach ($observations as $obs) {
+            $date = $obs->created_at;
+            $yearMonth = $date->format('Y-m');
+            $label = $date->format('n月') . ($date->year !== now()->year ? ', ' . $date->year : '');
+
+            if (!isset($groups[$yearMonth])) {
+                $groups[$yearMonth] = [
+                    'yearMonth' => $yearMonth,
+                    'label' => $label,
+                    'observations' => [],
+                ];
+            }
+            $groups[$yearMonth]['observations'][] = $obs;
+        }
+
+        // Sort by date descending
+        krsort($groups);
+
+        return array_values($groups);
+    }
+
+    /**
+     * Build category counts from observations.
+     */
+    private function buildCategoryCounts($observations): array
+    {
+        $counts = [];
+        foreach (self::CATEGORIES as $cat) {
+            $counts[$cat['id']] = 0;
+        }
+
+        foreach ($observations as $obs) {
+            $category = $obs->category ?? 'other';
+            if (isset($counts[$category])) {
+                $counts[$category]++;
+            } else {
+                $counts['other']++;
+            }
+        }
+
+        return $counts;
     }
 
     /**
