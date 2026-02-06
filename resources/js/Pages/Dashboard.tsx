@@ -1,17 +1,30 @@
-// @ts-nocheck
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState, useRef } from 'react';
+import type { PageProps } from '@/types';
 
-export default function Dashboard({ auth, scraps }) {
-    const fileInputRef = useRef(null);
-    const [preview, setPreview] = useState(null);
-    const { data, setData, post, processing, errors, reset } = useForm({
-        image: null,
+interface Scrap {
+    id: number;
+    primary_name: string | null;
+    image_path: string;
+    thumbnail_path: string | null;
+}
+
+interface DashboardProps extends PageProps {
+    scraps: {
+        data: Scrap[];
+    };
+}
+
+export default function Dashboard({ auth, scraps }: DashboardProps) {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [preview, setPreview] = useState<string | null>(null);
+    const { data, setData, post, processing, reset } = useForm({
+        image: null as File | null,
     });
 
-    const handleFileSelect = (e) => {
-        const file = e.target.files[0];
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
         if (file) {
             setData('image', file);
             setPreview(URL.createObjectURL(file));
@@ -38,9 +51,7 @@ export default function Dashboard({ auth, scraps }) {
     };
 
     return (
-        <AuthenticatedLayout
-            user={auth.user}
-        >
+        <AuthenticatedLayout>
             <Head title="Dashboard" />
 
             <div className="py-6">
@@ -55,7 +66,7 @@ export default function Dashboard({ auth, scraps }) {
                             >
                                 <img
                                     src={'/storage/' + (scrap.thumbnail_path || scrap.image_path)}
-                                    alt={scrap.primary_name}
+                                    alt={scrap.primary_name ?? '画像'}
                                     className="w-full h-full object-cover"
                                 />
                                 <div className="absolute bottom-0 w-full bg-black/50 text-white p-2 text-center text-sm font-bold truncate">

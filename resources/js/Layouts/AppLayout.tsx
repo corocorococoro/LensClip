@@ -1,6 +1,7 @@
 import { Link, usePage, router } from '@inertiajs/react';
 import { ReactNode, useRef, useState, useEffect, useCallback } from 'react';
 import { PageProps } from '@/types';
+import { useScrollDirection } from '@/hooks/useScrollDirection';
 
 interface AppLayoutProps {
     children: ReactNode;
@@ -46,9 +47,6 @@ function SpinnerIcon({ className }: { className?: string }) {
  * - safe-area-inset 対応
  * - touch-action は CSS で設定済み
  */
-import { useScrollDirection } from '@/hooks/useScrollDirection';
-
-// ... (imports)
 
 export default function AppLayout({ children, title, fullScreen = false }: AppLayoutProps) {
     const { auth, ziggy } = usePage<PageProps>().props;

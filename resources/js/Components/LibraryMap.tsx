@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import type { ObservationSummary, LibraryViewMode } from '@/types/models';
 import ViewModeSwitcher from './ViewModeSwitcher';
 
@@ -11,8 +9,10 @@ interface LibraryMapProps {
 
 export default function LibraryMap({ observations, onModeChange }: LibraryMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    const mapInstanceRef = useRef<L.Map | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet は動的ロードのため any
+    const mapInstanceRef = useRef<any>(null);
     const [mapReady, setMapReady] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Filter observations with valid coordinates
     const withLocation = observations.filter(
@@ -22,125 +22,149 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
     useEffect(() => {
         if (!mapRef.current || mapInstanceRef.current) return;
 
-        // Calculate bounds or use default center (Japan)
-        let initialCenter: [number, number] = [36.5, 138.0];
-        let initialZoom = 5;
+        let isMounted = true;
 
-        if (withLocation.length > 0) {
-            const lats = withLocation.map((o) => o.latitude!);
-            const lngs = withLocation.map((o) => o.longitude!);
-            initialCenter = [
-                (Math.min(...lats) + Math.max(...lats)) / 2,
-                (Math.min(...lngs) + Math.max(...lngs)) / 2,
-            ];
-            initialZoom = 6;
-        }
+        // 動的に Leaflet をロード
+        const loadLeaflet = async () => {
+            try {
+                const [leaflet] = await Promise.all([
+                    import('leaflet'),
+                    import('leaflet/dist/leaflet.css'),
+                ]);
+                const L = leaflet.default;
 
-        // Initialize map with full interaction
-        const map = L.map(mapRef.current, {
-            center: initialCenter,
-            zoom: initialZoom,
-            zoomControl: false,
-            attributionControl: false,
-        });
+                if (!isMounted || !mapRef.current) return;
 
-        // Add zoom control to top-right
-        L.control.zoom({ position: 'topright' }).addTo(map);
+                // Calculate bounds or use default center (Japan)
+                let initialCenter: [number, number] = [36.5, 138.0];
+                let initialZoom = 5;
 
-        // Add tile layer (Apple-like style with CartoDB Voyager)
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-            maxZoom: 19,
-            subdomains: 'abcd',
-        }).addTo(map);
+                if (withLocation.length > 0) {
+                    const lats = withLocation.map((o) => o.latitude!);
+                    const lngs = withLocation.map((o) => o.longitude!);
+                    initialCenter = [
+                        (Math.min(...lats) + Math.max(...lats)) / 2,
+                        (Math.min(...lngs) + Math.max(...lngs)) / 2,
+                    ];
+                    initialZoom = 6;
+                }
 
-        // Add markers for each observation
-        const markers: L.Marker[] = [];
-        withLocation.forEach((obs) => {
-            if (obs.latitude == null || obs.longitude == null) return;
+                // Initialize map with full interaction
+                const map = L.map(mapRef.current, {
+                    center: initialCenter,
+                    zoom: initialZoom,
+                    zoomControl: false,
+                    attributionControl: false,
+                });
 
-            // Create custom marker with thumbnail (Apple Photos style)
-            const markerIcon = L.divIcon({
-                className: 'observation-map-marker',
-                html: `
-                    <div class="marker-container" style="
-                        position: relative;
-                        width: 56px;
-                        height: 56px;
-                        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
-                    ">
-                        <div style="
-                            width: 56px;
-                            height: 56px;
-                            border-radius: 12px;
-                            border: 3px solid white;
-                            overflow: hidden;
-                            background: #f1f5f9;
-                        ">
-                            ${obs.thumb_url
+                // Add zoom control to top-right
+                L.control.zoom({ position: 'topright' }).addTo(map);
+
+                // Add tile layer (Apple-like style with CartoDB Voyager)
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                    subdomains: 'abcd',
+                }).addTo(map);
+
+                // Add markers for each observation
+                const markers: L.Marker[] = [];
+                withLocation.forEach((obs) => {
+                    if (obs.latitude == null || obs.longitude == null) return;
+
+                    // Create custom marker with thumbnail (Apple Photos style)
+                    const markerIcon = L.divIcon({
+                        className: 'observation-map-marker',
+                        html: `
+                            <div class="marker-container" style="
+                                position: relative;
+                                width: 56px;
+                                height: 56px;
+                                filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+                            ">
+                                <div style="
+                                    width: 56px;
+                                    height: 56px;
+                                    border-radius: 12px;
+                                    border: 3px solid white;
+                                    overflow: hidden;
+                                    background: #f1f5f9;
+                                ">
+                                    ${obs.thumb_url
                                 ? `<img src="${obs.thumb_url}" style="width: 100%; height: 100%; object-fit: cover;" />`
                                 : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: linear-gradient(135deg, #FFF0E5 0%, #FF9E7D40 100%);">📷</div>`
                             }
+                                </div>
+                                <div style="
+                                    position: absolute;
+                                    bottom: -6px;
+                                    left: 50%;
+                                    transform: translateX(-50%);
+                                    width: 12px;
+                                    height: 12px;
+                                    background: white;
+                                    border-radius: 2px;
+                                    transform: translateX(-50%) rotate(45deg);
+                                "></div>
+                            </div>
+                        `,
+                        iconSize: [56, 68],
+                        iconAnchor: [28, 68],
+                    });
+
+                    const marker = L.marker([obs.latitude, obs.longitude], { icon: markerIcon });
+
+                    // Create popup with enhanced styling
+                    const popupContent = `
+                        <div style="text-align: center; min-width: 140px; padding: 4px;">
+                            ${obs.thumb_url
+                            ? `<img src="${obs.thumb_url}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`
+                            : ''
+                        }
+                            <p style="font-weight: 600; font-size: 15px; margin: 0 0 8px 0; color: #1e293b;">${obs.title || '処理中...'}</p>
+                            <a href="/observations/${obs.id}" style="
+                                display: inline-block;
+                                padding: 6px 12px;
+                                background: linear-gradient(135deg, #FF6B6B 0%, #FF823C 100%);
+                                color: white;
+                                text-decoration: none;
+                                font-size: 13px;
+                                font-weight: 500;
+                                border-radius: 8px;
+                            ">くわしくみる</a>
                         </div>
-                        <div style="
-                            position: absolute;
-                            bottom: -6px;
-                            left: 50%;
-                            transform: translateX(-50%);
-                            width: 12px;
-                            height: 12px;
-                            background: white;
-                            border-radius: 2px;
-                            transform: translateX(-50%) rotate(45deg);
-                        "></div>
-                    </div>
-                `,
-                iconSize: [56, 68],
-                iconAnchor: [28, 68],
-            });
+                    `;
 
-            const marker = L.marker([obs.latitude, obs.longitude], { icon: markerIcon });
+                    marker.bindPopup(popupContent, {
+                        maxWidth: 200,
+                        className: 'observation-popup',
+                    });
+                    marker.addTo(map);
+                    markers.push(marker);
+                });
 
-            // Create popup with enhanced styling
-            const popupContent = `
-                <div style="text-align: center; min-width: 140px; padding: 4px;">
-                    ${obs.thumb_url
-                        ? `<img src="${obs.thumb_url}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`
-                        : ''
-                    }
-                    <p style="font-weight: 600; font-size: 15px; margin: 0 0 8px 0; color: #1e293b;">${obs.title || '処理中...'}</p>
-                    <a href="/observations/${obs.id}" style="
-                        display: inline-block;
-                        padding: 6px 12px;
-                        background: linear-gradient(135deg, #FF6B6B 0%, #FF823C 100%);
-                        color: white;
-                        text-decoration: none;
-                        font-size: 13px;
-                        font-weight: 500;
-                        border-radius: 8px;
-                    ">くわしくみる</a>
-                </div>
-            `;
+                // Fit bounds if there are markers
+                if (markers.length > 0) {
+                    const group = L.featureGroup(markers);
+                    map.fitBounds(group.getBounds().pad(0.15));
+                }
 
-            marker.bindPopup(popupContent, {
-                maxWidth: 200,
-                className: 'observation-popup',
-            });
-            marker.addTo(map);
-            markers.push(marker);
-        });
+                mapInstanceRef.current = map;
+                setMapReady(true);
+                setLoading(false);
+            } catch (error) {
+                console.error('Failed to load Leaflet:', error);
+                setLoading(false);
+            }
+        };
 
-        // Fit bounds if there are markers
-        if (markers.length > 0) {
-            const group = L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.15));
-        }
-
-        mapInstanceRef.current = map;
-        setMapReady(true);
+        loadLeaflet();
 
         return () => {
-            map.remove();
-            mapInstanceRef.current = null;
+            isMounted = false;
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.remove();
+                mapInstanceRef.current = null;
+            }
         };
     }, []);
 
@@ -171,6 +195,16 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
 
     return (
         <div className="relative h-full w-full">
+            {/* Loading state */}
+            {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+                    <div className="flex flex-col items-center gap-2">
+                        <span className="text-4xl animate-pulse">🗺️</span>
+                        <span className="text-sm text-gray-500">地図を読み込み中…</span>
+                    </div>
+                </div>
+            )}
+
             {/* Map container - full screen */}
             <div
                 ref={mapRef}

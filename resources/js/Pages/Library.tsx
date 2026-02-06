@@ -6,7 +6,7 @@ import CategoryCard from '@/Components/CategoryCard';
 import LibraryMap from '@/Components/LibraryMap';
 import type { ObservationSummary, Tag, LibraryViewMode, CategoryDefinition, DateGroup } from '@/types/models';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 interface Props {
     observations: {
@@ -69,17 +69,19 @@ export default function Library({
         router.get('/library', { q: search, tag: activeTag, view: viewMode, category: newCategory }, { preserveState: true });
     };
 
-    // Group observations by category for category view
-    const observationsByCategory: Record<string, ObservationSummary[]> = {};
-    if (viewMode === 'category') {
+    // Group observations by category for category view (memoized)
+    const observationsByCategory = useMemo(() => {
+        if (viewMode !== 'category') return {};
+        const grouped: Record<string, ObservationSummary[]> = {};
         observations.data.forEach((obs) => {
             const cat = obs.category || 'other';
-            if (!observationsByCategory[cat]) {
-                observationsByCategory[cat] = [];
+            if (!grouped[cat]) {
+                grouped[cat] = [];
             }
-            observationsByCategory[cat].push(obs);
+            grouped[cat].push(obs);
         });
-    }
+        return grouped;
+    }, [viewMode, observations.data]);
 
     return (
         <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>

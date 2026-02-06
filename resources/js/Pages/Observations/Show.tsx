@@ -5,7 +5,6 @@ import LocationMap from '@/Components/LocationMap';
 import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, useCallback } from 'react';
-import axios from 'axios';
 
 const SpeakerIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -106,9 +105,17 @@ export default function Show({ observation, categories }: Props) {
 
         setTtsLoading(true);
         try {
-            const res = await axios.post('/tts', { text });
-            const { url } = res.data;
-            const audio = new Audio(url);
+            const res = await fetch('/tts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({ text }),
+            });
+            if (!res.ok) throw new Error('TTS request failed');
+            const data = await res.json();
+            const audio = new Audio(data.url);
             audioRef.current = audio;
             await audio.play();
         } catch (error) {
@@ -416,8 +423,8 @@ export default function Show({ observation, categories }: Props) {
                                 onClick={() => handleCategoryChange(cat.id)}
                                 disabled={categoryUpdating}
                                 className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl text-base font-bold transition-all w-full sm:w-auto justify-center ${cat.id === observation.category
-                                        ? 'ring-2 ring-offset-2'
-                                        : 'hover:opacity-80'
+                                    ? 'ring-2 ring-offset-2'
+                                    : 'hover:opacity-80'
                                     } ${categoryUpdating ? 'cursor-wait opacity-50' : ''}`}
                                 style={{
                                     backgroundColor: cat.color + '20',
