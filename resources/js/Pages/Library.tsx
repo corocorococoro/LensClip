@@ -83,6 +83,13 @@ export default function Library({
         return grouped;
     }, [viewMode, observations.data]);
 
+    // Filter observations by active category to prevent flash of all data
+    // This ensures smooth UX while waiting for server response
+    const filteredObservations = useMemo(() => {
+        if (!activeCategory) return observations.data;
+        return observations.data.filter((obs) => obs.category === activeCategory);
+    }, [observations.data, activeCategory]);
+
     return (
         <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
             <Head title="ライブラリ" />
@@ -212,10 +219,10 @@ export default function Library({
                                 {categories.find((c) => c.id === activeCategory)?.name || activeCategory}
                             </h2>
 
-                            {observations.data.length > 0 ? (
+                            {filteredObservations.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-3">
-                                    {observations.data.map((obs) => (
-                                        <ObservationCard key={obs.id} observation={obs} categories={categories} />
+                                    {filteredObservations.map((obs) => (
+                                        <ObservationCard key={obs.id} observation={obs} categories={categories} showCategory={false} />
                                     ))}
                                 </div>
                             ) : (

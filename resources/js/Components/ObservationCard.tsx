@@ -6,6 +6,8 @@ interface ObservationCardProps {
     categories?: CategoryDefinition[];
     /** カードサイズ (グリッド用) */
     size?: 'sm' | 'md';
+    /** カテゴリバッジを表示するか (デフォルト: true) */
+    showCategory?: boolean;
 }
 
 /**
@@ -15,7 +17,7 @@ interface ObservationCardProps {
  * - カテゴリ表示 (バッジ)
  * - アクセシビリティ対応 (適切なalt属性)
  */
-export function ObservationCard({ observation, categories = [], size = 'md' }: ObservationCardProps) {
+export function ObservationCard({ observation, categories = [], size = 'md', showCategory = true }: ObservationCardProps) {
     const href =
         observation.status === 'processing'
             ? `/observations/${observation.id}/processing`
@@ -63,7 +65,7 @@ export function ObservationCard({ observation, categories = [], size = 'md' }: O
             {observation.status === 'ready' && (
                 <>
                     {/* Category Badge (Top Left) */}
-                    {category && (
+                    {showCategory && category && (
                         <div className="absolute top-2 left-2 z-10">
                             <span
                                 className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md bg-white/90"
