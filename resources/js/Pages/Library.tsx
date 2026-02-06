@@ -127,8 +127,8 @@ export default function Library({
                             onClick={() => handleTagFilter(tag.name)}
                             aria-pressed={activeTag === tag.name}
                             className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${activeTag === tag.name
-                                    ? 'bg-brand-coral text-white'
-                                    : 'bg-brand-cream text-brand-dark hover:bg-brand-beige'
+                                ? 'bg-brand-coral text-white'
+                                : 'bg-brand-cream text-brand-dark hover:bg-brand-beige'
                                 }`}
                         >
                             #{tag.name}
@@ -149,7 +149,7 @@ export default function Library({
                                     </h2>
                                     <div className="grid grid-cols-2 gap-3">
                                         {group.observations.map((obs) => (
-                                            <ObservationCard key={obs.id} observation={obs} />
+                                            <ObservationCard key={obs.id} observation={obs} categories={categories} />
                                         ))}
                                     </div>
                                 </div>
@@ -213,7 +213,7 @@ export default function Library({
                             {observations.data.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-3">
                                     {observations.data.map((obs) => (
-                                        <ObservationCard key={obs.id} observation={obs} />
+                                        <ObservationCard key={obs.id} observation={obs} categories={categories} />
                                     ))}
                                 </div>
                             ) : (

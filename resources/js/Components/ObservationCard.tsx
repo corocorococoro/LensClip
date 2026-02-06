@@ -1,8 +1,9 @@
 import { Link } from '@inertiajs/react';
-import type { ObservationSummary } from '@/types/models';
+import type { ObservationSummary, CategoryDefinition } from '@/types/models';
 
 interface ObservationCardProps {
     observation: ObservationSummary;
+    categories?: CategoryDefinition[];
     /** カードサイズ (グリッド用) */
     size?: 'sm' | 'md';
 }
@@ -11,9 +12,10 @@ interface ObservationCardProps {
  * 観察記録カードコンポーネント
  * - サムネイル表示 (CLS対策のためwidth/height指定)
  * - ステータス表示 (processing, failed, ready)
+ * - カテゴリ表示 (バッジ)
  * - アクセシビリティ対応 (適切なalt属性)
  */
-export function ObservationCard({ observation, size = 'md' }: ObservationCardProps) {
+export function ObservationCard({ observation, categories = [], size = 'md' }: ObservationCardProps) {
     const href =
         observation.status === 'processing'
             ? `/observations/${observation.id}/processing`
@@ -21,6 +23,9 @@ export function ObservationCard({ observation, size = 'md' }: ObservationCardPro
 
     // サイズに応じたクラス
     const sizeClasses = size === 'sm' ? 'rounded-xl' : 'rounded-2xl';
+
+    // カテゴリ取得
+    const category = categories.find(c => c.id === observation.category);
 
     return (
         <Link
@@ -54,13 +59,34 @@ export function ObservationCard({ observation, size = 'md' }: ObservationCardPro
                 </div>
             )}
 
-            {/* Ready State - Show Title */}
-            {observation.status === 'ready' && observation.title && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                    <p className="text-white text-sm font-medium truncate">
-                        {observation.title}
-                    </p>
-                </div>
+            {/* Ready State */}
+            {observation.status === 'ready' && (
+                <>
+                    {/* Category Badge (Top Left) */}
+                    {category && (
+                        <div className="absolute top-2 left-2 z-10">
+                            <span
+                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md bg-white/90"
+                                style={{ color: category.color }}
+                            >
+                                <span
+                                    className="w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: category.color }}
+                                />
+                                {category.name}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Title (Bottom) */}
+                    {observation.title && (
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                            <p className="text-white text-sm font-medium truncate">
+                                {observation.title}
+                            </p>
+                        </div>
+                    )}
+                </>
             )}
         </Link>
     );

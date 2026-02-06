@@ -82,6 +82,7 @@ class ObservationController extends Controller
                 'tags' => $tags,
                 'filters' => $request->only(['q', 'tag', 'view']),
                 'viewMode' => $viewMode,
+                'categories' => $this->getCategoriesForFrontend(),
             ]);
         }
 
@@ -95,6 +96,7 @@ class ObservationController extends Controller
             'filters' => $request->only(['q', 'tag', 'view']),
             'viewMode' => $viewMode,
             'dateGroups' => $dateGroups,
+            'categories' => $this->getCategoriesForFrontend(),
         ]);
     }
 
@@ -107,7 +109,7 @@ class ObservationController extends Controller
         foreach ($observations as $obs) {
             $date = $obs->created_at;
             $yearMonth = $date->format('Y-m');
-            $label = $date->format('n月') . ($date->year !== now()->year ? ', ' . $date->year : '');
+            $label = $date->format('Y年n月');
 
             if (!isset($groups[$yearMonth])) {
                 $groups[$yearMonth] = [

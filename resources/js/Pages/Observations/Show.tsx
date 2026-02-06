@@ -1,5 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
+import Modal from '@/Components/Modal';
 import LocationMap from '@/Components/LocationMap';
 import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
@@ -26,6 +27,12 @@ const MagnifyingGlassIcon = ({ className }: { className?: string }) => (
     </svg>
 );
 
+const PencilIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+    </svg>
+);
+
 interface Props {
     observation: Observation;
     categories: CategoryDefinition[];
@@ -35,7 +42,7 @@ export default function Show({ observation, categories }: Props) {
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
     const [ttsLoading, setTtsLoading] = useState(false);
-    const [editingCategory, setEditingCategory] = useState(false);
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -48,7 +55,7 @@ export default function Show({ observation, categories }: Props) {
         }, {
             preserveScroll: true,
             onSuccess: () => {
-                setEditingCategory(false);
+                setShowCategoryModal(false);
                 setCategoryUpdating(false);
             },
             onError: () => {
@@ -117,7 +124,6 @@ export default function Show({ observation, categories }: Props) {
 
             <div className="flex flex-col items-center">
                 {/* Main Image */}
-                {/* Main Image */}
                 <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6 group">
                     <img
                         src={displayImage}
@@ -127,6 +133,27 @@ export default function Show({ observation, categories }: Props) {
                         loading="eager"
                         className="w-full aspect-square object-cover"
                     />
+
+                    {/* Category Badge overlay (Top Left) - Interactive */}
+                    {currentCategory && (
+                        <div className="absolute top-3 left-3 z-10">
+                            <button
+                                onClick={() => setShowCategoryModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm backdrop-blur-md bg-white/90 transition-transform active:scale-95 group/badge"
+                                style={{
+                                    color: currentCategory.color,
+                                }}
+                            >
+                                <div
+                                    className="w-2.5 h-2.5 rounded-full"
+                                    style={{ backgroundColor: currentCategory.color }}
+                                />
+                                {currentCategory.name}
+                                <PencilIcon className="w-3 h-3 opacity-40 ml-0.5 group-hover/badge:opacity-100 transition-opacity" />
+                            </button>
+                        </div>
+                    )}
+
                     {/* Image Search Overlay */}
                     {observation.status === 'ready' && displayTitle && displayTitle !== '???' && (
                         <a
@@ -189,65 +216,6 @@ export default function Show({ observation, categories }: Props) {
                         </button>
                     </div>
                 )}
-
-                {/* Category Badge - Editable */}
-                {observation.status === 'ready' && currentCategory && (
-                    <div className="mb-4">
-                        {!editingCategory ? (
-                            <button
-                                onClick={() => setEditingCategory(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium transition-colors hover:opacity-80"
-                                style={{
-                                    backgroundColor: currentCategory.color + '20',
-                                    color: currentCategory.color,
-                                }}
-                                title="カテゴリを変更"
-                            >
-                                <span
-                                    className="w-2 h-2 rounded-full"
-                                    style={{ backgroundColor: currentCategory.color }}
-                                />
-                                {currentCategory.name}
-                                <svg className="w-3 h-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                            </button>
-                        ) : (
-                            <div className="flex flex-wrap gap-2 justify-center">
-                                {categories.map((cat) => (
-                                    <button
-                                        key={cat.id}
-                                        onClick={() => handleCategoryChange(cat.id)}
-                                        disabled={categoryUpdating}
-                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                                            cat.id === observation.category
-                                                ? 'ring-2 ring-offset-1'
-                                                : 'opacity-70 hover:opacity-100'
-                                        } ${categoryUpdating ? 'cursor-wait' : ''}`}
-                                        style={{
-                                            backgroundColor: cat.color + '20',
-                                            color: cat.color,
-                                            ...(cat.id === observation.category ? { '--tw-ring-color': cat.color } as React.CSSProperties : {}),
-                                        }}
-                                    >
-                                        <span
-                                            className="w-2 h-2 rounded-full"
-                                            style={{ backgroundColor: cat.color }}
-                                        />
-                                        {cat.name}
-                                    </button>
-                                ))}
-                                <button
-                                    onClick={() => setEditingCategory(false)}
-                                    className="px-3 py-1.5 rounded-full text-sm text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    キャンセル
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-
 
 
                 {/* Candidate Selector - これかも？ */}
@@ -434,6 +402,52 @@ export default function Show({ observation, categories }: Props) {
                     この発見を削除
                 </button>
             </div>
+
+            {/* Category Selection Modal */}
+            <Modal show={showCategoryModal} onClose={() => setShowCategoryModal(false)}>
+                <div className="p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                        カテゴリをへんこう
+                    </h2>
+                    <div className="flex flex-wrap gap-3">
+                        {categories.map((cat) => (
+                            <button
+                                key={cat.id}
+                                onClick={() => handleCategoryChange(cat.id)}
+                                disabled={categoryUpdating}
+                                className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl text-base font-bold transition-all w-full sm:w-auto justify-center ${cat.id === observation.category
+                                        ? 'ring-2 ring-offset-2'
+                                        : 'hover:opacity-80'
+                                    } ${categoryUpdating ? 'cursor-wait opacity-50' : ''}`}
+                                style={{
+                                    backgroundColor: cat.color + '20',
+                                    color: cat.color,
+                                    ...(cat.id === observation.category ? { '--tw-ring-color': cat.color } as React.CSSProperties : {}),
+                                }}
+                            >
+                                <span
+                                    className="w-3 h-3 rounded-full"
+                                    style={{ backgroundColor: cat.color }}
+                                />
+                                {cat.name}
+                                {cat.id === observation.category && (
+                                    <span className="ml-auto sm:ml-2 text-xs bg-white/50 px-2 py-0.5 rounded-full">
+                                        選択中
+                                    </span>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <Button
+                            variant="secondary"
+                            onClick={() => setShowCategoryModal(false)}
+                        >
+                            キャンセル
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </AppLayout>
     );
 }
