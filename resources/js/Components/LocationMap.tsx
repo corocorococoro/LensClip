@@ -39,7 +39,7 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
                 <div style="
                     width: 32px;
                     height: 32px;
-                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                    background: linear-gradient(135deg, #FF6B6B 0%, #FF823C 100%);
                     border-radius: 50% 50% 50% 0;
                     transform: rotate(-45deg);
                     border: 3px solid white;
@@ -90,7 +90,7 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
                 href={googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-center text-sm text-indigo-600 hover:text-indigo-800 py-2 border-t border-slate-100 transition-colors"
+                className="block text-center text-sm text-brand-coral hover:text-brand-orange py-2 border-t border-slate-100 transition-colors"
             >
                 Google マップでひらく →
             </a>

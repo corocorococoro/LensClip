@@ -101,7 +101,7 @@ export default function Library({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="なまえでさがす…"
-                            className="w-full px-4 py-3 pl-10 bg-white rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-blue-300"
+                            className="w-full px-4 py-3 pl-10 bg-white rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-brand-peach"
                             aria-label="観察記録を検索"
                         />
                         <span
@@ -127,8 +127,8 @@ export default function Library({
                             onClick={() => handleTagFilter(tag.name)}
                             aria-pressed={activeTag === tag.name}
                             className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${activeTag === tag.name
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-brand-coral text-white'
+                                    : 'bg-brand-cream text-brand-dark hover:bg-brand-beige'
                                 }`}
                         >
                             #{tag.name}
@@ -144,7 +144,7 @@ export default function Library({
                         <div className="space-y-6">
                             {dateGroups.map((group) => (
                                 <div key={group.yearMonth}>
-                                    <h2 className="text-xl font-bold text-gray-800 mb-3">
+                                    <h2 className="text-xl font-bold text-brand-dark mb-3">
                                         {group.label}
                                     </h2>
                                     <div className="grid grid-cols-2 gap-3">
@@ -163,7 +163,7 @@ export default function Library({
                                 (filters.q || filters.tag) && (
                                     <button
                                         onClick={handleClearFilters}
-                                        className="text-blue-600 text-sm hover:text-blue-700"
+                                        className="text-brand-coral text-sm hover:text-brand-orange"
                                     >
                                         フィルタをクリア
                                     </button>
@@ -180,7 +180,7 @@ export default function Library({
                     {!activeCategory ? (
                         // Category grid
                         <div>
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">カテゴリ</h2>
+                            <h2 className="text-xl font-bold text-brand-dark mb-4">カテゴリ</h2>
                             <div className="grid grid-cols-2 gap-3">
                                 {categories.map((category) => (
                                     <CategoryCard
@@ -198,7 +198,7 @@ export default function Library({
                         <div>
                             <button
                                 onClick={() => handleCategorySelect('')}
-                                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-4"
+                                className="flex items-center gap-2 text-brand-coral hover:text-brand-orange mb-4"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -206,7 +206,7 @@ export default function Library({
                                 カテゴリ一覧に戻る
                             </button>
 
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">
+                            <h2 className="text-xl font-bold text-brand-dark mb-4">
                                 {categories.find((c) => c.id === activeCategory)?.name || activeCategory}
                             </h2>
 

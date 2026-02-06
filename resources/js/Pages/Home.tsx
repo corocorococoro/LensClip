@@ -82,16 +82,16 @@ export default function Home({ stats, recent }: Props) {
                 {/* Stats */}
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
                     <Card className="text-center">
-                        <div className="text-3xl font-bold text-blue-600 tabular-nums">
+                        <div className="text-3xl font-bold text-brand-coral tabular-nums">
                             {stats.today}
                         </div>
-                        <div className="text-sm text-gray-500">きょう</div>
+                        <div className="text-sm text-brand-muted">きょう</div>
                     </Card>
                     <Card className="text-center">
-                        <div className="text-3xl font-bold text-purple-600 tabular-nums">
+                        <div className="text-3xl font-bold text-brand-orange tabular-nums">
                             {stats.total}
                         </div>
-                        <div className="text-sm text-gray-500">ぜんぶ</div>
+                        <div className="text-sm text-brand-muted">ぜんぶ</div>
                     </Card>
                 </div>
 
@@ -100,7 +100,7 @@ export default function Home({ stats, recent }: Props) {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={processing}
                     aria-label="カメラでしらべる"
-                    className="w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-2xl flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    className="w-32 h-32 bg-gradient-to-br from-brand-coral to-brand-orange hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-coral/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 >
                     {processing ? (
                         <>
@@ -118,12 +118,12 @@ export default function Home({ stats, recent }: Props) {
                         </>
                     )}
                 </button>
-                <p className="text-gray-500 text-sm mb-4">タップしてなにかしらべてみよう！</p>
+                <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
 
                 {/* Error Display */}
                 {errors.image && (
                     <div
-                        className="w-full mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-700 animate-bounce-short"
+                        className="w-full mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-bounce-short"
                         role="alert"
                     >
                         <span className="text-2xl" aria-hidden="true">
@@ -147,7 +147,7 @@ export default function Home({ stats, recent }: Props) {
                 {/* Recent Observations */}
                 {recent.length > 0 && (
                     <div className="w-full">
-                        <h2 className="text-lg font-bold text-gray-700 mb-3">
+                        <h2 className="text-lg font-bold text-brand-dark mb-3">
                             さいきんのはっけん
                         </h2>
                         <div className="grid grid-cols-3 gap-2">
@@ -161,7 +161,7 @@ export default function Home({ stats, recent }: Props) {
                         </div>
                         <Link
                             href="/library"
-                            className="block text-center text-blue-600 mt-4 text-sm font-medium hover:text-blue-700"
+                            className="block text-center text-brand-coral mt-4 text-sm font-medium hover:text-brand-orange"
                         >
                             もっとみる →
                         </Link>

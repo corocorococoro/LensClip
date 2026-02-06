@@ -133,7 +133,7 @@ export default function Show({ observation, categories }: Props) {
                             href={`https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(displayTitle)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm pl-2.5 pr-3 py-1.5 rounded-full text-xs font-medium text-slate-600 shadow-sm hover:bg-white hover:text-indigo-600 transition-all flex items-center gap-1.5 opacity-90 hover:opacity-100 hover:shadow-md"
+                            className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm pl-2.5 pr-3 py-1.5 rounded-full text-xs font-medium text-brand-dark shadow-sm hover:bg-white hover:text-brand-coral transition-all flex items-center gap-1.5 opacity-90 hover:opacity-100 hover:shadow-md"
                             title="Google画像検索で確認する"
                         >
                             <MagnifyingGlassIcon className="w-3.5 h-3.5" />
@@ -176,7 +176,7 @@ export default function Show({ observation, categories }: Props) {
                             disabled={ttsLoading}
                             className={`p-1.5 rounded-full transition-all duration-200 ${ttsLoading
                                 ? 'text-gray-400 cursor-wait'
-                                : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 active:scale-95'
+                                : 'text-slate-400 hover:text-brand-coral hover:bg-brand-cream active:scale-95'
                                 }`}
                             aria-label={`${activeCard.english_name}を読み上げる`}
                             title="発音を聞く"
@@ -382,7 +382,7 @@ export default function Show({ observation, categories }: Props) {
                                 <Link
                                     key={tag.id}
                                     href={`/library?tag=${tag.name}`}
-                                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-full text-sm text-gray-600 transition-colors"
+                                    className="px-4 py-2 bg-brand-cream hover:bg-brand-beige rounded-full text-sm text-brand-dark transition-colors"
                                 >
                                     #{tag.name}
                                 </Link>
