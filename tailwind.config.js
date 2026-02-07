@@ -16,15 +16,15 @@ export default {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                // LensClip ブランドカラー
+                // LensClip ブランドカラー（パステルピンク × ベビーブルー）
                 brand: {
-                    coral: '#FF6B6B',
-                    peach: '#FF9E7D',
-                    orange: '#FF823C',
-                    cream: '#FFF0E5',
-                    beige: '#F5EDD6',
+                    pink: '#F5B8C1',
+                    rose: '#E8A0AB',
+                    sky: '#8ECFE0',
+                    cream: '#FDE8EC',
+                    blush: '#F8D1D7',
                     dark: '#2D2D2D',
-                    muted: '#7D7D7D',
+                    muted: '#8E8E8E',
                 },
             },
             animation: {

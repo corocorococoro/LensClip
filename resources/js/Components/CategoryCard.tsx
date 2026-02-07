@@ -15,7 +15,7 @@ export default function CategoryCard({ category, count, observations, isActive, 
     return (
         <button
             onClick={onClick}
-            className={`relative w-full aspect-[4/5] rounded-2xl overflow-hidden text-left transition-all hover:scale-[1.02] hover:shadow-lg ${isActive ? 'ring-4 ring-brand-coral ring-offset-2' : ''
+            className={`relative w-full aspect-[4/5] rounded-2xl overflow-hidden text-left transition-all hover:scale-[1.02] hover:shadow-lg ${isActive ? 'ring-4 ring-brand-pink ring-offset-2' : ''
                 }`}
             style={{
                 background: `linear-gradient(135deg, ${category.color}40 0%, ${category.color}20 100%)`,

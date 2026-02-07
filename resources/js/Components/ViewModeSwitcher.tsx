@@ -38,7 +38,7 @@ export default function ViewModeSwitcher({ currentMode, onModeChange }: ViewMode
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-brand-beige hover:bg-brand-cream/50 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-brand-blush hover:bg-brand-cream/50 transition-colors"
                 aria-haspopup="listbox"
                 aria-expanded={isOpen}
             >
@@ -56,7 +56,7 @@ export default function ViewModeSwitcher({ currentMode, onModeChange }: ViewMode
 
             {isOpen && (
                 <div
-                    className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-brand-beige py-2 z-50"
+                    className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-brand-blush py-2 z-50"
                     role="listbox"
                 >
                     {VIEW_MODES.map((mode) => (
@@ -70,13 +70,13 @@ export default function ViewModeSwitcher({ currentMode, onModeChange }: ViewMode
                             aria-selected={currentMode === mode.id}
                         >
                             {currentMode === mode.id && (
-                                <svg className="w-5 h-5 text-brand-coral" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="w-5 h-5 text-brand-pink" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                 </svg>
                             )}
                             {currentMode !== mode.id && <span className="w-5" />}
                             <span className="text-xl" aria-hidden="true">{mode.icon}</span>
-                            <span className={`text-sm ${currentMode === mode.id ? 'font-semibold text-brand-coral' : 'text-brand-dark'}`}>
+                            <span className={`text-sm ${currentMode === mode.id ? 'font-semibold text-brand-pink' : 'text-brand-dark'}`}>
                                 {mode.label}
                             </span>
                         </button>

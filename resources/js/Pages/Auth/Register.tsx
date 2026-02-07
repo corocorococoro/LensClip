@@ -40,7 +40,7 @@ export default function Register() {
                         id="name"
                         name="name"
                         value={data.name}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="name"
                         autoFocus
                         onChange={(e) => setData('name', e.target.value)}
@@ -61,7 +61,7 @@ export default function Register() {
                         type="email"
                         name="email"
                         value={data.email}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -81,7 +81,7 @@ export default function Register() {
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
                         required
@@ -101,7 +101,7 @@ export default function Register() {
                         type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="new-password"
                         onChange={(e) => setData('password_confirmation', e.target.value)}
                         required
@@ -141,7 +141,7 @@ export default function Register() {
                     <span className="text-gray-500">すでにアカウントをお持ちの方は</span>{' '}
                     <Link
                         href={route('login')}
-                        className="text-brand-coral hover:text-brand-orange font-medium transition-colors"
+                        className="text-brand-pink hover:text-brand-sky font-medium transition-colors"
                     >
                         ログイン
                     </Link>

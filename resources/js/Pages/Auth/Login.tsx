@@ -52,7 +52,7 @@ export default function Login({
                         type="email"
                         name="email"
                         value={data.email}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="username"
                         autoFocus
                         onChange={(e) => setData('email', e.target.value)}
@@ -72,7 +72,7 @@ export default function Login({
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
@@ -86,7 +86,7 @@ export default function Login({
                         name="remember"
                         checked={data.remember}
                         onChange={(e) => setData('remember', e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-coral focus:ring-brand-coral"
+                        className="w-4 h-4 rounded border-gray-300 text-brand-pink focus:ring-brand-pink"
                     />
                     <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
                         ログイン状態を保持する
@@ -125,14 +125,14 @@ export default function Login({
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="text-brand-muted hover:text-brand-coral transition-colors"
+                            className="text-brand-muted hover:text-brand-pink transition-colors"
                         >
                             パスワードを忘れた方
                         </Link>
                     )}
                     <Link
                         href={route('register')}
-                        className="text-brand-coral hover:text-brand-orange font-medium transition-colors"
+                        className="text-brand-pink hover:text-brand-sky font-medium transition-colors"
                     >
                         新規登録はこちら
                     </Link>

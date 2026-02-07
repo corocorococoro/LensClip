@@ -11,7 +11,7 @@ export default function GuestLayout({ children }: PropsWithChildren) {
             {/* Logo */}
             <div className="mb-8">
                 <Link href="/" className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-brand-coral to-brand-peach rounded-xl shadow-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-brand-pink to-brand-rose rounded-xl shadow-lg flex items-center justify-center">
                         <svg
                             className="w-7 h-7 text-white"
                             viewBox="0 0 24 24"
@@ -33,7 +33,7 @@ export default function GuestLayout({ children }: PropsWithChildren) {
             </div>
 
             {/* Card */}
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-brand-beige p-6 sm:p-8">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-brand-blush p-6 sm:p-8">
                 {children}
             </div>
 
