@@ -27,7 +27,7 @@ type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 const variantClasses: Record<ButtonVariant, string> = {
     primary:
-        'bg-gradient-to-r from-brand-coral to-brand-orange text-white shadow-lg hover:translate-y-[-2px] active:scale-95',
+        'bg-gradient-to-r from-brand-pink to-brand-sky text-white shadow-lg hover:translate-y-[-2px] active:scale-95',
     secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-700',
     danger: 'bg-red-500 hover:bg-red-600 text-white',
     ghost: 'bg-transparent hover:bg-gray-100 text-gray-600',

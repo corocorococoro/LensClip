@@ -110,7 +110,7 @@ export default function Library({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="なまえでさがす…"
-                            className="w-full px-4 py-3 pl-10 bg-white rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-brand-peach"
+                            className="w-full px-4 py-3 pl-10 bg-white rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-brand-rose"
                             aria-label="観察記録を検索"
                         />
                         <span
@@ -136,8 +136,8 @@ export default function Library({
                             onClick={() => handleTagFilter(tag.name)}
                             aria-pressed={activeTag === tag.name}
                             className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${activeTag === tag.name
-                                ? 'bg-brand-coral text-white'
-                                : 'bg-brand-cream text-brand-dark hover:bg-brand-beige'
+                                ? 'bg-brand-pink text-white'
+                                : 'bg-brand-cream text-brand-dark hover:bg-brand-blush'
                                 }`}
                         >
                             #{tag.name}
@@ -172,7 +172,7 @@ export default function Library({
                                 (filters.q || filters.tag) && (
                                     <button
                                         onClick={handleClearFilters}
-                                        className="text-brand-coral text-sm hover:text-brand-orange"
+                                        className="text-brand-pink text-sm hover:text-brand-sky"
                                     >
                                         フィルタをクリア
                                     </button>
@@ -207,7 +207,7 @@ export default function Library({
                         <div>
                             <button
                                 onClick={() => handleCategorySelect('')}
-                                className="flex items-center gap-2 text-brand-coral hover:text-brand-orange mb-4"
+                                className="flex items-center gap-2 text-brand-pink hover:text-brand-sky mb-4"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

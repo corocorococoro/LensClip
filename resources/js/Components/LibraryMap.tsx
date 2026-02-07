@@ -91,7 +91,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                                 ">
                                     ${obs.thumb_url
                                 ? `<img src="${obs.thumb_url}" style="width: 100%; height: 100%; object-fit: cover;" />`
-                                : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: linear-gradient(135deg, #FFF0E5 0%, #FF9E7D40 100%);">📷</div>`
+                                : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 24px; background: linear-gradient(135deg, #FDE8EC 0%, #E8A0AB40 100%);">📷</div>`
                             }
                                 </div>
                                 <div style="
@@ -124,7 +124,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                             <a href="/observations/${obs.id}" style="
                                 display: inline-block;
                                 padding: 6px 12px;
-                                background: linear-gradient(135deg, #FF6B6B 0%, #FF823C 100%);
+                                background: linear-gradient(135deg, #F5B8C1 0%, #8ECFE0 100%);
                                 color: white;
                                 text-decoration: none;
                                 font-size: 13px;
@@ -178,7 +178,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center text-center px-4">
-                    <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-brand-cream to-brand-beige flex items-center justify-center">
+                    <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-br from-brand-cream to-brand-blush flex items-center justify-center">
                         <span className="text-5xl" aria-hidden="true">🗺️</span>
                     </div>
                     <p className="text-gray-700 text-lg font-medium mb-2">

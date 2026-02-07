@@ -96,7 +96,7 @@ export default function Processing({ observation }: Props) {
                             >
                                 🔍
                             </div>
-                            <div className="text-lg font-bold text-brand-coral animate-pulse">
+                            <div className="text-lg font-bold text-brand-pink animate-pulse">
                                 しらべています…
                             </div>
                         </div>

@@ -108,10 +108,10 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
     return (
         <div className={`min-h-screen ${fullScreen ? 'h-screen overflow-hidden' : 'pb-24'} bg-gradient-to-br from-sky-50 via-white to-purple-50`}>
             {/* Header */}
-            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-brand-beige/50 safe-area-top">
+            <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-brand-blush/50 safe-area-top">
                 <div className="max-w-lg mx-auto px-4 py-2 flex items-center justify-between">
                     <Link href="/dashboard" className="flex items-center gap-2">
-                        <div className="w-7 h-7 bg-gradient-to-br from-brand-coral to-brand-peach rounded-lg shadow-sm flex items-center justify-center">
+                        <div className="w-7 h-7 bg-gradient-to-br from-brand-pink to-brand-rose rounded-lg shadow-sm flex items-center justify-center">
                             <svg
                                 className="w-4 h-4 text-white"
                                 viewBox="0 0 24 24"
@@ -142,7 +142,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                         <Link
                             href="/profile"
                             aria-label="プロフィール設定"
-                            className="w-8 h-8 rounded-full bg-brand-cream text-brand-orange border border-brand-beige flex items-center justify-center text-lg shadow-sm hover:scale-105 active:scale-95 transition-transform"
+                            className="w-8 h-8 rounded-full bg-brand-cream text-brand-sky border border-brand-blush flex items-center justify-center text-lg shadow-sm hover:scale-105 active:scale-95 transition-transform"
                         >
                             <span aria-hidden="true">👤</span>
                         </Link>
@@ -159,7 +159,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                     }`}
                 aria-label="メインナビゲーション"
             >
-                <div className="bg-white/80 backdrop-blur-2xl border-t border-brand-beige/50">
+                <div className="bg-white/80 backdrop-blur-2xl border-t border-brand-blush/50">
                     <div className="max-w-lg mx-auto grid grid-cols-3 items-end py-1 px-4">
                         {/* ホーム */}
                         {(() => {
@@ -170,12 +170,12 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                                     href={item.href}
                                     aria-current={isActive ? 'page' : undefined}
                                     className={`flex flex-col items-center py-1 rounded-lg transition-all duration-200 active:scale-95 ${isActive
-                                        ? 'text-brand-coral'
+                                        ? 'text-brand-pink'
                                         : 'text-brand-muted hover:text-brand-dark'
                                         }`}
                                 >
                                     <span className="text-lg" aria-hidden="true">{item.icon}</span>
-                                    <span className={`text-[9px] font-medium ${isActive ? 'text-brand-coral' : 'text-brand-muted'}`}>
+                                    <span className={`text-[9px] font-medium ${isActive ? 'text-brand-pink' : 'text-brand-muted'}`}>
                                         {item.label}
                                     </span>
                                 </Link>
@@ -188,7 +188,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={processing}
                                 aria-label="カメラでしらべる"
-                                className="w-14 h-14 bg-gradient-to-br from-brand-coral to-brand-orange text-white rounded-full shadow-lg shadow-brand-coral/30 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-14 h-14 bg-gradient-to-br from-brand-pink to-brand-sky text-white rounded-full shadow-lg shadow-brand-pink/30 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {processing ? (
                                     <SpinnerIcon className="w-6 h-6 animate-spin" />
@@ -196,7 +196,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                                     <CameraIcon className="w-6 h-6" />
                                 )}
                             </button>
-                            <span className="text-[9px] font-medium text-brand-coral mt-0.5">しらべる</span>
+                            <span className="text-[9px] font-medium text-brand-pink mt-0.5">しらべる</span>
                         </div>
 
                         {/* ライブラリ */}
@@ -208,12 +208,12 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                                     href={item.href}
                                     aria-current={isActive ? 'page' : undefined}
                                     className={`flex flex-col items-center py-1 rounded-lg transition-all duration-200 active:scale-95 ${isActive
-                                        ? 'text-brand-coral'
+                                        ? 'text-brand-pink'
                                         : 'text-brand-muted hover:text-brand-dark'
                                         }`}
                                 >
                                     <span className="text-lg" aria-hidden="true">{item.icon}</span>
-                                    <span className={`text-[9px] font-medium ${isActive ? 'text-brand-coral' : 'text-brand-muted'}`}>
+                                    <span className={`text-[9px] font-medium ${isActive ? 'text-brand-pink' : 'text-brand-muted'}`}>
                                         {item.label}
                                     </span>
                                 </Link>

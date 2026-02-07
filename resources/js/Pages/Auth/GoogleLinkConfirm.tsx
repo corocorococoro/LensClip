@@ -48,7 +48,7 @@ export default function GoogleLinkConfirm({ email }: Props) {
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-coral focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
                         autoComplete="current-password"
                         autoFocus
                         onChange={(e) => setData('password', e.target.value)}
@@ -64,7 +64,7 @@ export default function GoogleLinkConfirm({ email }: Props) {
                 <div className="text-center text-sm text-gray-500">
                     <a
                         href={route('login')}
-                        className="text-brand-coral hover:text-brand-orange transition-colors"
+                        className="text-brand-pink hover:text-brand-sky transition-colors"
                     >
                         キャンセル
                     </a>

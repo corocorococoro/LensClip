@@ -82,13 +82,13 @@ export default function Home({ stats, recent }: Props) {
                 {/* Stats */}
                 <div className="w-full grid grid-cols-2 gap-4 mb-8">
                     <Card className="text-center">
-                        <div className="text-3xl font-bold text-brand-coral tabular-nums">
+                        <div className="text-3xl font-bold text-brand-pink tabular-nums">
                             {stats.today}
                         </div>
                         <div className="text-sm text-brand-muted">きょう</div>
                     </Card>
                     <Card className="text-center">
-                        <div className="text-3xl font-bold text-brand-orange tabular-nums">
+                        <div className="text-3xl font-bold text-brand-sky tabular-nums">
                             {stats.total}
                         </div>
                         <div className="text-sm text-brand-muted">ぜんぶ</div>
@@ -100,7 +100,7 @@ export default function Home({ stats, recent }: Props) {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={processing}
                     aria-label="カメラでしらべる"
-                    className="w-32 h-32 bg-gradient-to-br from-brand-coral to-brand-orange hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-coral/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
                 >
                     {processing ? (
                         <>
@@ -161,7 +161,7 @@ export default function Home({ stats, recent }: Props) {
                         </div>
                         <Link
                             href="/library"
-                            className="block text-center text-brand-coral mt-4 text-sm font-medium hover:text-brand-orange"
+                            className="block text-center text-brand-pink mt-4 text-sm font-medium hover:text-brand-sky"
                         >
                             もっとみる →
                         </Link>

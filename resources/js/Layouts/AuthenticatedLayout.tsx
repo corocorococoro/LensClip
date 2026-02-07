@@ -16,13 +16,13 @@ export default function Authenticated({
 
     return (
         <div className="min-h-screen bg-[#FFFDFB] text-[#4A4A4A]">
-            <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFFDFB]/80 backdrop-blur-md border-b border-[#F5EDD6]">
+            <nav className="fixed top-0 left-0 right-0 z-50 bg-[#FFFDFB]/80 backdrop-blur-md border-b border-[#F8D1D7]">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
                                 <Link href={route('dashboard')} className="flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-gradient-to-br from-[#FF6B6B] to-[#FF9E7D] rounded-lg shadow-sm flex items-center justify-center">
+                                    <div className="w-8 h-8 bg-gradient-to-br from-[#F5B8C1] to-[#E8A0AB] rounded-lg shadow-sm flex items-center justify-center">
                                         <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                                             <circle cx="12" cy="13" r="4" />

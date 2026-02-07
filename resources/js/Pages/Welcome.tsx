@@ -9,10 +9,10 @@ export default function Welcome({
             <Head title="LensClip - “これなに？”を学ぶ、親子図鑑" />
 
             {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFFDFB]/80 backdrop-blur-md border-b border-[#F5EDD6]">
+            <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFFDFB]/80 backdrop-blur-md border-b border-[#F8D1D7]">
                 <div className="max-w-screen-xl mx-auto px-6 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#FF6B6B] to-[#FF9E7D] rounded-lg shadow-sm flex items-center justify-center">
+                        <div className="w-8 h-8 bg-gradient-to-br from-[#F5B8C1] to-[#E8A0AB] rounded-lg shadow-sm flex items-center justify-center">
                             <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                                 <circle cx="12" cy="13" r="4" />
@@ -23,7 +23,7 @@ export default function Welcome({
                     <nav>
                         <Link
                             href={route('login')}
-                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#FF6B6B] transition-colors"
+                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#F5B8C1] transition-colors"
                         >
                             ログイン
                         </Link>
@@ -57,7 +57,7 @@ export default function Welcome({
 
                     {/* Content Container */}
                     <div className="max-w-screen-md mx-auto px-6 relative z-10">
-                        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/80 backdrop-blur-sm text-[#FF823C] text-xs font-bold tracking-wider uppercase shadow-sm border border-white/40">
+                        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/80 backdrop-blur-sm text-[#8ECFE0] text-xs font-bold tracking-wider uppercase shadow-sm border border-white/40">
                             子どもの目は、世界をひろげる。
                         </div>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-[#2D2D2D] leading-[1.2] mb-6 drop-shadow-sm">
@@ -69,7 +69,7 @@ export default function Welcome({
                         <div className="flex flex-col items-center gap-4">
                             <Link
                                 href={route('register')}
-                                className="w-full sm:w-64 py-4 px-8 bg-gradient-to-r from-[#FF6B6B] to-[#FF823C] text-white rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(255,107,107,0.3)] hover:translate-y-[-2px] transition-all active:scale-95 text-center"
+                                className="w-full sm:w-64 py-4 px-8 bg-gradient-to-r from-[#F5B8C1] to-[#8ECFE0] text-white rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(255,107,107,0.3)] hover:translate-y-[-2px] transition-all active:scale-95 text-center"
                             >
                                 無料ではじめる
                             </Link>
@@ -101,24 +101,24 @@ export default function Welcome({
                 </section>
 
                 {/* Steps Detail */}
-                <section className="px-6 py-12 bg-[#FDFCF8] border-y border-[#F5EDD6]">
+                <section className="px-6 py-12 bg-[#FDFCF8] border-y border-[#F8D1D7]">
                     <div className="max-w-screen-md mx-auto space-y-10">
                         <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F5EDD6] flex items-center justify-center text-xl font-bold text-[#FF9E7D]">1</div>
+                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">1</div>
                             <div>
                                 <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">みつける</h3>
                                 <p className="text-[#7D7D7D]">散歩中、気になったものを撮るだけ。</p>
                             </div>
                         </div>
                         <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F5EDD6] flex items-center justify-center text-xl font-bold text-[#FF9E7D]">2</div>
+                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">2</div>
                             <div>
                                 <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">しらべる</h3>
                                 <p className="text-[#7D7D7D]">AIが名前や特徴をすぐにお教えします。</p>
                             </div>
                         </div>
                         <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F5EDD6] flex items-center justify-center text-xl font-bold text-[#FF9E7D]">3</div>
+                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">3</div>
                             <div>
                                 <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">のこす</h3>
                                 <p className="text-[#7D7D7D]">スクラップに保存して、自分だけの図鑑を作ろう。</p>
@@ -133,39 +133,39 @@ export default function Welcome({
 
                     <div className="grid gap-8">
                         {/* Card 1 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F5EDD6] border border-[#F5EDD6] text-left transform rotate-[-1deg] transition-transform hover:rotate-0">
+                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[-1deg] transition-transform hover:rotate-0">
                             <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
                                 <img src="/images/lp/sunflower.webp" className="w-full h-full object-cover" alt="ひまわり" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#FF6B6B]">なつのはな</div>
+                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">なつのはな</div>
                             </div>
                             <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ひまわり</h4>
-                            <p className="text-sm text-[#FF823C] font-bold px-2 flex items-start gap-1">
+                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
                                 <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
                                 <span>親子で観察：おひさまのほうをむいているかな？</span>
                             </p>
                         </div>
 
                         {/* Card 2 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F5EDD6] border border-[#F5EDD6] text-left transform rotate-[1deg] transition-transform hover:rotate-0">
+                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[1deg] transition-transform hover:rotate-0">
                             <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
                                 <img src="/images/lp/ladybug.webp" className="w-full h-full object-cover" alt="ななほしてんとう" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#FF6B6B]">むし</div>
+                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">むし</div>
                             </div>
                             <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ななほしてんとう</h4>
-                            <p className="text-sm text-[#FF823C] font-bold px-2 flex items-start gap-1">
+                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
                                 <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
                                 <span>親子で観察：せなかの ほしを かぞえてみよう！</span>
                             </p>
                         </div>
 
                         {/* Card 3 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F5EDD6] border border-[#F5EDD6] text-left transform rotate-[-0.5deg] transition-transform hover:rotate-0">
+                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[-0.5deg] transition-transform hover:rotate-0">
                             <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
                                 <img src="/images/lp/pinecone.webp" className="w-full h-full object-cover" alt="まつぼっくり" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#FF6B6B]">きのみ</div>
+                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">きのみ</div>
                             </div>
                             <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">まつぼっくり</h4>
-                            <p className="text-sm text-[#FF823C] font-bold px-2 flex items-start gap-1">
+                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
                                 <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
                                 <span>親子で観察：うろこみたいな かたちは なんだろう？</span>
                             </p>
@@ -174,7 +174,7 @@ export default function Welcome({
                 </section>
 
                 {/* Final CTA */}
-                <section className="px-6 py-20 text-center bg-gradient-to-b from-[#FFFDFB] to-[#FFF0E5]">
+                <section className="px-6 py-20 text-center bg-gradient-to-b from-[#FFFDFB] to-[#FDE8EC]">
                     <h2 className="text-2xl font-bold text-[#2D2D2D] mb-8">さあ、ちいさな冒険に出かけよう。</h2>
                     <div className="flex flex-col items-center gap-6">
                         <Link
@@ -185,7 +185,7 @@ export default function Welcome({
                         </Link>
                         <Link
                             href={route('login')}
-                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#FF6B6B] transition-colors"
+                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#F5B8C1] transition-colors"
                         >
                             すでにアカウントをお持ちの方はこちら
                         </Link>
@@ -194,10 +194,10 @@ export default function Welcome({
             </main>
 
             {/* Footer */}
-            <footer className="px-6 py-12 border-t border-[#F5EDD6] bg-white">
+            <footer className="px-6 py-12 border-t border-[#F8D1D7] bg-white">
                 <div className="max-w-screen-xl mx-auto flex flex-col items-center gap-8">
                     <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#FF6B6B] to-[#FF9E7D] rounded flex items-center justify-center">
+                        <div className="w-6 h-6 bg-gradient-to-br from-[#F5B8C1] to-[#E8A0AB] rounded flex items-center justify-center">
                             <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                                 <circle cx="12" cy="13" r="4" />
@@ -207,8 +207,8 @@ export default function Welcome({
                     </div>
 
                     <div className="flex gap-6 text-[10px] sm:text-xs font-medium text-[#94A3B8]">
-                        <Link href={route('terms')} className="hover:text-[#FF6B6B]">利用規約</Link>
-                        <Link href={route('privacy-policy')} className="hover:text-[#FF6B6B]">プライバシーポリシー</Link>
+                        <Link href={route('terms')} className="hover:text-[#F5B8C1]">利用規約</Link>
+                        <Link href={route('privacy-policy')} className="hover:text-[#F5B8C1]">プライバシーポリシー</Link>
                     </div>
 
                     <p className="text-[10px] text-[#CBD5E1]">
