@@ -43,10 +43,12 @@ class LibraryViewTest extends TestCase
                 ->component('Library')
                 ->has('dateGroups', 2)
                 ->where('dateGroups.0.yearMonth', '2026-01')
-                ->where('dateGroups.0.label', '2026年1月') // Check for new format with year
+                ->where('dateGroups.0.label', '2026年1月')
                 ->where('dateGroups.1.yearMonth', '2025-12')
-                ->where('dateGroups.1.label', '2025年12月') // Check for new format with year
-                ->has('categories') // Check categories are passed
+                ->where('dateGroups.1.label', '2025年12月')
+                ->has('categories')
+                ->has('pagination')
+                ->where('pagination.hasMore', false)
         );
     }
 

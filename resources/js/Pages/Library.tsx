@@ -4,15 +4,22 @@ import { ObservationCard } from '@/Components/ObservationCard';
 import ViewModeSwitcher from '@/Components/ViewModeSwitcher';
 import CategoryCard from '@/Components/CategoryCard';
 import LibraryMap from '@/Components/LibraryMap';
-import type { ObservationSummary, Tag, LibraryViewMode, CategoryDefinition, DateGroup } from '@/types/models';
+import { useInfiniteScroll } from '@/hooks/useInfiniteScroll';
+import type {
+    ObservationSummary,
+    Tag,
+    LibraryViewMode,
+    CategoryDefinition,
+    DateGroup,
+    CursorPagination,
+    CategoryPreviews,
+} from '@/types/models';
 import { Head, router } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Props {
     observations: {
         data: ObservationSummary[];
-        links?: unknown;
-        meta?: unknown;
     };
     tags: Tag[];
     filters: {
@@ -25,6 +32,22 @@ interface Props {
     dateGroups?: DateGroup[];
     categories?: CategoryDefinition[];
     categoryCounts?: Record<string, number>;
+    categoryPreviews?: CategoryPreviews;
+    pagination?: CursorPagination;
+}
+
+/** dateGroups をマージ（同月は observation を結合） */
+function mergeDateGroups(existing: DateGroup[], incoming: DateGroup[]): DateGroup[] {
+    const merged = [...existing];
+    for (const group of incoming) {
+        const found = merged.find((g) => g.yearMonth === group.yearMonth);
+        if (found) {
+            found.observations.push(...group.observations);
+        } else {
+            merged.push(group);
+        }
+    }
+    return merged;
 }
 
 export default function Library({
@@ -32,63 +55,113 @@ export default function Library({
     tags,
     filters,
     viewMode = 'date',
-    dateGroups = [],
+    dateGroups: initialDateGroups = [],
     categories = [],
     categoryCounts = {},
+    categoryPreviews = {},
+    pagination: initialPagination,
 }: Props) {
     const [search, setSearch] = useState(filters.q || '');
     const [activeTag, setActiveTag] = useState(filters.tag || '');
-    const [activeCategory, setActiveCategory] = useState(filters.category || '');
 
+    // --- 無限スクロール用ステート ---
+    const [allDateGroups, setAllDateGroups] = useState(initialDateGroups);
+    const [categoryObservations, setCategoryObservations] = useState<ObservationSummary[]>(
+        observations.data,
+    );
+    const [pagination, setPagination] = useState<CursorPagination>(
+        initialPagination ?? { hasMore: false, nextCursor: null },
+    );
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+    // Props が変わったら（フィルタ変更等）ステートをリセット
+    const filterKey = `${filters.q ?? ''}_${filters.tag ?? ''}_${filters.category ?? ''}_${viewMode}`;
+    useEffect(() => {
+        setAllDateGroups(initialDateGroups);
+        setCategoryObservations(observations.data);
+        setPagination(initialPagination ?? { hasMore: false, nextCursor: null });
+        setIsLoadingMore(false);
+    }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // --- Load more ---
+    const loadMore = useCallback(async () => {
+        if (!pagination.nextCursor || isLoadingMore) return;
+        setIsLoadingMore(true);
+
+        const params = new URLSearchParams();
+        params.set('view', viewMode);
+        params.set('cursor', pagination.nextCursor);
+        if (filters.q) params.set('q', filters.q);
+        if (filters.tag) params.set('tag', filters.tag);
+        if (filters.category) params.set('category', filters.category);
+
+        try {
+            const res = await fetch(`/library?${params.toString()}`, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            if (viewMode === 'date' && data.dateGroups) {
+                setAllDateGroups((prev) => mergeDateGroups(prev, data.dateGroups));
+            } else if (data.observations) {
+                setCategoryObservations((prev) => [...prev, ...data.observations]);
+            }
+
+            setPagination(data.pagination ?? { hasMore: false, nextCursor: null });
+        } finally {
+            setIsLoadingMore(false);
+        }
+    }, [pagination.nextCursor, isLoadingMore, viewMode, filters]);
+
+    const sentinelRef = useInfiniteScroll(loadMore, pagination.hasMore && !isLoadingMore);
+
+    // --- Navigation handlers ---
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get('/library', { q: search, tag: activeTag, view: viewMode, category: activeCategory }, { preserveState: true });
+        router.get(
+            '/library',
+            { q: search, tag: activeTag, view: viewMode, category: filters.category },
+            { preserveState: true },
+        );
     };
 
     const handleTagFilter = (tagName: string) => {
         const newTag = activeTag === tagName ? '' : tagName;
         setActiveTag(newTag);
-        router.get('/library', { q: search, tag: newTag, view: viewMode, category: activeCategory }, { preserveState: true });
+        router.get(
+            '/library',
+            { q: search, tag: newTag, view: viewMode, category: filters.category },
+            { preserveState: true },
+        );
     };
 
     const handleClearFilters = () => {
         setSearch('');
         setActiveTag('');
-        setActiveCategory('');
         router.get('/library', { view: viewMode });
     };
 
     const handleViewModeChange = (mode: LibraryViewMode) => {
-        setActiveCategory('');
         router.get('/library', { q: search, tag: activeTag, view: mode }, { preserveState: true });
     };
 
     const handleCategorySelect = (categoryId: string) => {
-        const newCategory = activeCategory === categoryId ? '' : categoryId;
-        setActiveCategory(newCategory);
-        router.get('/library', { q: search, tag: activeTag, view: viewMode, category: newCategory }, { preserveState: true });
+        router.get(
+            '/library',
+            { q: filters.q, tag: filters.tag, view: 'category', category: categoryId || undefined },
+            { preserveState: true },
+        );
     };
 
-    // Group observations by category for category view (memoized)
-    const observationsByCategory = useMemo(() => {
-        if (viewMode !== 'category') return {};
-        const grouped: Record<string, ObservationSummary[]> = {};
-        observations.data.forEach((obs) => {
-            const cat = obs.category || 'other';
-            if (!grouped[cat]) {
-                grouped[cat] = [];
-            }
-            grouped[cat].push(obs);
-        });
-        return grouped;
-    }, [viewMode, observations.data]);
+    // --- Loading indicator ---
+    const loadingIndicator = isLoadingMore && (
+        <div className="flex justify-center py-6">
+            <span className="text-2xl animate-spin">⏳</span>
+        </div>
+    );
 
-    // Filter observations by active category to prevent flash of all data
-    // This ensures smooth UX while waiting for server response
-    const filteredObservations = useMemo(() => {
-        if (!activeCategory) return observations.data;
-        return observations.data.filter((obs) => obs.category === activeCategory);
-    }, [observations.data, activeCategory]);
+    const sentinel = <div ref={sentinelRef} className="h-1" aria-hidden="true" />;
 
     return (
         <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
@@ -135,10 +208,11 @@ export default function Library({
                             key={tag.id}
                             onClick={() => handleTagFilter(tag.name)}
                             aria-pressed={activeTag === tag.name}
-                            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${activeTag === tag.name
-                                ? 'bg-brand-pink text-white'
-                                : 'bg-brand-cream text-brand-dark hover:bg-brand-blush'
-                                }`}
+                            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${
+                                activeTag === tag.name
+                                    ? 'bg-brand-pink text-white'
+                                    : 'bg-brand-cream text-brand-dark hover:bg-brand-blush'
+                            }`}
                         >
                             #{tag.name}
                         </button>
@@ -149,25 +223,35 @@ export default function Library({
             {/* Date View */}
             {viewMode === 'date' && (
                 <>
-                    {dateGroups.length > 0 ? (
+                    {allDateGroups.length > 0 ? (
                         <div className="space-y-6">
-                            {dateGroups.map((group) => (
+                            {allDateGroups.map((group) => (
                                 <div key={group.yearMonth}>
                                     <h2 className="text-xl font-bold text-brand-dark mb-3">
                                         {group.label}
                                     </h2>
                                     <div className="grid grid-cols-2 gap-3">
                                         {group.observations.map((obs) => (
-                                            <ObservationCard key={obs.id} observation={obs} categories={categories} />
+                                            <ObservationCard
+                                                key={obs.id}
+                                                observation={obs}
+                                                categories={categories}
+                                            />
                                         ))}
                                     </div>
                                 </div>
                             ))}
+                            {loadingIndicator}
+                            {sentinel}
                         </div>
                     ) : (
                         <EmptyState
                             icon="📭"
-                            message={filters.q || filters.tag ? 'みつからなかったよ' : 'まだなにもないよ'}
+                            message={
+                                filters.q || filters.tag
+                                    ? 'みつからなかったよ'
+                                    : 'まだなにもないよ'
+                            }
                             action={
                                 (filters.q || filters.tag) && (
                                     <button
@@ -186,8 +270,8 @@ export default function Library({
             {/* Category View */}
             {viewMode === 'category' && (
                 <>
-                    {!activeCategory ? (
-                        // Category grid
+                    {!filters.category ? (
+                        // カテゴリ一覧グリッド
                         <div>
                             <h2 className="text-xl font-bold text-brand-dark mb-4">カテゴリ</h2>
                             <div className="grid grid-cols-2 gap-3">
@@ -196,33 +280,49 @@ export default function Library({
                                         key={category.id}
                                         category={category}
                                         count={categoryCounts[category.id] || 0}
-                                        observations={observationsByCategory[category.id] || []}
+                                        observations={categoryPreviews[category.id] || []}
                                         onClick={() => handleCategorySelect(category.id)}
                                     />
                                 ))}
                             </div>
                         </div>
                     ) : (
-                        // Category detail - show observations in selected category
+                        // カテゴリ詳細（無限スクロール）
                         <div>
                             <button
                                 onClick={() => handleCategorySelect('')}
                                 className="flex items-center gap-2 text-brand-pink hover:text-brand-sky mb-4"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 19l-7-7 7-7"
+                                    />
                                 </svg>
                                 カテゴリ一覧に戻る
                             </button>
 
                             <h2 className="text-xl font-bold text-brand-dark mb-4">
-                                {categories.find((c) => c.id === activeCategory)?.name || activeCategory}
+                                {categories.find((c) => c.id === filters.category)?.name ||
+                                    filters.category}
                             </h2>
 
-                            {filteredObservations.length > 0 ? (
+                            {categoryObservations.length > 0 ? (
                                 <div className="grid grid-cols-2 gap-3">
-                                    {filteredObservations.map((obs) => (
-                                        <ObservationCard key={obs.id} observation={obs} categories={categories} showCategory={false} />
+                                    {categoryObservations.map((obs) => (
+                                        <ObservationCard
+                                            key={obs.id}
+                                            observation={obs}
+                                            categories={categories}
+                                            showCategory={false}
+                                        />
                                     ))}
                                 </div>
                             ) : (
@@ -231,6 +331,8 @@ export default function Library({
                                     message="このカテゴリにはまだなにもないよ"
                                 />
                             )}
+                            {loadingIndicator}
+                            {sentinel}
                         </div>
                     )}
                 </>
