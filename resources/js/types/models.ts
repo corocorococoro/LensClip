@@ -52,6 +52,15 @@ export interface CategoryGroup {
     observations: ObservationSummary[];
 }
 
+// ページネーション情報（カーソルベース）
+export interface CursorPagination {
+    hasMore: boolean;
+    nextCursor: string | null;
+}
+
+// カテゴリプレビュー（グリッド表示用）
+export type CategoryPreviews = Record<string, ObservationSummary[]>;
+
 // 観察記録（詳細用・フル版）
 export interface Observation extends ObservationSummary {
     summary: string;

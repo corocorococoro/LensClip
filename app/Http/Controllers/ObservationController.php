@@ -32,6 +32,7 @@ class ObservationController extends Controller
     public function index(Request $request)
     {
         $viewMode = $request->get('view', 'date');
+        $perPage = config('library.per_page', 30);
 
         $query = Observation::forUser(auth()->id())
             ->with('tags')
@@ -47,55 +48,114 @@ class ObservationController extends Controller
             $query->withTag($request->tag);
         }
 
-        // Filter by category
-        if ($request->filled('category')) {
-            $query->forCategory($request->category);
-        }
-
         // Get user's tags for filter
         $tags = Tag::forUser(auth()->id())->orderBy('name')->get();
 
-        // Build response based on view mode
         if ($viewMode === 'category') {
-            // Category view - return all with category counts
-            $observations = $query->get();
-            $categoryCounts = $this->buildCategoryCounts($observations);
-
-            return Inertia::render('Library', [
-                'observations' => ['data' => $observations],
-                'tags' => $tags,
-                'filters' => $request->only(['q', 'tag', 'view', 'category']),
-                'viewMode' => $viewMode,
-                'categories' => $this->getCategoriesForFrontend(),
-                'categoryCounts' => $categoryCounts,
-            ]);
+            return $this->indexCategory($request, $query, $tags, $perPage);
         }
 
         if ($viewMode === 'map') {
-            // Map view - return all observations with location
-            $observations = $query->whereNotNull('latitude')
-                ->whereNotNull('longitude')
-                ->get();
+            return $this->indexMap($request, $query, $tags);
+        }
 
-            return Inertia::render('Library', [
-                'observations' => ['data' => $observations],
-                'tags' => $tags,
-                'filters' => $request->only(['q', 'tag', 'view']),
-                'viewMode' => $viewMode,
-                'categories' => $this->getCategoriesForFrontend(),
+        return $this->indexDate($request, $query, $tags, $perPage);
+    }
+
+    /**
+     * Date view: cursor-paginated observations grouped by year/month.
+     */
+    private function indexDate(Request $request, $query, $tags, int $perPage)
+    {
+        $paginated = $query->cursorPaginate($perPage);
+        $dateGroups = $this->buildDateGroups(collect($paginated->items()));
+        $pagination = [
+            'hasMore' => $paginated->hasMorePages(),
+            'nextCursor' => $paginated->nextCursor()?->encode(),
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'dateGroups' => $dateGroups,
+                'pagination' => $pagination,
             ]);
         }
 
-        // Date view (default) - group by year/month
-        $observations = $query->get();
-        $dateGroups = $this->buildDateGroups($observations);
+        return Inertia::render('Library', [
+            'dateGroups' => $dateGroups,
+            'pagination' => $pagination,
+            'observations' => ['data' => []],
+            'tags' => $tags,
+            'filters' => $request->only(['q', 'tag', 'view']),
+            'viewMode' => 'date',
+            'categories' => $this->getCategoriesForFrontend(),
+        ]);
+    }
+
+    /**
+     * Category view: grid (counts + previews) or detail (paginated observations).
+     */
+    private function indexCategory(Request $request, $query, $tags, int $perPage)
+    {
+        $categories = $this->getCategoriesForFrontend();
+        $filters = $request->only(['q', 'tag', 'view', 'category']);
+
+        // カテゴリ詳細: 特定カテゴリの観察をページネーション
+        if ($request->filled('category')) {
+            $query->forCategory($request->category);
+            $paginated = $query->cursorPaginate($perPage);
+            $pagination = [
+                'hasMore' => $paginated->hasMorePages(),
+                'nextCursor' => $paginated->nextCursor()?->encode(),
+            ];
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'observations' => collect($paginated->items())->values(),
+                    'pagination' => $pagination,
+                ]);
+            }
+
+            return Inertia::render('Library', [
+                'observations' => ['data' => $paginated->items()],
+                'pagination' => $pagination,
+                'tags' => $tags,
+                'filters' => $filters,
+                'viewMode' => 'category',
+                'categories' => $categories,
+                'categoryCounts' => $this->buildCategoryCountsFromQuery($request),
+            ]);
+        }
+
+        // カテゴリ一覧: 件数 + プレビュー3件
+        $categoryCounts = $this->buildCategoryCountsFromQuery($request);
+        $categoryPreviews = $this->buildCategoryPreviews($request, 3);
+
+        return Inertia::render('Library', [
+            'observations' => ['data' => []],
+            'tags' => $tags,
+            'filters' => $filters,
+            'viewMode' => 'category',
+            'categories' => $categories,
+            'categoryCounts' => $categoryCounts,
+            'categoryPreviews' => $categoryPreviews,
+        ]);
+    }
+
+    /**
+     * Map view: all observations with location (no pagination).
+     */
+    private function indexMap(Request $request, $query, $tags)
+    {
+        $observations = $query->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
 
         return Inertia::render('Library', [
             'observations' => ['data' => $observations],
             'tags' => $tags,
             'filters' => $request->only(['q', 'tag', 'view']),
-            'viewMode' => $viewMode,
-            'dateGroups' => $dateGroups,
+            'viewMode' => 'map',
             'categories' => $this->getCategoriesForFrontend(),
         ]);
     }
@@ -128,26 +188,62 @@ class ObservationController extends Controller
     }
 
     /**
-     * Build category counts from observations.
+     * Build category counts via GROUP BY query (lightweight).
      */
-    private function buildCategoryCounts($observations): array
+    private function buildCategoryCountsFromQuery(Request $request): array
     {
-        $categories = config('categories');
-        $counts = [];
-        foreach ($categories as $cat) {
-            $counts[$cat['id']] = 0;
+        $query = Observation::forUser(auth()->id());
+
+        if ($request->filled('q')) {
+            $query->search($request->q);
+        }
+        if ($request->filled('tag')) {
+            $query->withTag($request->tag);
         }
 
-        foreach ($observations as $obs) {
-            $category = $obs->category ?? 'other';
-            if (isset($counts[$category])) {
-                $counts[$category]++;
-            } else {
-                $counts['other']++;
-            }
+        $raw = $query->selectRaw('COALESCE(category, ?) as cat, count(*) as cnt', ['other'])
+            ->groupBy('cat')
+            ->pluck('cnt', 'cat')
+            ->toArray();
+
+        $counts = [];
+        foreach (config('categories') as $cat) {
+            $counts[$cat['id']] = $raw[$cat['id']] ?? 0;
         }
 
         return $counts;
+    }
+
+    /**
+     * Build category previews (N thumbnails per category, lightweight).
+     */
+    private function buildCategoryPreviews(Request $request, int $limit): array
+    {
+        $previews = [];
+        foreach (config('categories') as $cat) {
+            $query = Observation::forUser(auth()->id())
+                ->forCategory($cat['id'])
+                ->latest()
+                ->limit($limit);
+
+            if ($request->filled('q')) {
+                $query->search($request->q);
+            }
+            if ($request->filled('tag')) {
+                $query->withTag($request->tag);
+            }
+
+            // サムネイル用の最小限データのみ返す
+            $previews[$cat['id']] = $query->get()->map(fn ($obs) => [
+                'id' => $obs->id,
+                'thumb_url' => $obs->thumb_url,
+                'status' => $obs->status,
+                'title' => $obs->title,
+                'category' => $obs->category,
+            ])->values()->all();
+        }
+
+        return $previews;
     }
 
     /**

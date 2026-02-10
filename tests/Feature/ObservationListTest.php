@@ -22,15 +22,16 @@ class ObservationListTest extends TestCase
         Observation::factory()->create(['user_id' => $user->id, 'title' => 'Apple Fruit']);
         Observation::factory()->create(['user_id' => $user->id, 'title' => 'Banana Yellow']);
 
-        // Search for 'Apple'
+        // Search for 'Apple' (date view returns observations inside dateGroups)
         $response = $this->get(route('library', ['q' => 'Apple']));
 
         $response->assertStatus(200);
         $response->assertInertia(
             fn(Assert $page) => $page
                 ->component('Library')
-                ->has('observations.data', 1)
-                ->where('observations.data.0.title', 'Apple Fruit')
+                ->has('dateGroups', 1)
+                ->has('dateGroups.0.observations', 1)
+                ->where('dateGroups.0.observations.0.title', 'Apple Fruit')
         );
     }
 
@@ -46,15 +47,16 @@ class ObservationListTest extends TestCase
         $tag = Tag::create(['user_id' => $user->id, 'name' => 'Nature']);
         $obsWithTag->tags()->attach($tag->id);
 
-        // Filter by 'Nature' tag
+        // Filter by 'Nature' tag (date view returns observations inside dateGroups)
         $response = $this->get(route('library', ['tag' => 'Nature']));
 
         $response->assertStatus(200);
         $response->assertInertia(
             fn(Assert $page) => $page
                 ->component('Library')
-                ->has('observations.data', 1)
-                ->where('observations.data.0.title', 'Tagged Item')
+                ->has('dateGroups', 1)
+                ->has('dateGroups.0.observations', 1)
+                ->where('dateGroups.0.observations.0.title', 'Tagged Item')
         );
     }
 
@@ -71,8 +73,9 @@ class ObservationListTest extends TestCase
 
         $response->assertInertia(
             fn(Assert $page) => $page
-                ->has('observations.data', 1)
-                ->where('observations.data.0.title', 'User 1 Item')
+                ->has('dateGroups', 1)
+                ->has('dateGroups.0.observations', 1)
+                ->where('dateGroups.0.observations.0.title', 'User 1 Item')
         );
     }
 }
