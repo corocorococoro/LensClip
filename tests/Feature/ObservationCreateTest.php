@@ -17,7 +17,7 @@ class ObservationCreateTest extends TestCase
 
     public function test_user_can_upload_image_and_create_observation(): void
     {
-        Storage::fake('public');
+        Storage::fake();
         Queue::fake();
 
         $user = User::factory()->create();
@@ -40,8 +40,8 @@ class ObservationCreateTest extends TestCase
 
         // Assert files were stored
         $observation = Observation::first();
-        Storage::disk('public')->assertExists($observation->original_path);
-        Storage::disk('public')->assertExists($observation->thumb_path);
+        Storage::disk()->assertExists($observation->original_path);
+        Storage::disk()->assertExists($observation->thumb_path);
     }
 
     public function test_observation_requires_image(): void

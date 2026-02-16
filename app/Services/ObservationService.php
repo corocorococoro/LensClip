@@ -48,12 +48,12 @@ class ObservationService
 
         // Save Original (WebP, strip EXIF by default)
         $encoded = $image->toWebp(quality: 80);
-        Storage::disk('public')->put($originalPath, (string) $encoded);
+        Storage::disk()->put($originalPath, (string) $encoded);
 
         // Save Thumbnail
         $thumb = clone $image;
         $thumb->scaleDown(width: 300);
-        Storage::disk('public')->put($thumbPath, (string) $thumb->toWebp(quality: 70));
+        Storage::disk()->put($thumbPath, (string) $thumb->toWebp(quality: 70));
 
         // Create Observation with processing status
         $observation = Observation::create([
@@ -179,7 +179,7 @@ class ObservationService
         ]);
 
         if (!empty($paths)) {
-            Storage::disk('public')->delete($paths);
+            Storage::disk()->delete($paths);
         }
 
         // Delete observation (cascades pivot, but let's be explicit if needed, currently delete handles it)

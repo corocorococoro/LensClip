@@ -28,7 +28,7 @@ export default function Show({ auth, scrap }) {
                         {/* Image */}
                         <div className="aspect-square w-full relative">
                             <img
-                                src={'/storage/' + scrap.image_path}
+                                src={scrap.image_path}
                                 alt={scrap.primary_name}
                                 className="w-full h-full object-cover"
                             />

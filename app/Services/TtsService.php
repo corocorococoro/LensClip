@@ -40,7 +40,7 @@ class TtsService
         if ($this->isCacheValid($path)) {
             Log::debug('TTS cache hit', ['text' => $text, 'file' => $filename]);
             return [
-                'url' => Storage::disk('public')->url($path),
+                'url' => Storage::disk()->url($path),
                 'cacheHit' => true,
             ];
         }
@@ -49,17 +49,14 @@ class TtsService
         $audioContent = $this->callGoogleTts($text, $rate);
 
         // Save to storage
-        Storage::disk('public')->put($path, $audioContent);
+        Storage::disk()->put($path, $audioContent);
 
-        $realPath = Storage::disk('public')->path($path);
-        $publicUrl = Storage::disk('public')->url($path);
+        $publicUrl = Storage::disk()->url($path);
 
         Log::info('TTS generated', [
             'text' => $text,
             'file' => $filename,
-            'storage_path' => $realPath,
             'public_url' => $publicUrl,
-            'exists' => file_exists($realPath) ? 'yes' : 'no'
         ]);
 
         return [
@@ -82,11 +79,11 @@ class TtsService
      */
     protected function isCacheValid(string $path): bool
     {
-        if (!Storage::disk('public')->exists($path)) {
+        if (!Storage::disk()->exists($path)) {
             return false;
         }
 
-        $lastModified = Storage::disk('public')->lastModified($path);
+        $lastModified = Storage::disk()->lastModified($path);
         $ttlSeconds = $this->ttlDays * 24 * 60 * 60;
 
         return (time() - $lastModified) < $ttlSeconds;
@@ -146,14 +143,14 @@ class TtsService
      */
     public function cleanupExpired(): int
     {
-        $files = Storage::files('public/tts');
+        $files = Storage::disk()->files('tts');
         $ttlSeconds = $this->ttlDays * 24 * 60 * 60;
         $deleted = 0;
 
         foreach ($files as $file) {
-            $lastModified = Storage::lastModified($file);
+            $lastModified = Storage::disk()->lastModified($file);
             if ((time() - $lastModified) >= $ttlSeconds) {
-                Storage::delete($file);
+                Storage::disk()->delete($file);
                 $deleted++;
             }
         }

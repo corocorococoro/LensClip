@@ -27,7 +27,7 @@ class PerformanceTestSeeder extends Seeder
         Observation::where('user_id', $user->id)->delete();
 
         // 2. Prepare Dummy Images (Calm colors)
-        $disk = Storage::disk('public');
+        $disk = Storage::disk();
         $dummyDir = 'observations';
         $disk->makeDirectory($dummyDir);
 

@@ -31,8 +31,7 @@ class ImageAnalysisService
      */
     public function analyze(Observation $observation): array
     {
-        $originalPath = Storage::disk('public')->path($observation->original_path);
-        $imageContent = file_get_contents($originalPath);
+        $imageContent = Storage::disk()->get($observation->original_path);
 
         $result = [
             'cropped_path' => null,
@@ -47,7 +46,7 @@ class ImageAnalysisService
         $result['vision_objects'] = $visionResult;
 
         // Step 2: Select best bbox and crop
-        $selectedBbox = $this->selectBestBbox($visionResult, $originalPath);
+        $selectedBbox = $this->selectBestBbox($visionResult, $imageContent);
 
         if ($selectedBbox) {
             Log::info('ImageAnalysisService: Bbox selected, cropping image', [
@@ -55,7 +54,7 @@ class ImageAnalysisService
                 'score' => $selectedBbox['score']
             ]);
             $result['crop_bbox'] = $selectedBbox;
-            $croppedPath = $this->cropImage($originalPath, $selectedBbox, $observation);
+            $croppedPath = $this->cropImage($imageContent, $selectedBbox, $observation);
             $result['cropped_path'] = $croppedPath;
         } else {
             Log::info('ImageAnalysisService: No bbox selected, using original image');
@@ -63,7 +62,7 @@ class ImageAnalysisService
 
         // Step 3: Gemini - Use cropped image if available, otherwise original
         $imageForGemini = $result['cropped_path']
-            ? Storage::disk('public')->get($result['cropped_path'])
+            ? Storage::disk()->get($result['cropped_path'])
             : $imageContent;
 
         Log::info('ImageAnalysisService: Sending image to Gemini');
@@ -189,14 +188,14 @@ class ImageAnalysisService
      * Select best bbox from Vision results
      * Score = vision_score * 0.5 + area_ratio * 0.3 + center_bonus * 0.2
      */
-    protected function selectBestBbox(?array $objects, string $imagePath): ?array
+    protected function selectBestBbox(?array $objects, string $imageContent): ?array
     {
         if (empty($objects)) {
             return null;
         }
 
-        // Get image dimensions
-        $imageInfo = getimagesize($imagePath);
+        // Get image dimensions from binary content (no local path on GCS)
+        $imageInfo = getimagesizefromstring($imageContent);
         if (!$imageInfo) {
             return null;
         }
@@ -263,10 +262,10 @@ class ImageAnalysisService
     /**
      * Crop image with margin
      */
-    protected function cropImage(string $imagePath, array $bbox, Observation $observation): string
+    protected function cropImage(string $imageContent, array $bbox, Observation $observation): string
     {
         $manager = new ImageManager(new Driver());
-        $image = $manager->read($imagePath);
+        $image = $manager->read($imageContent);
         $image->orient();
 
         $imageWidth = $image->width();
@@ -292,7 +291,7 @@ class ImageAnalysisService
         $croppedPath = str_replace('.webp', '_cropped.webp', $originalPath);
 
         // Save
-        Storage::disk('public')->put($croppedPath, (string) $image->toWebp(quality: 80));
+        Storage::disk()->put($croppedPath, (string) $image->toWebp(quality: 80));
 
         return $croppedPath;
     }

@@ -20,7 +20,7 @@ class ImageProcessingTest extends TestCase
      */
     public function test_exif_data_is_stripped_on_upload()
     {
-        Storage::fake('public');
+        Storage::fake();
 
         $user = User::factory()->create();
 
@@ -37,19 +37,19 @@ class ImageProcessingTest extends TestCase
         $originalPath = $observation->original_path;
         $thumbPath = $observation->thumb_path;
 
-        $this->assertTrue(Storage::disk('public')->exists($originalPath));
-        $this->assertTrue(Storage::disk('public')->exists($thumbPath));
+        $this->assertTrue(Storage::disk()->exists($originalPath));
+        $this->assertTrue(Storage::disk()->exists($thumbPath));
 
         // Check dimension of processed original (should be scaled down to 1024)
         $manager = new ImageManager(new Driver());
-        $image = $manager->read(Storage::disk('public')->get($originalPath));
+        $image = $manager->read(Storage::disk()->get($originalPath));
 
         $this->assertLessThanOrEqual(1024, $image->width());
         $this->assertLessThanOrEqual(1024, $image->height());
 
         // Verify EXIF is gone (In GD/WebP, it usually is)
         // If we want to be strictly sure, we check if any exif data remains.
-        // $exif = exif_read_data(Storage::disk('public')->path($originalPath)); // Only works if file is physical
+        // $exif = exif_read_data(Storage::disk()->path($originalPath)); // Only works if file is physical
         // Since we use Fake storage, we'd need to write it to a temp file.
     }
 }

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 class Observation extends Model
 {
@@ -66,17 +67,17 @@ class Observation extends Model
     // Accessors for image URLs
     public function getOriginalUrlAttribute()
     {
-        return $this->original_path ? '/storage/' . $this->original_path : null;
+        return $this->original_path ? Storage::url($this->original_path) : null;
     }
 
     public function getCroppedUrlAttribute()
     {
-        return $this->cropped_path ? '/storage/' . $this->cropped_path : null;
+        return $this->cropped_path ? Storage::url($this->cropped_path) : null;
     }
 
     public function getThumbUrlAttribute()
     {
-        return $this->thumb_path ? '/storage/' . $this->thumb_path : null;
+        return $this->thumb_path ? Storage::url($this->thumb_path) : null;
     }
 
     // Scopes

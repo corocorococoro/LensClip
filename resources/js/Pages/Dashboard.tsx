@@ -65,7 +65,7 @@ export default function Dashboard({ auth, scraps }: DashboardProps) {
                                 className="block relative aspect-square bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition"
                             >
                                 <img
-                                    src={'/storage/' + (scrap.thumbnail_path || scrap.image_path)}
+                                    src={scrap.thumbnail_path || scrap.image_path}
                                     alt={scrap.primary_name ?? '画像'}
                                     className="w-full h-full object-cover"
                                 />

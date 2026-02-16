@@ -35,6 +35,14 @@ cp .env.example .env
 ```env
 # Google Gemini API Key
 GEMINI_API_KEY=your-gemini-api-key
+
+# Storage (local, public, gcs, s3)
+FILESYSTEM_DISK=local
+
+# Google Cloud Storage (Required if FILESYSTEM_DISK=gcs)
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+GOOGLE_CLOUD_KEY_FILE=path/to/service-account.json
 ```
 
 ### 3. Docker環境を起動
@@ -234,11 +242,17 @@ bash railway/start.sh
 
 ### 4. 環境変数の設定
 Variables に以下を追加してください。
-- `FILESYSTEM_DISK`: `public`
+- `FILESYSTEM_DISK`: `gcs` (推奨) または `public`
 - `QUEUE_CONNECTION`: `redis` (Redisサービスを別途追加し、`REDIS_URL` がある場合) または `database`
 - `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
 - `APP_KEY`: `php artisan key:generate --show` で生成したもの
 - `APP_ENV`: `production` 強制httpsに。
+
+**GCSを使用する場合（推奨）:**
+- `GOOGLE_CLOUD_PROJECT_ID`: GCPプロジェクトID
+- `GOOGLE_CLOUD_STORAGE_BUCKET`: GCSバケット名
+- `GOOGLE_CLOUD_KEY_FILE`: サービスアカウントキーへのパス（例: `storage/gcs-key.json`）
+  - ※ キーファイルをリポジトリに含めるか、ビルド時に生成する必要があります。
 ---
 
 ## ライセンス
