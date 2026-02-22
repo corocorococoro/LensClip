@@ -50,7 +50,6 @@ return [
         'gcs' => [
             'driver' => 'gcs',
             'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
-            'key_file_path' => env('GOOGLE_CLOUD_KEY_FILE') ? base_path(env('GOOGLE_CLOUD_KEY_FILE')) : null,
             'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
             'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
             'throw' => true,

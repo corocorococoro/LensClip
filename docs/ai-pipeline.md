@@ -69,37 +69,14 @@ storage/app/public/observations/{random40chars}_cropped.webp
 
 ## 2. Vision API (Object Localization)
 
-### リクエスト
-```json
-{
-  "requests": [{
-    "image": { "content": "<base64>" },
-    "features": [{ "type": "OBJECT_LOCALIZATION", "maxResults": 10 }]
-  }]
-}
-```
+**認証・接続**: `google/cloud-vision` SDKを使用し、`GOOGLE_APPLICATION_CREDENTIALS` (サービスアカウント) にて認証・リクエストを行います。
 
-### レスポンス
-```json
-{
-  "responses": [{
-    "localizedObjectAnnotations": [
-      {
-        "mid": "/m/0bt9lr",
-        "name": "Dog",
-        "score": 0.9,
-        "boundingPoly": {
-          "normalizedVertices": [
-            {"x": 0.1, "y": 0.2},
-            {"x": 0.8, "y": 0.2},
-            {"x": 0.8, "y": 0.9},
-            {"x": 0.1, "y": 0.9}
-          ]
-        }
-      }
-    ]
-  }]
-}
+### 実装 (SDK)
+```php
+$client = new ImageAnnotatorClient();
+$features = [Type::OBJECT_LOCALIZATION, Type::SAFE_SEARCH_DETECTION];
+$response = $client->annotateImage($imageContent, $features);
+$localizedObjects = $response->getLocalizedObjectAnnotations();
 ```
 
 ### bbox選定ロジック
