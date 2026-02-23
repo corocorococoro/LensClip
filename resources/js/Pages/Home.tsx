@@ -41,14 +41,39 @@ export default function Home({ stats, recent }: Props) {
         }
     }, []);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Set image and location data together
+        // クライアント側で 1024px WebP にリサイズしてから送ることで
+        // ・ネットワーク転送量を大幅削減（例: 5MB JPEG → ~200KB WebP）
+        // ・サーバーの orient/scaleDown/encode 処理が軽くなる
+        // 失敗時は元ファイルをそのまま使用（サーバー側でフォールバック処理）
+        let imageToUpload: File = file;
+        try {
+            const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+            const scale = Math.min(1, 1024 / bitmap.width);
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(bitmap.width * scale);
+            canvas.height = Math.round(bitmap.height * scale);
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('canvas unavailable');
+            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+            bitmap.close();
+
+            const blob = await new Promise<Blob | null>((resolve) => {
+                canvas.toBlob(resolve, 'image/webp', 0.85);
+            });
+            if (blob) {
+                imageToUpload = new File([blob], 'image.webp', { type: 'image/webp' });
+            }
+        } catch {
+            // リサイズ失敗時は元ファイルをそのまま使用
+        }
+
         setData((prev) => ({
             ...prev,
-            image: file,
+            image: imageToUpload,
             latitude: location?.latitude ?? null,
             longitude: location?.longitude ?? null,
         }));
