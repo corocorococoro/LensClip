@@ -197,6 +197,10 @@ $h = min($height - $y, $bbox['h'] + 2 * $margin * $height);
 
 ## 環境変数
 ```env
+# Google Cloud Service Account (for Vision API)
+GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+
+# Gemini API Key (for LLM analysis)
 GEMINI_API_KEY=your-gemini-api-key
 ```
 
