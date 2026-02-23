@@ -58,8 +58,14 @@ export default function Home({ stats, recent }: Props) {
     const submitImage = useCallback(() => {
         post('/observations', {
             forceFormData: true,
-            onSuccess: () => reset(),
+            onSuccess: () => {
+                reset();
+                // ファイル input をクリアしないと同じ画像を再選択しても onChange が発火しない
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            },
             onError: (errors) => {
+                // リトライ時に同じ画像を再選択できるよう input をクリア
+                if (fileInputRef.current) fileInputRef.current.value = '';
                 if (!errors.image) {
                     alert('おくりものに しっぱいしちゃった。もういちど やってみてね！');
                 }
