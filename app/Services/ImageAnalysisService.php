@@ -54,16 +54,14 @@ class ImageAnalysisService
                 'score' => $selectedBbox['score']
             ]);
             $result['crop_bbox'] = $selectedBbox;
-            $croppedPath = $this->cropImage($imageContent, $selectedBbox, $observation);
-            $result['cropped_path'] = $croppedPath;
+            // cropImage はパスとエンコード済みバイト列を返す（Storage 再読み込み不要）
+            $cropped = $this->cropImage($imageContent, $selectedBbox, $observation);
+            $result['cropped_path'] = $cropped['path'];
+            $imageForGemini = $cropped['content'];
         } else {
             Log::info('ImageAnalysisService: No bbox selected, using original image');
+            $imageForGemini = $imageContent;
         }
-
-        // Step 3: Gemini - Use cropped image if available, otherwise original
-        $imageForGemini = $result['cropped_path']
-            ? Storage::disk()->get($result['cropped_path'])
-            : $imageContent;
 
         Log::info('ImageAnalysisService: Sending image to Gemini');
         $geminiResult = $this->callGemini($imageForGemini);
@@ -260,13 +258,16 @@ class ImageAnalysisService
     }
 
     /**
-     * Crop image with margin
+     * Crop image with margin.
+     * Returns ['path' => string, 'content' => string] to avoid re-reading from storage.
+     *
+     * @return array{path: string, content: string}
      */
-    protected function cropImage(string $imageContent, array $bbox, Observation $observation): string
+    protected function cropImage(string $imageContent, array $bbox, Observation $observation): array
     {
         $manager = new ImageManager(new Driver());
         $image = $manager->read($imageContent);
-        $image->orient();
+        // orient() 不要: ObservationService で保存した WebP は既に向き補正・EXIF 除去済み
 
         $imageWidth = $image->width();
         $imageHeight = $image->height();
@@ -286,14 +287,13 @@ class ImageAnalysisService
         // Crop
         $image->crop($width, $height, $x, $y);
 
-        // Generate cropped path
-        $originalPath = $observation->original_path;
-        $croppedPath = str_replace('.webp', '_cropped.webp', $originalPath);
+        // Encode once, save and return bytes in one shot (避免二次 Storage 読み込み)
+        $encoded = (string) $image->toWebp(quality: 80);
 
-        // Save
-        Storage::disk()->put($croppedPath, (string) $image->toWebp(quality: 80));
+        $croppedPath = str_replace('.webp', '_cropped.webp', $observation->original_path);
+        Storage::disk()->put($croppedPath, $encoded);
 
-        return $croppedPath;
+        return ['path' => $croppedPath, 'content' => $encoded];
     }
 
     /**
