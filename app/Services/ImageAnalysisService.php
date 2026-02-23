@@ -8,7 +8,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Google\Cloud\Vision\V1\AnnotateImageRequest;
+use Google\Cloud\Vision\V1\BatchAnnotateImagesRequest;
+use Google\Cloud\Vision\V1\Feature;
 use Google\Cloud\Vision\V1\Feature\Type;
+use Google\Cloud\Vision\V1\Image;
 use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
 use Google\Cloud\Vision\V1\Likelihood;
 use Google\Cloud\Vision\V1\SafeSearchAnnotation;
@@ -91,15 +95,29 @@ class ImageAnalysisService
     protected function callVisionObjectLocalization(string $imageContent): ?array
     {
         try {
-            $client = new ImageAnnotatorClient();
+            $image = (new Image())->setContent($imageContent);
 
             $features = [
-                Type::OBJECT_LOCALIZATION,
-                Type::SAFE_SEARCH_DETECTION,
+                (new Feature())->setType(Type::OBJECT_LOCALIZATION),
+                (new Feature())->setType(Type::SAFE_SEARCH_DETECTION),
             ];
 
-            $response = $client->annotateImage($imageContent, $features);
+            $request = (new AnnotateImageRequest())
+                ->setImage($image)
+                ->setFeatures($features);
+
+            $batchRequest = (new BatchAnnotateImagesRequest())
+                ->setRequests([$request]);
+
+            $client = new ImageAnnotatorClient();
+            $batchResponse = $client->batchAnnotateImages($batchRequest);
             $client->close();
+
+            $responses = $batchResponse->getResponses();
+            if (count($responses) === 0) {
+                return null;
+            }
+            $response = $responses[0];
 
             if ($response->getError()) {
                 throw new \Exception("Vision API Error: " . $response->getError()->getMessage());

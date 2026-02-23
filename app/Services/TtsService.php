@@ -9,6 +9,7 @@ use Google\Cloud\TextToSpeech\V1\AudioConfig;
 use Google\Cloud\TextToSpeech\V1\AudioEncoding;
 use Google\Cloud\TextToSpeech\V1\Client\TextToSpeechClient;
 use Google\Cloud\TextToSpeech\V1\SynthesisInput;
+use Google\Cloud\TextToSpeech\V1\SynthesizeSpeechRequest;
 use Google\Cloud\TextToSpeech\V1\VoiceSelectionParams;
 
 class TtsService
@@ -110,7 +111,12 @@ class TtsService
                 ->setAudioEncoding(AudioEncoding::MP3)
                 ->setSpeakingRate($rate);
 
-            $response = $client->synthesizeSpeech($input, $voice, $audioConfig);
+            $synthesizeRequest = (new SynthesizeSpeechRequest())
+                ->setInput($input)
+                ->setVoice($voice)
+                ->setAudioConfig($audioConfig);
+
+            $response = $client->synthesizeSpeech($synthesizeRequest);
             $client->close();
 
             $audioContent = $response->getAudioContent();
