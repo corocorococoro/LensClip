@@ -49,11 +49,10 @@ return [
 
         'gcs' => [
             'driver' => 'gcs',
-            'key_file_path' => env('GOOGLE_APPLICATION_CREDENTIALS')
-                ? base_path(env('GOOGLE_APPLICATION_CREDENTIALS'))
-                : null,
-            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
-            'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+            'key_file' => config('services.google_cloud.credentials'),
+            'key_file_path' => config('services.google_cloud.key_file_path'),
+            'project_id' => config('services.google_cloud.project_id'),
+            'bucket' => config('services.google_cloud.storage_bucket'),
             'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
             'throw' => true,
             'report' => false,

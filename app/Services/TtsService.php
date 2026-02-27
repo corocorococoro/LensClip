@@ -98,7 +98,16 @@ class TtsService
     protected function callGoogleTts(string $text, float $rate): string
     {
         try {
-            $client = new TextToSpeechClient();
+            $clientOptions = [];
+            $credentials = config('services.google_cloud.credentials');
+            $keyFilePath = config('services.google_cloud.key_file_path');
+            if ($credentials) {
+                $clientOptions['credentials'] = $credentials;
+            } elseif ($keyFilePath) {
+                $clientOptions['credentials'] = $keyFilePath;
+            }
+
+            $client = new TextToSpeechClient($clientOptions);
 
             $input = (new SynthesisInput())
                 ->setText($text);
