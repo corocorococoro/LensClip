@@ -1,4 +1,66 @@
-# LensClip — 子どもの「これなぁに？」を AI が答えてくれるアプリ
+# LensClip
+
+**散歩が、冒険になる。**
+
+「これなぁに？」
+その一言から、会話が始まる。
+
+写真を1枚撮るだけで、子どもにわかる言葉で教えてくれる。
+親子で使う、デジタル図鑑アプリ。
+
+**デモ**: https://lensclip.up.railway.app/
+
+---
+
+## こんな瞬間のために
+
+公園で見つけた虫、散歩中に気になった草花、空を飛ぶ鳥の名前——
+
+「なんで？」「これなに？」と聞かれたとき、
+ちゃんと答えてあげられる。その瞬間を、アプリが一緒に作ります。
+
+何気ない散歩が、忘れられない思い出に変わる。
+
+---
+
+## 子どもには、自分だけの図鑑ができる
+
+撮った発見は、すべてライブラリに残ります。
+日付・カテゴリ・タグで整理されていくから、
+使うたびに**世界にひとつだけの図鑑**が育っていく。
+
+---
+
+## 使い方は、写真を撮るだけ
+
+```
+📷 気になるものを撮る
+        ↓
+📖 子どもにわかる言葉で説明が届く
+        ↓
+📚 ライブラリに保存されて、図鑑が育つ
+```
+
+説明は「読み聞かせできる」文体で届きます。
+画面を見せながら、一緒に読んであげてください。
+
+---
+
+## できること
+
+- **その場で調べる** ── カメラでパシャっと撮るだけ
+- **複数の候補が出る** ── 「これかも」を子どもと一緒に選べる
+- **図鑑として残る** ── 日付・カテゴリ・地図で振り返れる
+- **タグをつけられる** ── 「こうえん」「おきにいり」など自由に整理
+- **調べなおせる** ── もう一回確認したいときはワンタップ
+
+---
+
+---
+
+## For Developers
+
+ここからは実装の話です。
 
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
@@ -6,34 +68,22 @@
 ![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
 ![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
 
-**デモ**: https://lensclip.up.railway.app/
+### Tech Stack
 
----
+| カテゴリ | 技術 | 選定理由 |
+|---------|------|---------|
+| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
+| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
+| 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
+| 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
+| ストレージ | Google Cloud Storage | 本番スケール対応。サービスアカウント 1 本で Vision / Gemini / GCS を統合 |
+| Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
+| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
+| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
 
-## Overview
+### AI Pipeline
 
-子どもが見つけた虫・花・どうぶつを写真に撮ると、AI が「これはなぁに？」を子ども向けに説明してくれる Web アプリです。
-親子で一緒に使えるデジタル図鑑として、撮った発見を保存・検索できるライブラリ機能も備えています。
-
-**対象**: 3〜6 歳の子どもを持つ親
-**設計思想**: 操作は親、コンテンツは子どもへ ── 読み聞かせに使えるテキストを AI が生成します。
-
----
-
-## How it Works
-
-```mermaid
-flowchart LR
-    A["📷 写真を撮る"] --> B["⏳ AI が分析中\nVision + Gemini"]
-    B --> C["✅ これは○○だよ！\n子ども向けに説明"]
-    C --> D["📚 ライブラリに保存"]
-```
-
----
-
-## AI Pipeline
-
-写真 1 枚から「何か」を当てて説明するために、**2 つの AI を直列で使う**設計を採用しています。
+写真から説明を生成するまでの処理フロー。2 つのモデルを直列で使う設計を採用しています。
 
 ```mermaid
 sequenceDiagram
@@ -61,60 +111,20 @@ sequenceDiagram
 ```
 
 **なぜ 2 段構えにするか？**
-Vision API で主対象を bbox で切り出してから Gemini に渡すことで、背景ノイズを排除し同定精度を向上させています。
-また責務を分離することで、将来のモデル差し替えにも対応しやすい設計になっています。
+Vision API で主対象を bbox で切り出してから Gemini に渡すことで、背景ノイズを排除し同定精度を向上させています。また責務を分離することで、将来のモデル差し替えにも対応しやすい設計になっています。
 
----
+### Key Design Decisions
 
-## Tech Stack
+**1. 非同期パイプライン + status machine**
+処理は 3〜10 秒かかるため、`processing → ready / failed` の status machine でフロントがポーリング。Job を冪等設計（status が processing 以外なら何もしない）にしてリトライを安全にしています。
 
-| カテゴリ | 技術 | 選定理由 |
-|---------|------|---------|
-| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
-| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
-| AI（検出） | Cloud Vision API | Object Localization で主対象を bbox 取得 |
-| AI（説明） | Gemini API | マルチモーダル + JSON mode で構造化出力 |
-| ストレージ | Google Cloud Storage | 本番スケール対応。サービスアカウント 1 本で Vision / Gemini / GCS を統合 |
-| Queue | Redis + Laravel Jobs | 非同期 AI 処理・冪等リトライ設計 |
-| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
-| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
+**2. Google Cloud を一貫して活用**
+ストレージ（GCS）・画像認識（Vision API）・説明生成（Gemini API）をサービスアカウント 1 本で統合。認証の複雑さを最小化しています。
 
----
+**3. 二層 UX 設計**
+操作者は親、コンテンツの受け手は子どもという二層構造を前提に設計。`kid_friendly` フィールドは「親が読み聞かせる」想定の文体で生成されます。
 
-## Key Design Decisions
-
-### 1. 非同期 AI パイプライン + status machine
-
-AI 分析は 3〜10 秒かかるためリクエスト同期処理は避けました。
-`processing → ready / failed` の status machine でフロントがポーリングし、
-Job を冪等設計（status が processing 以外なら何もしない）にしてリトライを安全にしています。
-
-### 2. Google Cloud を一貫して活用
-
-ストレージ（GCS）・物体検出（Vision API）・説明生成（Gemini API）をサービスアカウント 1 本で統合。
-企画・技術選定・インフラ構成まで一貫して設計しました。
-
-### 3. 子ども向け UX の二層設計
-
-エンドユーザーは 3〜6 歳の子ども、操作者は親という二層構造を意識しています。
-AI が生成する `kid_friendly` テキストは「親が読み聞かせる」想定の文体で、
-処理中アニメーション + 「しらべています...」で子どもが待てる UX にしています。
-
----
-
-## Features
-
-- **撮影・アップロード** ── カメラ撮影またはファイル選択
-- **AI 分析** ── Vision API で主対象を Crop → Gemini で同定・子ども向け説明生成
-- **候補カード** ── 複数候補をタップで切り替え（信頼度スコア付き）
-- **ライブラリ** ── グリッド表示・日付/カテゴリ/マップビュー・タグフィルタ・検索
-- **タグ管理** ── AI 自動付与 + 手動追加
-- **失敗時リトライ** ── 分析失敗時にワンタップで再実行
-- **管理者機能** ── Gemini モデルの切り替え・ログ閲覧
-
----
-
-## Docs
+### Docs
 
 | ドキュメント | 内容 |
 |------------|------|
@@ -127,9 +137,7 @@ AI が生成する `kid_friendly` テキストは「親が読み聞かせる」�
 | [Setup Guide](docs/setup.md) | ローカル環境構築手順 |
 | [Deployment](docs/deployment.md) | Railway デプロイ手順 |
 
----
-
-## Quick Start
+### Quick Start
 
 ```bash
 cp .env.example .env           # API キーを設定
