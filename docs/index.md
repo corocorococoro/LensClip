@@ -7,9 +7,7 @@
 
 | ドメイン | 一次ソース | 概要 |
 |---------|-----------|------|
-| プロダクト定義 | [prd.md](prd.md) | MVP スコープ、ターゲット、ゴール |
-| 画面・導線・文言 | [ux-flow.md](ux-flow.md) | 画面遷移図、UI状態、コピー |
-| API 契約 | [api-spec.md](api-spec.md) | エンドポイント、リクエスト/レスポンス |
+| プロダクト定義 | [prd.md](prd.md) | ターゲット、ゴール、機能一覧 |
 | データベース | [db-schema.md](db-schema.md) | テーブル、カラム、制約 |
 | AI パイプライン | [ai-pipeline.md](ai-pipeline.md) | Vision/Gemini 処理フロー |
 | AI モデル許可リスト | [ai-models.md](ai-models.md) | 使用可能な Gemini モデル（**唯一の一次ソース**） |
