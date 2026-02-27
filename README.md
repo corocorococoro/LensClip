@@ -115,17 +115,17 @@ Vision API で主対象を bbox で切り出してから Gemini に渡すこと�
 
 ### Key Design Decisions
 
-**1. 非同期パイプライン + status machine**
-処理は 3〜10 秒かかるため、`processing → ready / failed` の status machine でフロントがポーリング。Job を冪等設計（status が processing 以外なら何もしない）にしてリトライを安全にしています。
+**1. AI パイプラインの段階的フォールバック**
+Vision API で bbox 取得できなかった場合は元画像のまま Gemini に渡す。「bbox があれば crop して精度向上、なくても止まらない」という degraded-mode 設計で、安定稼働と精度向上を両立させた。
 
-**2. Laravel Filesystem 抽象化によるストレージ差し替え設計**
-アプリケーションコードは `Storage` ファサードのみを使い、GCS かローカルかを一切意識しない。`FILESYSTEM_DISK` 環境変数一本で切り替えられる。これは Laravel のサービスコンテナと設定駆動設計を素直に活かした例で、同一コードがどの環境でもそのまま動く。
+**2. 冪等 Job で安全なリトライ**
+`AnalyzeObservationJob` は status が `processing` 以外なら即リターン。分散キューでは重複実行が起きうるため、冪等性を最初から設計に組み込んだ。ユーザーのリトライも status を `processing` に戻してから再投入する一方向設計にしている。
 
-**3. Google Cloud をサービスアカウント 1 本で統合**
-ストレージ（GCS）・画像認識（Vision API）・説明生成（Gemini API）の認証をサービスアカウント 1 本に集約。Google Cloud SDK が環境変数から自動的に認証情報を読む仕組みを活かし、サービスごとに個別のキー管理を不要にしています。
+**3. 環境依存をゼロにする抽象化**
+ストレージは `Storage` ファサードで実装し `FILESYSTEM_DISK` 一本で GCS／ローカルを切り替え。Google Cloud 認証は Application Default Credentials で Vision / Gemini / GCS を統一。コードを変えずにローカル開発から本番まで動く。
 
-**4. 二層 UX 設計**
-操作者は親、コンテンツの受け手は子どもという二層構造を前提に設計。`kid_friendly` フィールドは子どもが理解できる言葉で生成され、親子の会話のきっかけになることを意図しています。
+**4. 操作者とエンドユーザーの分離**
+アプリを操作するのは親、コンテンツを受け取るのは子どもという二層設計。この前提が UI（シンプルな導線・大きなタッチターゲット）とコンテンツ（`kid_friendly` フィールド）の両方に一貫して影響している。
 
 ### Docs
 
