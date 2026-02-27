@@ -76,7 +76,7 @@
 | Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
 | 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
 | 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
-| ストレージ | Google Cloud Storage | 本番スケール対応。サービスアカウント 1 本で Vision / Gemini / GCS を統合 |
+| ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` で切り替え可能。GCS 使用時はサービスアカウント 1 本で Vision / Gemini / GCS を統合 |
 | Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
 | Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
 | Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |

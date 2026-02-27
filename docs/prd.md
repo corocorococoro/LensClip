@@ -50,7 +50,7 @@
 - **Backend**: Laravel 12 + MySQL
 - **Frontend**: Inertia.js + React + TypeScript + Tailwind CSS
 - **AI**: Cloud Vision API（Object Localization）+ Gemini API
-- **Storage**: Google Cloud Storage（本番）/ ローカル（開発）
+- **Storage**: Google Cloud Storage / ローカル（`FILESYSTEM_DISK` で切り替え可能）
 - **Queue**: Redis + Laravel Jobs
 - **Deploy**: Railway（Docker）
 

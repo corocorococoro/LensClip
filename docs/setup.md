@@ -44,7 +44,7 @@ GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 # Gemini API
 GEMINI_API_KEY=your-gemini-api-key
 
-# ストレージ（ローカル開発は public）
+# ストレージドライバー（public=ローカル / gcs=Google Cloud Storage）
 FILESYSTEM_DISK=public
 ```
 
