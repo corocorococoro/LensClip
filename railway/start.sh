@@ -3,6 +3,13 @@
 # Ensure storage directory exists for Volume mounting
 mkdir -p /app/storage/app/public/observations
 
+# Write GCP service account credentials from env var to file
+if [ -n "$GOOGLE_CREDENTIALS_JSON" ]; then
+    echo "Writing GCP service account credentials..."
+    echo "$GOOGLE_CREDENTIALS_JSON" > /app/service-account.json
+    export GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+fi
+
 # Run database migrations
 # We use --force because it's a production-like environment
 echo "Running migrations..."
