@@ -56,32 +56,9 @@
 
 ---
 
----
+## AI パイプライン
 
-## 実装
-
-![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)
-![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
-![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
-
-### Tech Stack
-
-| カテゴリ | 技術 | 選定理由 |
-|---------|------|---------|
-| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
-| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
-| 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
-| 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
-| ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` で切り替え可能。GCS 使用時はサービスアカウント 1 本で Vision / Gemini / GCS を統合 |
-| Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
-| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
-| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
-
-### AI Pipeline
-
-写真から説明を生成するまでの処理フロー。2 つのモデルを直列で使う設計を採用しています。
+Gemini に画像をそのまま渡すのではなく、まず Vision API で主対象を bbox で切り出してから渡す2段構えの設計にしています。背景ノイズを排除することで同定精度が上がり、bbox が取れない場合は元画像にフォールバックするため、どちらに転んでも止まらない構造です。
 
 ```mermaid
 sequenceDiagram
@@ -108,34 +85,43 @@ sequenceDiagram
     App-->>User: { status: ready, title: "テントウムシ", ... }
 ```
 
-**なぜ 2 段構えにするか？**
-Vision API で主対象を bbox で切り出してから Gemini に渡すことで、背景ノイズを排除し同定精度を向上させています。また責務を分離することで、将来のモデル差し替えにも対応しやすい設計になっています。
+---
 
-### Key Design Decisions
+## 設計の判断
 
-**1. AI パイプラインの段階的フォールバック**
-Vision API で bbox 取得できなかった場合は元画像のまま Gemini に渡す。「bbox があれば crop して精度向上、なくても止まらない」という degraded-mode 設計で、安定稼働と精度向上を両立させた。
-
-**2. 冪等 Job で安全なリトライ**
+**冪等 Job で安全なリトライ**
 `AnalyzeObservationJob` は status が `processing` 以外なら即リターン。分散キューでは重複実行が起きうるため、冪等性を最初から設計に組み込んだ。ユーザーのリトライも status を `processing` に戻してから再投入する一方向設計にしている。
 
-**3. 環境依存をゼロにする抽象化**
+**環境依存をゼロにする抽象化**
 ストレージは `Storage` ファサードで実装し `FILESYSTEM_DISK` 一本で GCS／ローカルを切り替え。Google Cloud 認証は Application Default Credentials で Vision / Gemini / GCS を統一。コードを変えずにローカル開発から本番まで動く。
 
-**4. 操作者とエンドユーザーの分離**
+**操作者とエンドユーザーの分離**
 アプリを操作するのは親、コンテンツを受け取るのは子どもという二層設計。この前提が UI（シンプルな導線・大きなタッチターゲット）とコンテンツ（`kid_friendly` フィールド）の両方に一貫して影響している。
 
-### Docs
+---
 
-| ドキュメント | 内容 |
-|------------|------|
-| [PRD](docs/prd.md) | 製品要件・ターゲット・ゴール |
-| [DB Schema](docs/db-schema.md) | テーブル設計 |
-| [AI Pipeline](docs/ai-pipeline.md) | Vision→Crop→Gemini パイプライン詳細 |
-| [Setup Guide](docs/setup.md) | ローカル環境構築手順 |
-| [Deployment](docs/deployment.md) | Railway デプロイ手順 |
+## スタック
 
-### Quick Start
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)
+![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
+
+| カテゴリ | 技術 | 選定理由 |
+|---------|------|---------|
+| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
+| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
+| 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
+| 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
+| ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` で切り替え可能。GCS 使用時はサービスアカウント 1 本で Vision / Gemini / GCS を統合 |
+| Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
+| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
+| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
+
+---
+
+## Quick Start
 
 ```bash
 cp .env.example .env           # API キーを設定
