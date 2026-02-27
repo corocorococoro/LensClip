@@ -5,18 +5,21 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Google\Cloud\TextToSpeech\V1\AudioConfig;
+use Google\Cloud\TextToSpeech\V1\AudioEncoding;
+use Google\Cloud\TextToSpeech\V1\Client\TextToSpeechClient;
+use Google\Cloud\TextToSpeech\V1\SynthesisInput;
+use Google\Cloud\TextToSpeech\V1\SynthesizeSpeechRequest;
+use Google\Cloud\TextToSpeech\V1\VoiceSelectionParams;
 
 class TtsService
 {
-    protected ?string $apiKey;
     protected string $voice;
     protected float $speakingRate;
     protected int $ttlDays;
 
     public function __construct()
     {
-        // API Key is centralized in config/services.php (gemini.api_key)
-        $this->apiKey = config('services.gemini.api_key');
         $this->voice = config('services.tts.voice', 'en-US-Neural2-J');
         $this->speakingRate = (float) config('services.tts.speaking_rate', 0.9);
         $this->ttlDays = (int) config('services.tts.ttl_days', 7);
@@ -90,50 +93,47 @@ class TtsService
     }
 
     /**
-     * Call Google Cloud TTS API
-     */
-    /**
-     * Call Google Cloud TTS API using API Key
+     * Call Google Cloud TTS API using SDK (Service Account)
      */
     protected function callGoogleTts(string $text, float $rate): string
     {
-        if (!$this->apiKey) {
-            throw new \Exception('Google API Key (GEMINI_API_KEY) not configured');
-        }
+        try {
+            $client = new TextToSpeechClient();
 
-        // Retry with exponential backoff (100ms, 200ms, 400ms)
-        $response = Http::retry(3, 100)
-            ->timeout(30)
-            ->post('https://texttospeech.googleapis.com/v1/text:synthesize?key=' . $this->apiKey, [
-                'input' => [
-                    'text' => $text,
-                ],
-                'voice' => [
-                    'languageCode' => 'en-US',
-                    'name' => $this->voice,
-                ],
-                'audioConfig' => [
-                    'audioEncoding' => 'MP3',
-                    'speakingRate' => $rate,
-                ],
-            ]);
+            $input = (new SynthesisInput())
+                ->setText($text);
 
-        if (!$response->successful()) {
+            $voice = (new VoiceSelectionParams())
+                ->setLanguageCode('en-US')
+                ->setName($this->voice);
+
+            $audioConfig = (new AudioConfig())
+                ->setAudioEncoding(AudioEncoding::MP3)
+                ->setSpeakingRate($rate);
+
+            $synthesizeRequest = (new SynthesizeSpeechRequest())
+                ->setInput($input)
+                ->setVoice($voice)
+                ->setAudioConfig($audioConfig);
+
+            $response = $client->synthesizeSpeech($synthesizeRequest);
+            $client->close();
+
+            $audioContent = $response->getAudioContent();
+
+            if (!$audioContent) {
+                throw new \Exception('No audio content in TTS response');
+            }
+
+            // SDK returns binary data
+            return $audioContent;
+
+        } catch (\Exception $e) {
             Log::error('Google TTS API error', [
-                'status' => $response->status(),
-                'body' => $response->body(),
+                'error' => $e->getMessage(),
             ]);
-            throw new \Exception("Google TTS API error: {$response->status()}");
+            throw new \Exception("Google TTS API error: " . $e->getMessage());
         }
-
-        $data = $response->json();
-        $audioContent = $data['audioContent'] ?? null;
-
-        if (!$audioContent) {
-            throw new \Exception('No audio content in TTS response');
-        }
-
-        return base64_decode($audioContent);
     }
 
     /**

@@ -10,6 +10,8 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "google/cloud-text-to-speech": "^2.6",
+        "google/cloud-vision": "^2.1",
         "inertiajs/inertia-laravel": "^2.0",
         "intervention/image": "^3.11",
         "laravel/framework": "^12.0",
@@ -17,6 +19,7 @@
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
         "rap2hpoutre/laravel-log-viewer": "^2.5",
+        "spatie/laravel-google-cloud-storage": "^2.3",
         "tightenco/ziggy": "^2.0"
     },
     "require-dev": {

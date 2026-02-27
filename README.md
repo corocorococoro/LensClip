@@ -33,16 +33,21 @@ cp .env.example .env
 `.env` ファイルを編集して、以下のAPIキーを設定してください：
 
 ```env
-# Google Gemini API Key
-GEMINI_API_KEY=your-gemini-api-key
+# Google Login (Socialite)
+GOOGLE_CLIENT_ID=your-client-id
+GOOGLE_CLIENT_SECRET=your-client-secret
+GOOGLE_REDIRECT_URI="http://localhost/auth/google/callback"
 
-# Storage (local, public, gcs, s3)
-FILESYSTEM_DISK=local
-
-# Google Cloud Storage (Required if FILESYSTEM_DISK=gcs)
+# Google Cloud Services (GCS, Vision API, TTS API)
+GOOGLE_APPLICATION_CREDENTIALS=your-service-account-file.json
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
 GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
-GOOGLE_CLOUD_KEY_FILE=path/to/service-account.json
+
+# Google Gemini API
+GEMINI_API_KEY=your-gemini-api-key
+
+# Storage (public for local, gcs for production)
+FILESYSTEM_DISK=public
 ```
 
 ### 3. Docker環境を起動
@@ -249,10 +254,12 @@ Variables に以下を追加してください。
 - `APP_ENV`: `production` 強制httpsに。
 
 **GCSを使用する場合（推奨）:**
+- `FILESYSTEM_DISK`: `gcs`
+- `GOOGLE_APPLICATION_CREDENTIALS`: サービスアカウントキーへのパス（例: `storage/gcs-key.json`）
 - `GOOGLE_CLOUD_PROJECT_ID`: GCPプロジェクトID
 - `GOOGLE_CLOUD_STORAGE_BUCKET`: GCSバケット名
-- `GOOGLE_CLOUD_KEY_FILE`: サービスアカウントキーへのパス（例: `storage/gcs-key.json`）
-  - ※ キーファイルをリポジトリに含めるか、ビルド時に生成する必要があります。
+
+> これにより、Cloud Storage だけでなく、Vision API や Text-to-Speech API など、すべての Google Cloud SDK が共通の認証で動作します。
 ---
 
 ## ライセンス
