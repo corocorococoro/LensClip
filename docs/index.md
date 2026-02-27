@@ -19,12 +19,6 @@
 | [setup.md](setup.md) | ローカル環境構築手順 |
 | [deployment.md](deployment.md) | Railway デプロイ手順 |
 
-## 決定ログ (ADR)
-
-| ID | タイトル |
-|----|---------|
-| [0001](decisions/0001-single-source-of-truth.md) | Single Source of Truth 戦略 |
-
 ## Rules（ガバナンス・パック）
 
 Rules は「不変の強制」「運用の手順」「監査の強制」「優先順位」のみを保持します。
