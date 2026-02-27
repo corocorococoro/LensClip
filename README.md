@@ -58,9 +58,7 @@
 
 ---
 
-## For Developers
-
-ここからは実装の話です。
+## 実装
 
 ![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
