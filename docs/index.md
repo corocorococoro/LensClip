@@ -11,7 +11,6 @@
 | データベース | [db-schema.md](db-schema.md) | テーブル、カラム、制約 |
 | AI パイプライン | [ai-pipeline.md](ai-pipeline.md) | Vision/Gemini 処理フロー |
 | AI モデル許可リスト | [ai-models.md](ai-models.md) | 使用可能な Gemini モデル（**唯一の一次ソース**） |
-| テスト計画 | [test-plan.md](test-plan.md) | テスト観点、カバレッジ方針 |
 
 ## セットアップ・デプロイ
 
