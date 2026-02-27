@@ -107,16 +107,7 @@ class ImageAnalysisService
             $batchRequest = (new BatchAnnotateImagesRequest())
                 ->setRequests([$request]);
 
-            $clientOptions = [];
-            $credentials = config('services.google_cloud.credentials');
-            $keyFilePath = config('services.google_cloud.key_file_path');
-            if ($credentials) {
-                $clientOptions['credentials'] = $credentials;
-            } elseif ($keyFilePath) {
-                $clientOptions['credentials'] = $keyFilePath;
-            }
-
-            $client = new ImageAnnotatorClient($clientOptions);
+            $client = new ImageAnnotatorClient(GoogleCloudClientFactory::clientOptions());
             $batchResponse = $client->batchAnnotateImages($batchRequest);
             $client->close();
 
