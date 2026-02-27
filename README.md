@@ -1,267 +1,147 @@
-# LensClip 📷
+# LensClip — 子どもの「これなぁに？」を AI が答えてくれるアプリ
 
-親子向け「これなぁに？」スクラップWebアプリ
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)
+![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
 
-写真を撮るとAIが「これはなぁに？」の答えを返し、親子で一緒に学べる図鑑体験を提供します。
+**デモ**: https://lensclip.up.railway.app/
 
-### デモURL
-https://lensclip.up.railway.app/
-
-
-## 技術スタック
-
-- **Backend**: Laravel 12 + MySQL
-- **Frontend**: Inertia.js + React + TypeScript + Tailwind CSS
-- **AI**: Google Cloud Vision API（Object Localization）+ Gemini API
-- **Environment**: Docker (Laravel Sail)
-
-## セットアップ
-
-### 1. リポジトリをクローン
-
-```bash
-git clone <repository-url>
-cd LensClip
-```
-
-### 2. 環境変数を設定
-
-```bash
-cp .env.example .env
-```
-
-`.env` ファイルを編集して、以下のAPIキーを設定してください：
-
-```env
-# Google Login (Socialite)
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI="http://localhost/auth/google/callback"
-
-# Google Cloud Services (GCS, Vision API, TTS API)
-GOOGLE_APPLICATION_CREDENTIALS=your-service-account-file.json
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
-
-# Google Gemini API
-GEMINI_API_KEY=your-gemini-api-key
-
-# Storage (public for local, gcs for production)
-FILESYSTEM_DISK=public
-```
-
-### 3. Docker環境を起動
-
-```bash
-./vendor/bin/sail up -d
-```
-
-### 4. 依存関係をインストール
-
-```bash
-./vendor/bin/sail composer install
-./vendor/bin/sail npm install
-```
-
-### 5. アプリケーションキー生成
-
-```bash
-./vendor/bin/sail artisan key:generate
-```
-
-### 6. データベースマイグレーション
-
-```bash
-./vendor/bin/sail artisan migrate
-```
-
-### 7. ストレージリンク作成
-
-```bash
-./vendor/bin/sail artisan storage:link
-```
-
-### 8. フロントエンドビルド
-
-開発モード:
-```bash
-./vendor/bin/sail npm run dev
-```
-
-本番ビルド:
-```bash
-./vendor/bin/sail npm run build
-```
-
-## 動作確認
-
-1. http://localhost にアクセス
-2. ユーザー登録 → ログイン
-3. 「しらべる」ボタンをタップ → 画像をアップロード
-4. AI分析待ち → 結果表示
-5. ライブラリで一覧確認
-
-## 主要機能
-
-- 📷 **撮影・アップロード**: カメラまたはファイル選択
-- 🔍 **AI分析**: Vision APIで主対象をCrop → Gemini APIで同定・説明
-- 📚 **ライブラリ**: グリッド表示、検索、タグフィルタ
-- 🏷️ **タグ**: AI自動付与＋手動追加
-
-## テスト実行
-
-```bash
-./vendor/bin/sail artisan test
-```
-
-## 管理者設定
-
-### 管理者に昇格する
-
-特定のユーザーを管理者に昇格するには、以下のコマンドを実行します：
-
-```bash
-./vendor/bin/sail artisan user:promote your-email@example.com
-```
-
-### 管理画面へのアクセス
-
-管理者としてログインすると以下のURLにアクセスできます：
-
-- `/admin/logs` - アプリケーションログの閲覧
-- `/admin/settings/ai` - Geminiモデルの切り替え
-
-### 管理者機能
-
-| 機能 | URL | 説明 |
-|------|-----|------|
-| ログ閲覧 | `/admin/logs` | レベル・日付でフィルタ、スタックトレース表示 |
-| AI設定 | `/admin/settings/ai` | Geminiモデルの切り替え（即時反映） |
-
-## 困ったときは（トラブルシューティング）
-
-アプリにアクセスできない、または画像が表示されないなどの問題が発生した場合は、以下の手順を試してください：
-
-### 1. Sailの再起動
-コンテナの状態が不安定な場合、一度停止して起動し直すのが最も効果的です。
-```bash
-./vendor/bin/sail stop
-./vendor/bin/sail up -d
-```
-
-### 2. アセット（CSS/JS）の読み込みエラー
-ブラウザ画面が真っ白な場合、Viteサーバーが起動していない可能性があります。
-```bash
-./vendor/bin/sail npm run dev
-```
-
-### 3. 画像が表示されない
-ストレージのシンボリックリンクが切れている可能性があります。
-```bash
-./vendor/bin/sail artisan storage:link
-```
-
-### 4. AI分析が進まない（処理中のまま）
-非同期ジョブを実行するワーカーが起動しているか確認してください。
-```bash
-./vendor/bin/sail artisan queue:work
-```
-
-### 5. ログの確認
-原因が不明な場合は、以下のコマンドでログを確認してください。
-```bash
-# Dockerコンテナのログ
-./vendor/bin/sail logs app
-
-# Laravelのアプリケーションログ
-./vendor/bin/sail exec app tail -f storage/logs/laravel.log
-```
-
-## 既知の制約
-
-- iOSでのカメラ起動は環境依存（HTTPS必須等）
-- API キーなしでは AI 分析はモックデータになります
-- 画像サイズ上限: 10MB
-
-## ディレクトリ構成
-
-```
-app/
-├── Http/Controllers/     # ObservationController, TagController等
-├── Jobs/                 # AnalyzeObservationJob（非同期AI処理）
-├── Models/               # Observation, Tag
-├── Policies/             # ObservationPolicy
-└── Services/             # ImageAnalysisService（Vision + Gemini）
-
-resources/js/
-├── Layouts/              # AppLayout（下部ナビ付き）
-├── Components/           # ObservationCard, ui/（Button, Card等）
-└── Pages/
-    ├── Home.tsx          # ホーム（しらべるCTA）
-    ├── Library.tsx       # ライブラリ
-    └── Observations/     # Processing, Show
-
-docs/
-├── index.md             # ドキュメント台帳
-├── prd.md               # 製品要件定義
-├── ux-flow.md           # 画面遷移
-├── api-spec.md          # API仕様
-├── db-schema.md         # DBスキーマ
-├── ai-pipeline.md       # AIパイプライン
-├── ai-models.md         # AIモデル許可リスト
-├── test-plan.md         # テスト計画
-└── decisions/           # 決定ログ (ADR)
-
-.agent/rules/
-├── project-governance.md      # ガバナンス・SSOT
-├── product-ui-principles.md   # プロダクト・UI方針
-├── security-invariants.md     # セキュリティ絶対ルール
-├── engineering-standards.md   # 実装規約
-├── ai-responsibility-split.md # AI責務分離
-└── laravel-conventions.md     # Laravel規約
-```
-
-## Railway へのデプロイ
-
-### 1. Volume の作成と接続
-Railway のダッシュボードで Volume を作成し、Laravel サービスに以下の設定でアタッチしてください。
-- **Mount Path**: `/app/storage/app`
-  - これにより `storage/app/public` 配下の画像データが永続化されます。
-
-### 2. MySQLの作成
-Railway のダッシュボードで MySQL を作成。Laravel側の環境変数は
-```
-DB_CONNECTION=mysql
-DB_HOST=${{ MySQL.MYSQLHOST }}
-DB_PORT=${{ MySQL.MYSQLPORT }}
-DB_DATABASE=${{ MySQL.MYSQLDATABASE }}
-DB_USERNAME=${{ MySQL.MYSQLUSER }}
-DB_PASSWORD=${{ MySQL.MYSQLPASSWORD }}
-```
-
-### 3. Start Command
-サービスの設定（Settings > Deploy > Start Command）に以下を設定してください。
-```bash
-bash railway/start.sh
-```
-
-### 4. 環境変数の設定
-Variables に以下を追加してください。
-- `FILESYSTEM_DISK`: `gcs` (推奨) または `public`
-- `QUEUE_CONNECTION`: `redis` (Redisサービスを別途追加し、`REDIS_URL` がある場合) または `database`
-- `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
-- `APP_KEY`: `php artisan key:generate --show` で生成したもの
-- `APP_ENV`: `production` 強制httpsに。
-
-**GCSを使用する場合（推奨）:**
-- `FILESYSTEM_DISK`: `gcs`
-- `GOOGLE_APPLICATION_CREDENTIALS`: サービスアカウントキーへのパス（例: `storage/gcs-key.json`）
-- `GOOGLE_CLOUD_PROJECT_ID`: GCPプロジェクトID
-- `GOOGLE_CLOUD_STORAGE_BUCKET`: GCSバケット名
-
-> これにより、Cloud Storage だけでなく、Vision API や Text-to-Speech API など、すべての Google Cloud SDK が共通の認証で動作します。
 ---
 
-## ライセンス
+## Overview
+
+子どもが見つけた虫・花・どうぶつを写真に撮ると、AI が「これはなぁに？」を子ども向けに説明してくれる Web アプリです。
+親子で一緒に使えるデジタル図鑑として、撮った発見を保存・検索できるライブラリ機能も備えています。
+
+**対象**: 3〜6 歳の子どもを持つ親
+**設計思想**: 操作は親、コンテンツは子どもへ ── 読み聞かせに使えるテキストを AI が生成します。
+
+---
+
+## How it Works
+
+```mermaid
+flowchart LR
+    A["📷 写真を撮る"] --> B["⏳ AI が分析中\nVision + Gemini"]
+    B --> C["✅ これは○○だよ！\n子ども向けに説明"]
+    C --> D["📚 ライブラリに保存"]
+```
+
+---
+
+## AI Pipeline
+
+写真 1 枚から「何か」を当てて説明するために、**2 つの AI を直列で使う**設計を採用しています。
+
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant App as Web Server
+    participant Q as Queue Worker
+    participant Vision as Cloud Vision API
+    participant Gemini as Gemini API
+    participant GCS as Cloud Storage
+
+    User->>App: 画像アップロード
+    App->>GCS: original + thumb 保存
+    App->>Q: Job をキュー投入
+    App-->>User: { status: processing }
+
+    Q->>Vision: Object Localization
+    Vision-->>Q: bbox 座標（主対象の位置）
+    Q->>GCS: crop 画像を保存
+    Q->>Gemini: crop 画像 + プロンプト
+    Gemini-->>Q: JSON（title / summary / kid_friendly ...）
+    Q-->>Q: status = ready
+
+    User->>App: ポーリング（1 秒間隔）
+    App-->>User: { status: ready, title: "テントウムシ", ... }
+```
+
+**なぜ 2 段構えにするか？**
+Vision API で主対象を bbox で切り出してから Gemini に渡すことで、背景ノイズを排除し同定精度を向上させています。
+また責務を分離することで、将来のモデル差し替えにも対応しやすい設計になっています。
+
+---
+
+## Tech Stack
+
+| カテゴリ | 技術 | 選定理由 |
+|---------|------|---------|
+| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
+| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
+| AI（検出） | Cloud Vision API | Object Localization で主対象を bbox 取得 |
+| AI（説明） | Gemini API | マルチモーダル + JSON mode で構造化出力 |
+| ストレージ | Google Cloud Storage | 本番スケール対応。サービスアカウント 1 本で Vision / Gemini / GCS を統合 |
+| Queue | Redis + Laravel Jobs | 非同期 AI 処理・冪等リトライ設計 |
+| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
+| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
+
+---
+
+## Key Design Decisions
+
+### 1. 非同期 AI パイプライン + status machine
+
+AI 分析は 3〜10 秒かかるためリクエスト同期処理は避けました。
+`processing → ready / failed` の status machine でフロントがポーリングし、
+Job を冪等設計（status が processing 以外なら何もしない）にしてリトライを安全にしています。
+
+### 2. Google Cloud を一貫して活用
+
+ストレージ（GCS）・物体検出（Vision API）・説明生成（Gemini API）をサービスアカウント 1 本で統合。
+企画・技術選定・インフラ構成まで一貫して設計しました。
+
+### 3. 子ども向け UX の二層設計
+
+エンドユーザーは 3〜6 歳の子ども、操作者は親という二層構造を意識しています。
+AI が生成する `kid_friendly` テキストは「親が読み聞かせる」想定の文体で、
+処理中アニメーション + 「しらべています...」で子どもが待てる UX にしています。
+
+---
+
+## Features
+
+- **撮影・アップロード** ── カメラ撮影またはファイル選択
+- **AI 分析** ── Vision API で主対象を Crop → Gemini で同定・子ども向け説明生成
+- **候補カード** ── 複数候補をタップで切り替え（信頼度スコア付き）
+- **ライブラリ** ── グリッド表示・日付/カテゴリ/マップビュー・タグフィルタ・検索
+- **タグ管理** ── AI 自動付与 + 手動追加
+- **失敗時リトライ** ── 分析失敗時にワンタップで再実行
+- **管理者機能** ── Gemini モデルの切り替え・ログ閲覧
+
+---
+
+## Docs
+
+| ドキュメント | 内容 |
+|------------|------|
+| [PRD](docs/prd.md) | 製品要件・ターゲット・MVP スコープ |
+| [UX Flow](docs/ux-flow.md) | 画面遷移・状態管理 |
+| [API Spec](docs/api-spec.md) | エンドポイント仕様 |
+| [DB Schema](docs/db-schema.md) | テーブル設計 |
+| [AI Pipeline](docs/ai-pipeline.md) | Vision→Crop→Gemini パイプライン詳細 |
+| [AI Models](docs/ai-models.md) | Gemini モデル許可リスト |
+| [Setup Guide](docs/setup.md) | ローカル環境構築手順 |
+| [Deployment](docs/deployment.md) | Railway デプロイ手順 |
+
+---
+
+## Quick Start
+
+```bash
+cp .env.example .env           # API キーを設定
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate && ./vendor/bin/sail artisan storage:link
+./vendor/bin/sail npm run dev
+```
+
+詳細は [Setup Guide](docs/setup.md) を参照してください。
+
+---
+
+## License
 
 MIT

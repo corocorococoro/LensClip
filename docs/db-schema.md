@@ -95,6 +95,7 @@ erDiagram
 | kid_friendly | text | nullable | 子供向け説明 |
 | confidence | float | nullable | 確信度 0.0-1.0 |
 | category | varchar(50) | NOT NULL, DEFAULT 'other' | カテゴリ（`config/categories.php` 参照） |
+| gemini_model | varchar | nullable | 分析に使用した Gemini モデル名 |
 | error_message | varchar | nullable | 失敗時メッセージ |
 | created_at | timestamp | | 作成日時 |
 | updated_at | timestamp | | 更新日時 |

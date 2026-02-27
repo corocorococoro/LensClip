@@ -161,8 +161,3 @@ Content-Type: multipart/form-data
 }
 ```
 
----
-
-## レート制限
-- 画像アップロード: 10回/分
-- その他API: 60回/分
