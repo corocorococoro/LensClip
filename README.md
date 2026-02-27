@@ -53,6 +53,7 @@
 - **図鑑として残る** ── 日付・カテゴリ・地図で振り返れる
 - **タグをつけられる** ── 「こうえん」「おきにいり」など自由に整理
 - **調べなおせる** ── もう一回確認したいときはワンタップ
+- **英語名の発音が聞ける** ── テントウムシなら "ladybug" をその場で確認
 
 ---
 
@@ -93,7 +94,7 @@ sequenceDiagram
 `AnalyzeObservationJob` は status が `processing` 以外なら即リターン。分散キューでは重複実行が起きうるため、冪等性を最初から設計に組み込んだ。ユーザーのリトライも status を `processing` に戻してから再投入する一方向設計にしている。
 
 **環境依存をゼロにする抽象化**
-ストレージは `Storage` ファサードで実装し `FILESYSTEM_DISK` 一本で GCS／ローカルを切り替え。Google Cloud 認証は Application Default Credentials で Vision / Gemini / GCS を統一。コードを変えずにローカル開発から本番まで動く。
+ストレージは `Storage` ファサードで実装し `FILESYSTEM_DISK` 一本で GCS／ローカルを切り替え。Google Cloud 認証は Application Default Credentials で Vision / Gemini / GCS / TTS を統一。TTS の生成ファイルも同じ `Storage` ファサード経由でキャッシュし、スケジュールコマンドで TTL 管理する。コードを変えずにローカル開発から本番まで動く。
 
 **操作者とエンドユーザーの分離**
 アプリを操作するのは親、コンテンツを受け取るのは子どもという二層設計。この前提が UI（シンプルな導線・大きなタッチターゲット）とコンテンツ（`kid_friendly` フィールド）の両方に一貫して影響している。
@@ -114,6 +115,7 @@ sequenceDiagram
 | Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
 | 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
 | 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
+| 音声合成 | Google Cloud Text-to-Speech | 英語名の発音読み上げ。TTL キャッシュで API 呼び出しを削減、スケジュールコマンドで自動クリーンアップ |
 | ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` で切り替え可能。GCS 使用時はサービスアカウント 1 本で Vision / Gemini / GCS を統合 |
 | Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
 | Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
