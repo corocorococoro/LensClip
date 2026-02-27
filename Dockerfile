@@ -40,7 +40,6 @@ WORKDIR /app
 COPY . .
 
 # Install PHP dependencies
-ENV FILESYSTEM_DISK=public
 RUN composer install --no-interaction --no-dev --optimize-autoloader
 
 # Install Node dependencies and build assets
