@@ -131,12 +131,9 @@ Vision API で bbox 取得できなかった場合は元画像のまま Gemini �
 
 | ドキュメント | 内容 |
 |------------|------|
-| [PRD](docs/prd.md) | 製品要件・ターゲット・MVP スコープ |
-| [UX Flow](docs/ux-flow.md) | 画面遷移・状態管理 |
-| [API Spec](docs/api-spec.md) | エンドポイント仕様 |
+| [PRD](docs/prd.md) | 製品要件・ターゲット・ゴール |
 | [DB Schema](docs/db-schema.md) | テーブル設計 |
 | [AI Pipeline](docs/ai-pipeline.md) | Vision→Crop→Gemini パイプライン詳細 |
-| [AI Models](docs/ai-models.md) | Gemini モデル許可リスト |
 | [Setup Guide](docs/setup.md) | ローカル環境構築手順 |
 | [Deployment](docs/deployment.md) | Railway デプロイ手順 |
 
