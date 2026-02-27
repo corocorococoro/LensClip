@@ -47,16 +47,21 @@ return [
             'report' => false,
         ],
 
-        'gcs' => [
-            'driver' => 'gcs',
-            'key_file' => config('services.google_cloud.credentials'),
-            'key_file_path' => config('services.google_cloud.key_file_path'),
-            'project_id' => config('services.google_cloud.project_id'),
-            'bucket' => config('services.google_cloud.storage_bucket'),
-            'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
-            'throw' => true,
-            'report' => false,
-        ],
+        'gcs' => (function () {
+            $json = env('GOOGLE_CREDENTIALS_JSON');
+            $filePath = env('GOOGLE_APPLICATION_CREDENTIALS');
+
+            return [
+                'driver' => 'gcs',
+                'key_file' => $json ? json_decode($json, true) : null,
+                'key_file_path' => (!$json && $filePath) ? base_path($filePath) : null,
+                'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+                'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+                'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,
+                'throw' => true,
+                'report' => false,
+            ];
+        })(),
 
         's3' => [
             'driver' => 's3',
