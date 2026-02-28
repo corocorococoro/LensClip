@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\TtsSynthesizeRequest;
 use App\Services\TtsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class TtsController extends Controller
@@ -17,12 +17,9 @@ class TtsController extends Controller
     /**
      * Synthesize text to speech and return audio URL
      */
-    public function synthesize(Request $request): JsonResponse
+    public function synthesize(TtsSynthesizeRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'text' => 'required|string|max:200',
-            'speakingRate' => 'nullable|numeric|min:0.5|max:2.0',
-        ]);
+        $validated = $request->validated();
 
         try {
             $result = $this->ttsService->synthesize(
