@@ -2,58 +2,12 @@
 
 **散歩が、冒険になる。**
 
-「これなぁに？」
-その一言から、会話が始まる。
+「これなぁに？」——公園の虫、散歩中の草花、空を飛ぶ鳥。
+写真を1枚撮るだけで、子どもにわかる言葉で答えが届く。親子で使う、デジタル図鑑アプリ。
 
-写真を1枚撮るだけで、子どもにわかる言葉で教えてくれる。
-親子で使う、デジタル図鑑アプリ。
+発見は日付・カテゴリ・地図で蓄積されていき、使うたびに**世界にひとつの図鑑**が育つ。
 
 **デモ**: https://lensclip.up.railway.app/
-
----
-
-## こんな瞬間のために
-
-公園で見つけた虫、散歩中に気になった草花、空を飛ぶ鳥の名前——
-
-「なんで？」「これなに？」と聞かれたとき、
-ちゃんと答えてあげられる。その瞬間を、アプリが一緒に作ります。
-
-何気ない散歩が、忘れられない思い出に変わる。
-
----
-
-## 子どもには、自分だけの図鑑ができる
-
-撮った発見は、すべてライブラリに残ります。
-日付・カテゴリ・タグで整理されていくから、
-使うたびに**世界にひとつだけの図鑑**が育っていく。
-
----
-
-## 使い方は、写真を撮るだけ
-
-```
-📷 気になるものを撮る
-        ↓
-📖 子どもにわかる言葉で説明が届く
-        ↓
-📚 ライブラリに保存されて、図鑑が育つ
-```
-
-説明は子どもにわかる言葉で届きます。
-画面を一緒に見ながら、会話のきっかけにしてください。
-
----
-
-## できること
-
-- **その場で調べる** ── カメラでパシャっと撮るだけ
-- **複数の候補が出る** ── 「これかも」を子どもと一緒に選べる
-- **図鑑として残る** ── 日付・カテゴリ・地図で振り返れる
-- **タグをつけられる** ── 「こうえん」「おきにいり」など自由に整理
-- **調べなおせる** ── もう一回確認したいときはワンタップ
-- **英語名の発音が聞ける** ── テントウムシなら "ladybug" をその場で確認
 
 ---
 
@@ -111,15 +65,15 @@ sequenceDiagram
 
 | カテゴリ | 技術 | 選定理由 |
 |---------|------|---------|
-| Backend | Laravel 12 + Inertia.js | 堅牢な MVC + SPA 的 UX を最小構成で実現 |
-| Frontend | React + TypeScript | 型安全な UI 開発、Inertia による SSR 対応 |
-| 画像認識 | Cloud Vision API | Object Localization で主対象を bbox 取得 |
-| 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力 |
-| 音声合成 | Google Cloud Text-to-Speech | 英語名の発音読み上げ。TTL キャッシュで API 呼び出しを削減、スケジュールコマンドで自動クリーンアップ |
-| ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` で切り替え可能。GCS 使用時はサービスアカウント 1 本で Vision / Gemini / GCS を統合 |
-| Queue | Redis + Laravel Jobs | 非同期処理・冪等リトライ設計 |
-| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小コストで実装 |
-| Deploy | Railway | Docker ベースの即時デプロイ、MySQL + Redis + Volume を一元管理 |
+| Backend | Laravel 12 + Inertia.js | API 分離なしで React を使える。認証・バリデーションは Laravel に任せ、フロントの型安全性だけ取る |
+| Frontend | React + TypeScript | Props の型がサーバ側スキーマと自然に揃う。`any` 禁止を前提にすると型安全性の恩恵が出やすい |
+| 画像認識 | Cloud Vision API | Object Localization に特化。分類や説明はさせない |
+| 説明生成 | Gemini API | マルチモーダル + JSON mode で構造化出力。`kid_friendly` フィールドをプロンプトで強制できる |
+| 音声合成 | Google Cloud TTS | 英語名の読み上げ。TTL キャッシュで同一単語の重複 API 呼び出しを排除 |
+| ストレージ | Google Cloud Storage / ローカル | `FILESYSTEM_DISK` 一本で切り替え。dev と prod でコードを変えない |
+| Queue | Redis + Laravel Jobs | 非同期処理。冪等 Job で重複実行・リトライを安全にハンドル |
+| Auth | Laravel Breeze + Socialite | メール認証 + Google OAuth を最小実装で追加 |
+| Deploy | Railway | MySQL + Redis + Volume を一元管理。インフラより機能に集中する選択 |
 
 ---
 
