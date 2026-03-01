@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Google\Cloud\TextToSpeech\V1\AudioConfig;
@@ -26,24 +25,23 @@ class TtsService
     }
 
     /**
-     * Synthesize text to speech and return URL
+     * Synthesize text to speech and return cache key
      *
      * @param string $text Text to synthesize
      * @param float|null $speakingRate Optional speaking rate override
-     * @return array{url: string, cacheHit: bool}
+     * @return array{key: string, cacheHit: bool}
      */
     public function synthesize(string $text, ?float $speakingRate = null): array
     {
         $rate = $speakingRate ?? $this->speakingRate;
         $cacheKey = $this->getCacheKey($text, $rate);
-        $filename = "{$cacheKey}.mp3";
-        $path = "tts/{$filename}";
+        $path = self::audioPath($cacheKey);
 
         // Check cache
         if ($this->isCacheValid($path)) {
-            Log::debug('TTS cache hit', ['text' => $text, 'file' => $filename]);
+            Log::debug('TTS cache hit', ['text' => $text, 'key' => $cacheKey]);
             return [
-                'url' => Storage::disk()->url($path),
+                'key' => $cacheKey,
                 'cacheHit' => true,
             ];
         }
@@ -54,18 +52,23 @@ class TtsService
         // Save to storage
         Storage::disk()->put($path, $audioContent);
 
-        $publicUrl = Storage::disk()->url($path);
-
         Log::info('TTS generated', [
             'text' => $text,
-            'file' => $filename,
-            'public_url' => $publicUrl,
+            'key' => $cacheKey,
         ]);
 
         return [
-            'url' => $publicUrl,
+            'key' => $cacheKey,
             'cacheHit' => false,
         ];
+    }
+
+    /**
+     * Build the storage path for a TTS audio file by cache key.
+     */
+    public static function audioPath(string $key): string
+    {
+        return "tts/{$key}.mp3";
     }
 
     /**
@@ -78,15 +81,17 @@ class TtsService
     }
 
     /**
-     * Check if cached file is still valid (within TTL)
+     * Check if cached file is still valid (within TTL).
+     * Uses a single lastModified() call; returns false if file does not exist.
      */
     protected function isCacheValid(string $path): bool
     {
-        if (!Storage::disk()->exists($path)) {
+        try {
+            $lastModified = Storage::disk()->lastModified($path);
+        } catch (\Exception $e) {
             return false;
         }
 
-        $lastModified = Storage::disk()->lastModified($path);
         $ttlSeconds = $this->ttlDays * 24 * 60 * 60;
 
         return (time() - $lastModified) < $ttlSeconds;
