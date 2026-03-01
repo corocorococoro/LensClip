@@ -41,6 +41,7 @@ export default function Show({ observation, categories }: Props) {
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
     const [ttsLoading, setTtsLoading] = useState(false);
+    const [ttsError, setTtsError] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -103,6 +104,7 @@ export default function Show({ observation, categories }: Props) {
             audioRef.current = null;
         }
 
+        setTtsError(false);
         setTtsLoading(true);
         try {
             const res = await fetch('/tts', {
@@ -120,6 +122,7 @@ export default function Show({ observation, categories }: Props) {
             await audio.play();
         } catch (error) {
             console.error('TTS playback failed:', error);
+            setTtsError(true);
         } finally {
             setTtsLoading(false);
         }
@@ -198,29 +201,36 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* English Word + TTS */}
                 {observation.status === 'ready' && activeCard?.english_name && (
-                    <div className="flex items-center justify-center gap-2 mb-6">
-                        <span className="text-lg text-slate-500 font-medium">
-                            {activeCard.english_name
-                                .split(/[\s-]+/)
-                                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                .join(' ')}
-                        </span>
-                        <button
-                            onClick={() => playTts(activeCard.english_name!)}
-                            disabled={ttsLoading}
-                            className={`p-1.5 rounded-full transition-all duration-200 ${ttsLoading
-                                ? 'text-gray-400 cursor-wait'
-                                : 'text-slate-400 hover:text-brand-pink hover:bg-brand-cream active:scale-95'
-                                }`}
-                            aria-label={`${activeCard.english_name}を読み上げる`}
-                            title="発音を聞く"
-                        >
-                            {ttsLoading ? (
-                                <SpinnerIcon className="w-4 h-4" />
-                            ) : (
-                                <SpeakerIcon className="w-4 h-4" />
-                            )}
-                        </button>
+                    <div className="flex flex-col items-center gap-1 mb-6">
+                        <div className="flex items-center justify-center gap-2">
+                            <span className="text-lg text-slate-500 font-medium">
+                                {activeCard.english_name
+                                    .split(/[\s-]+/)
+                                    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                                    .join(' ')}
+                            </span>
+                            <button
+                                onClick={() => playTts(activeCard.english_name!)}
+                                disabled={ttsLoading}
+                                className={`p-1.5 rounded-full transition-all duration-200 ${ttsLoading
+                                    ? 'text-gray-400 cursor-wait'
+                                    : ttsError
+                                        ? 'text-red-400 hover:text-red-500 hover:bg-red-50 active:scale-95'
+                                        : 'text-slate-400 hover:text-brand-pink hover:bg-brand-cream active:scale-95'
+                                    }`}
+                                aria-label={`${activeCard.english_name}を読み上げる`}
+                                title="発音を聞く"
+                            >
+                                {ttsLoading ? (
+                                    <SpinnerIcon className="w-4 h-4" />
+                                ) : (
+                                    <SpeakerIcon className="w-4 h-4" />
+                                )}
+                            </button>
+                        </div>
+                        {ttsError && (
+                            <span className="text-xs text-red-400">音声を再生できませんでした</span>
+                        )}
                     </div>
                 )}
 

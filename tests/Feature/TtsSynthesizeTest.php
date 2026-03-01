@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\TtsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TtsSynthesizeTest extends TestCase
@@ -18,6 +19,13 @@ class TtsSynthesizeTest extends TestCase
         $response = $this->postJson('/tts', ['text' => 'ladybug']);
 
         $response->assertUnauthorized();
+    }
+
+    public function test_unauthenticated_user_cannot_stream_audio(): void
+    {
+        $response = $this->get('/tts/audio/abc123');
+
+        $response->assertRedirect(); // auth ミドルウェアがログインへリダイレクト
     }
 
     // ---- バリデーション ----
@@ -55,9 +63,9 @@ class TtsSynthesizeTest extends TestCase
             ->assertJsonValidationErrors(['speakingRate']);
     }
 
-    // ---- 正常系 ----
+    // ---- POST /tts 正常系 ----
 
-    public function test_authenticated_verified_user_can_synthesize(): void
+    public function test_authenticated_user_can_synthesize(): void
     {
         $user = User::factory()->create();
 
@@ -65,7 +73,7 @@ class TtsSynthesizeTest extends TestCase
             $mock->shouldReceive('synthesize')
                 ->once()
                 ->with('ladybug', null)
-                ->andReturn(['url' => 'https://example.com/tts/test.mp3', 'cacheHit' => false]);
+                ->andReturn(['key' => 'abc123def456', 'cacheHit' => false]);
         });
 
         $response = $this->actingAs($user)
@@ -73,7 +81,10 @@ class TtsSynthesizeTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure(['url', 'cacheHit'])
-            ->assertJsonPath('url', 'https://example.com/tts/test.mp3');
+            ->assertJsonFragment(['cacheHit' => false]);
+
+        // URLが /tts/audio/{key} 形式であることを確認
+        $this->assertStringContainsString('/tts/audio/abc123def456', $response->json('url'));
     }
 
     public function test_speaking_rate_is_passed_to_service(): void
@@ -84,13 +95,14 @@ class TtsSynthesizeTest extends TestCase
             $mock->shouldReceive('synthesize')
                 ->once()
                 ->with('tulip', 1.5)
-                ->andReturn(['url' => 'https://example.com/tts/test.mp3', 'cacheHit' => true]);
+                ->andReturn(['key' => 'xyz789', 'cacheHit' => true]);
         });
 
         $response = $this->actingAs($user)
             ->postJson('/tts', ['text' => 'tulip', 'speakingRate' => 1.5]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonFragment(['cacheHit' => true]);
     }
 
     public function test_returns_500_when_tts_service_throws(): void
@@ -108,5 +120,33 @@ class TtsSynthesizeTest extends TestCase
 
         $response->assertStatus(500)
             ->assertJsonPath('error', 'TTS synthesis failed');
+    }
+
+    // ---- GET /tts/audio/{key} ----
+
+    public function test_stream_returns_audio_when_file_exists(): void
+    {
+        Storage::fake();
+        Storage::disk()->put('tts/abc123.mp3', 'fake-mp3-content');
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->get('/tts/audio/abc123');
+
+        $response->assertOk()
+            ->assertHeader('Content-Type', 'audio/mpeg');
+    }
+
+    public function test_stream_returns_404_when_file_not_found(): void
+    {
+        Storage::fake();
+
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user)
+            ->get('/tts/audio/nonexistent');
+
+        $response->assertNotFound();
     }
 }

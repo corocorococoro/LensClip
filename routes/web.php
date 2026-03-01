@@ -53,6 +53,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // TTS
     Route::post('/tts', [TtsController::class, 'synthesize'])->name('tts.synthesize');
+    Route::get('/tts/audio/{key}', [TtsController::class, 'stream'])->name('tts.audio');
 });
 
 Route::middleware('auth')->group(function () {

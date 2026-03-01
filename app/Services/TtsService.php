@@ -25,24 +25,23 @@ class TtsService
     }
 
     /**
-     * Synthesize text to speech and return URL
+     * Synthesize text to speech and return cache key
      *
      * @param string $text Text to synthesize
      * @param float|null $speakingRate Optional speaking rate override
-     * @return array{url: string, cacheHit: bool}
+     * @return array{key: string, cacheHit: bool}
      */
     public function synthesize(string $text, ?float $speakingRate = null): array
     {
         $rate = $speakingRate ?? $this->speakingRate;
         $cacheKey = $this->getCacheKey($text, $rate);
-        $filename = "{$cacheKey}.mp3";
-        $path = "tts/{$filename}";
+        $path = "tts/{$cacheKey}.mp3";
 
         // Check cache
         if ($this->isCacheValid($path)) {
-            Log::debug('TTS cache hit', ['text' => $text, 'file' => $filename]);
+            Log::debug('TTS cache hit', ['text' => $text, 'key' => $cacheKey]);
             return [
-                'url' => Storage::disk()->url($path),
+                'key' => $cacheKey,
                 'cacheHit' => true,
             ];
         }
@@ -53,16 +52,13 @@ class TtsService
         // Save to storage
         Storage::disk()->put($path, $audioContent);
 
-        $publicUrl = Storage::disk()->url($path);
-
         Log::info('TTS generated', [
             'text' => $text,
-            'file' => $filename,
-            'public_url' => $publicUrl,
+            'key' => $cacheKey,
         ]);
 
         return [
-            'url' => $publicUrl,
+            'key' => $cacheKey,
             'cacheHit' => false,
         ];
     }
@@ -70,7 +66,7 @@ class TtsService
     /**
      * Generate cache key from text and rate
      */
-    protected function getCacheKey(string $text, float $rate): string
+    public function getCacheKey(string $text, float $rate): string
     {
         $normalized = strtolower(trim($text));
         return md5("{$normalized}|{$this->voice}|{$rate}");
