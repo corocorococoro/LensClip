@@ -45,6 +45,7 @@ export default function Show({ observation, categories }: Props) {
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const ttsCache = useRef<Map<string, string>>(new Map());
 
     const currentCategory = categories?.find(c => c.id === observation.category) || categories?.[categories.length - 1];
 
@@ -107,21 +108,28 @@ export default function Show({ observation, categories }: Props) {
         setTtsError(false);
         setTtsLoading(true);
         try {
-            const res = await fetch('/tts', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
-                },
-                body: JSON.stringify({ text }),
-            });
-            if (!res.ok) throw new Error('TTS request failed');
-            const data = await res.json();
-            const audio = new Audio(data.url);
+            // キャッシュにURLがあれば POST をスキップ
+            let url = ttsCache.current.get(text);
+            if (!url) {
+                const res = await fetch('/tts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
+                    },
+                    body: JSON.stringify({ text }),
+                });
+                if (!res.ok) throw new Error('TTS request failed');
+                const data = await res.json();
+                url = data.url as string;
+                ttsCache.current.set(text, url);
+            }
+            const audio = new Audio(url);
             audioRef.current = audio;
             await audio.play();
         } catch (error) {
             console.error('TTS playback failed:', error);
+            ttsCache.current.delete(text); // エラー時はキャッシュを破棄してリトライ可能に
             setTtsError(true);
         } finally {
             setTtsLoading(false);
