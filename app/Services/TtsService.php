@@ -35,7 +35,7 @@ class TtsService
     {
         $rate = $speakingRate ?? $this->speakingRate;
         $cacheKey = $this->getCacheKey($text, $rate);
-        $path = "tts/{$cacheKey}.mp3";
+        $path = self::audioPath($cacheKey);
 
         // Check cache
         if ($this->isCacheValid($path)) {
@@ -64,24 +64,34 @@ class TtsService
     }
 
     /**
+     * Build the storage path for a TTS audio file by cache key.
+     */
+    public static function audioPath(string $key): string
+    {
+        return "tts/{$key}.mp3";
+    }
+
+    /**
      * Generate cache key from text and rate
      */
-    public function getCacheKey(string $text, float $rate): string
+    protected function getCacheKey(string $text, float $rate): string
     {
         $normalized = strtolower(trim($text));
         return md5("{$normalized}|{$this->voice}|{$rate}");
     }
 
     /**
-     * Check if cached file is still valid (within TTL)
+     * Check if cached file is still valid (within TTL).
+     * Uses a single lastModified() call; returns false if file does not exist.
      */
     protected function isCacheValid(string $path): bool
     {
-        if (!Storage::disk()->exists($path)) {
+        try {
+            $lastModified = Storage::disk()->lastModified($path);
+        } catch (\Exception $e) {
             return false;
         }
 
-        $lastModified = Storage::disk()->lastModified($path);
         $ttlSeconds = $this->ttlDays * 24 * 60 * 60;
 
         return (time() - $lastModified) < $ttlSeconds;

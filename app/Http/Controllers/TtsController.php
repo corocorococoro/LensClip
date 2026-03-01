@@ -48,23 +48,23 @@ class TtsController extends Controller
      */
     public function stream(string $key): Response
     {
-        $path = "tts/{$key}.mp3";
-
-        if (!Storage::disk()->exists($path)) {
-            Log::warning('TTS stream: file not found', ['key' => $key, 'path' => $path, 'disk' => config('filesystems.default')]);
-            abort(404);
-        }
+        $path = TtsService::audioPath($key);
 
         try {
             $content = Storage::disk()->get($path);
-            Log::debug('TTS stream: serving audio', ['key' => $key, 'bytes' => strlen($content)]);
+            $length = strlen($content);
+            Log::debug('TTS stream: serving audio', ['key' => $key, 'bytes' => $length]);
 
             return response($content, 200, [
                 'Content-Type' => 'audio/mpeg',
-                'Content-Length' => strlen($content),
+                'Content-Length' => $length,
                 'Cache-Control' => 'private, max-age=86400',
             ]);
         } catch (\Exception $e) {
+            if (!Storage::disk()->exists($path)) {
+                Log::warning('TTS stream: file not found', ['key' => $key, 'path' => $path, 'disk' => config('filesystems.default')]);
+                abort(404);
+            }
             Log::error('TTS stream: read failed', ['key' => $key, 'error' => $e->getMessage()]);
             abort(500);
         }

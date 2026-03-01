@@ -4,7 +4,7 @@ import Modal from '@/Components/Modal';
 import LocationMap from '@/Components/LocationMap';
 import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 const SpeakerIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -46,6 +46,13 @@ export default function Show({ observation, categories }: Props) {
     const [categoryUpdating, setCategoryUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const ttsCache = useRef<Map<string, string>>(new Map());
+
+    useEffect(() => {
+        return () => {
+            audioRef.current?.pause();
+            audioRef.current = null;
+        };
+    }, []);
 
     const currentCategory = categories?.find(c => c.id === observation.category) || categories?.[categories.length - 1];
 
@@ -96,6 +103,7 @@ export default function Show({ observation, categories }: Props) {
 
     const handleCandidateSelect = (index: number) => {
         setActiveCandidateIndex(index);
+        setTtsError(false);
     };
 
     const playTts = useCallback(async (text: string) => {
