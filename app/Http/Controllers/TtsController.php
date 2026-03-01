@@ -8,7 +8,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TtsController extends Controller
 {
@@ -44,14 +43,30 @@ class TtsController extends Controller
     }
 
     /**
-     * Stream an audio file by cache key.
+     * Serve an audio file by cache key.
      * Works with any Storage disk (local, public, gcs) without requiring a public URL or symlink.
      */
-    public function stream(string $key): StreamedResponse
+    public function stream(string $key): Response
     {
         $path = "tts/{$key}.mp3";
-        abort_unless(Storage::disk()->exists($path), Response::HTTP_NOT_FOUND);
 
-        return Storage::disk()->response($path, null, ['Content-Type' => 'audio/mpeg']);
+        if (!Storage::disk()->exists($path)) {
+            Log::warning('TTS stream: file not found', ['key' => $key, 'path' => $path, 'disk' => config('filesystems.default')]);
+            abort(404);
+        }
+
+        try {
+            $content = Storage::disk()->get($path);
+            Log::debug('TTS stream: serving audio', ['key' => $key, 'bytes' => strlen($content)]);
+
+            return response($content, 200, [
+                'Content-Type' => 'audio/mpeg',
+                'Content-Length' => strlen($content),
+                'Cache-Control' => 'private, max-age=86400',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('TTS stream: read failed', ['key' => $key, 'error' => $e->getMessage()]);
+            abort(500);
+        }
     }
 }
