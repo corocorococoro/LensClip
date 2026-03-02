@@ -20,37 +20,33 @@ export default function Processing({ observation }: Props) {
     useEffect(() => {
         if (status !== 'processing') return;
 
-        const pollInterval = setInterval(async () => {
-            try {
-                const response = await fetch(`/observations/${observation.id}`, {
-                    headers: { Accept: 'application/json' },
-                });
-                const data = await response.json();
+        const source = new EventSource(`/observations/${observation.id}/stream`);
 
-                if (data.status === 'ready') {
-                    clearInterval(pollInterval);
-                    router.visit(`/observations/${observation.id}`);
-                } else if (data.status === 'failed') {
-                    clearInterval(pollInterval);
-                    setStatus('failed');
-                    setError(data.error_message || 'AI分析に失敗しました');
-                }
-            } catch (e) {
-                console.error('Polling error:', e);
-            }
-        }, 1000);
+        source.addEventListener('ready', () => {
+            source.close();
+            router.visit(`/observations/${observation.id}`);
+        });
 
-        // Timeout after 60 seconds
-        const timeout = setTimeout(() => {
-            clearInterval(pollInterval);
+        source.addEventListener('failed', (e: MessageEvent) => {
+            source.close();
+            const data = JSON.parse(e.data) as { error_message?: string };
+            setStatus('failed');
+            setError(data.error_message || 'AI分析に失敗しました');
+        });
+
+        source.addEventListener('timeout', () => {
+            source.close();
             setStatus('failed');
             setError('タイムアウトしました。もう一度お試しください。');
-        }, 60000);
+        });
 
-        return () => {
-            clearInterval(pollInterval);
-            clearTimeout(timeout);
+        source.onerror = () => {
+            source.close();
+            setStatus('failed');
+            setError('接続エラーが発生しました。もう一度お試しください。');
         };
+
+        return () => source.close();
     }, [observation.id, status]);
 
     const handleRetry = () => {

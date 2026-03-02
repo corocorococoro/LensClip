@@ -61,11 +61,6 @@ class User extends Authenticatable
         return $this->role === self::ROLE_ADMIN;
     }
 
-    public function scraps()
-    {
-        return $this->hasMany(Scrap::class);
-    }
-
     /**
      * Get all auth identities (Google, etc).
      */

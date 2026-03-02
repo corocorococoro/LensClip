@@ -39,6 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/library', [ObservationController::class, 'index'])->name('library');
     Route::post('/observations', [ObservationController::class, 'store'])->name('observations.store');
     Route::get('/observations/{observation}/processing', [ObservationController::class, 'processing'])->name('observations.processing');
+    Route::get('/observations/{observation}/stream', [ObservationController::class, 'stream'])->name('observations.stream');
     Route::get('/observations/{observation}', [ObservationController::class, 'show'])->name('observations.show');
     Route::post('/observations/{observation}/retry', [ObservationController::class, 'retry'])->name('observations.retry');
     Route::delete('/observations/{observation}', [ObservationController::class, 'destroy'])->name('observations.destroy');

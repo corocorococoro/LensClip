@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RetryObservationAction;
+use App\Actions\UpdateObservationTagsAction;
 use App\Http\Requests\DestroyAllObservationsRequest;
 use App\Http\Requests\StoreObservationRequest;
 use App\Http\Requests\UpdateObservationCategoryRequest;
 use App\Http\Requests\UpdateObservationTagsRequest;
-use App\Jobs\AnalyzeObservationJob;
 use App\Models\Observation;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -21,8 +22,11 @@ class ObservationController extends Controller
 {
     protected $observationService;
 
-    public function __construct(\App\Services\ObservationService $observationService)
-    {
+    public function __construct(
+        \App\Services\ObservationService $observationService,
+        private RetryObservationAction $retryAction,
+        private UpdateObservationTagsAction $updateTagsAction,
+    ) {
         $this->observationService = $observationService;
     }
 
@@ -316,18 +320,67 @@ class ObservationController extends Controller
     }
 
     /**
+     * Stream observation status changes via Server-Sent Events.
+     */
+    public function stream(Observation $observation)
+    {
+        $this->authorize('view', $observation);
+
+        return response()->stream(function () use ($observation) {
+            $start = time();
+
+            while (true) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                if (time() - $start > 90) {
+                    echo "event: timeout\ndata: {}\n\n";
+                    ob_flush();
+                    flush();
+                    break;
+                }
+
+                $obs = $observation->fresh();
+
+                if ($obs->status === 'ready') {
+                    echo "event: ready\ndata: {}\n\n";
+                    ob_flush();
+                    flush();
+                    break;
+                }
+
+                if ($obs->status === 'failed') {
+                    echo "event: failed\ndata: " . json_encode([
+                        'error_message' => $obs->error_message,
+                    ]) . "\n\n";
+                    ob_flush();
+                    flush();
+                    break;
+                }
+
+                echo ": heartbeat\n\n";
+                ob_flush();
+                flush();
+
+                sleep(2);
+            }
+        }, 200, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache',
+            'X-Accel-Buffering' => 'no',
+            'Connection' => 'keep-alive',
+        ]);
+    }
+
+    /**
      * Retry failed observation.
      */
     public function retry(Observation $observation)
     {
         $this->authorize('retry', $observation);
 
-        $observation->update([
-            'status' => 'processing',
-            'error_message' => null,
-        ]);
-
-        AnalyzeObservationJob::dispatch($observation->id);
+        $this->retryAction->execute($observation);
 
         if (request()->wantsJson()) {
             return response()->json([
@@ -380,25 +433,10 @@ class ObservationController extends Controller
     {
         $this->authorize('update', $observation);
 
-        $validated = $request->validated();
-
-        $tagIds = [];
-        foreach ($validated['tags'] ?? [] as $name) {
-            $name = trim($name);
-            if (empty($name)) {
-                continue;
-            }
-
-            $tag = Tag::firstOrCreate(
-                ['user_id' => auth()->id(), 'name' => $name],
-                ['user_id' => auth()->id(), 'name' => $name]
-            );
-            $tagIds[] = $tag->id;
-        }
-
-        $observation->tags()->sync($tagIds);
+        $this->updateTagsAction->execute($observation, $request->validated('tags') ?? []);
 
         if ($request->wantsJson()) {
+            $observation->load('tags');
             return response()->json(['tags' => $observation->tags->pluck('name')]);
         }
 
