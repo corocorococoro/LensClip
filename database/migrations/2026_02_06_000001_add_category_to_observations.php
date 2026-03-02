@@ -25,7 +25,7 @@ return new class extends Migration
                     $aiJson = json_decode($row->ai_json, true);
                     $category = $aiJson['category'] ?? 'other';
 
-                    if (!in_array($category, $allowed)) {
+                    if (! in_array($category, $allowed)) {
                         $category = 'other';
                     }
 

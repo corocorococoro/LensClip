@@ -31,9 +31,11 @@ class CleanupExpiredTtsCommand extends Command
         try {
             $count = $ttsService->cleanupExpired();
             $this->info("Deleted {$count} expired TTS files.");
+
             return Command::SUCCESS;
         } catch (\Exception $e) {
-            $this->error("Cleanup failed: " . $e->getMessage());
+            $this->error('Cleanup failed: '.$e->getMessage());
+
             return Command::FAILURE;
         }
     }

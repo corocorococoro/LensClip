@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL'), '/') . '/storage',
+            'url' => rtrim(env('APP_URL'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -54,7 +54,7 @@ return [
             return [
                 'driver' => 'gcs',
                 'key_file' => $json ? json_decode($json, true) : null,
-                'key_file_path' => (!$json && $filePath) ? base_path($filePath) : null,
+                'key_file_path' => (! $json && $filePath) ? base_path($filePath) : null,
                 'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
                 'bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
                 'visibility_handler' => \League\Flysystem\GoogleCloudStorage\UniformBucketLevelAccessVisibility::class,

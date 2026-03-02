@@ -15,7 +15,7 @@ class LandingPageRedirectTest extends TestCase
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        $response->assertInertia(fn($page) => $page->component('Welcome'));
+        $response->assertInertia(fn ($page) => $page->component('Welcome'));
     }
 
     public function test_authenticated_user_is_redirected_to_dashboard(): void

@@ -34,7 +34,7 @@ class ObservationService
         $finalLongitude = $gps['longitude'] ?? $longitude;
 
         // Process image
-        $manager = new ImageManager(new Driver());
+        $manager = new ImageManager(new Driver);
         $image = $manager->read($tempPath);
         $image->orient();
 
@@ -72,7 +72,7 @@ class ObservationService
 
         Log::info('Observation created, dispatching analysis job', [
             'original_path' => $originalPath,
-            'has_gps' => !empty($gps),
+            'has_gps' => ! empty($gps),
         ]);
 
         // Dispatch analysis job
@@ -89,7 +89,7 @@ class ObservationService
         try {
             $exif = @exif_read_data($imagePath);
 
-            if (!$exif || !isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
+            if (! $exif || ! isset($exif['GPSLatitude'], $exif['GPSLongitude'])) {
                 return [];
             }
 
@@ -113,6 +113,7 @@ class ObservationService
             ];
         } catch (\Exception $e) {
             Log::debug('Failed to extract GPS from EXIF', ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -178,7 +179,7 @@ class ObservationService
             $observation->thumb_path,
         ]);
 
-        if (!empty($paths)) {
+        if (! empty($paths)) {
             Storage::disk()->delete($paths);
         }
 
@@ -186,7 +187,7 @@ class ObservationService
         $observation->delete();
 
         // Cleanup orphan tags
-        if (!empty($tagIds)) {
+        if (! empty($tagIds)) {
             // Check each tag
             foreach ($tagIds as $tagId) {
                 // If the tag has no observations left, delete it

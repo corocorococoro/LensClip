@@ -39,7 +39,7 @@ class AiSettingsController extends Controller
         $allowedModels = array_keys(config('services.gemini.allowed_models', []));
 
         $validated = $request->validate([
-            'model' => ['required', 'string', 'in:' . implode(',', $allowedModels)],
+            'model' => ['required', 'string', 'in:'.implode(',', $allowedModels)],
         ], [
             'model.required' => 'モデルを選択してください。',
             'model.in' => '無効なモデルが選択されました。',

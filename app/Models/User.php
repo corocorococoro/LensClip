@@ -16,6 +16,7 @@ class User extends Authenticatable
      * User roles.
      */
     public const ROLE_USER = 'user';
+
     public const ROLE_ADMIN = 'admin';
 
     /**

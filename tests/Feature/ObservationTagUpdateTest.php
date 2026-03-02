@@ -24,7 +24,7 @@ class ObservationTagUpdateTest extends TestCase
 
         // Update with new tags
         $response = $this->patchJson(route('observations.updateTags', $observation), [
-            'tags' => ['Nature', 'Flower', '  '] // Includes whitespace to test trimming/skipping
+            'tags' => ['Nature', 'Flower', '  '], // Includes whitespace to test trimming/skipping
         ]);
 
         $response->assertStatus(200);
@@ -47,7 +47,7 @@ class ObservationTagUpdateTest extends TestCase
 
         $this->actingAs($user2);
         $response = $this->patch(route('observations.updateTags', $observation), [
-            'tags' => ['EvilTag']
+            'tags' => ['EvilTag'],
         ]);
 
         $response->assertStatus(403);
@@ -73,7 +73,7 @@ class ObservationTagUpdateTest extends TestCase
 
         // Update tags to a DIFFERENT tag
         $this->patch(route('observations.updateTags', $observation), [
-            'tags' => ['NewTag']
+            'tags' => ['NewTag'],
         ]);
 
         $observation->refresh();

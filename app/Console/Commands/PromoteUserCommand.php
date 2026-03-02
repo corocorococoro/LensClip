@@ -27,13 +27,15 @@ class PromoteUserCommand extends Command
 
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
+        if (! $user) {
             $this->error("User with email '{$email}' not found.");
+
             return Command::FAILURE;
         }
 
         if ($user->isAdmin()) {
             $this->info("User '{$email}' is already an admin.");
+
             return Command::SUCCESS;
         }
 

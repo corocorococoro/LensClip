@@ -58,7 +58,7 @@ return [
         return [
             // Railway等: JSON文字列をデコード / ローカル: ファイルパス / どちらもなし: ADC
             'credentials' => $json ? json_decode($json, true) : null,
-            'key_file_path' => (!$json && $filePath) ? base_path($filePath) : null,
+            'key_file_path' => (! $json && $filePath) ? base_path($filePath) : null,
             'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
             'storage_bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
         ];

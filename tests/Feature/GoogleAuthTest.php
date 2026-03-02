@@ -6,8 +6,8 @@ use App\Models\AuthIdentity;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Socialite\Facades\Socialite;
-use Tests\TestCase;
 use Mockery;
+use Tests\TestCase;
 
 class GoogleAuthTest extends TestCase
 {
@@ -102,7 +102,7 @@ class GoogleAuthTest extends TestCase
                 'email' => 'linkme@example.com',
                 'name' => 'Link Me',
                 'user_id' => $user->id,
-            ]
+            ],
         ]);
 
         $response = $this->post(route('auth.google.link.process'), [
@@ -133,7 +133,7 @@ class GoogleAuthTest extends TestCase
                 'email' => 'linkme@example.com',
                 'name' => 'Link Me',
                 'user_id' => $user->id,
-            ]
+            ],
         ]);
 
         $response = $this->post(route('auth.google.link.process'), [

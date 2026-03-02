@@ -2,14 +2,14 @@
 
 namespace Tests\Unit;
 
-use App\Services\ObservationService;
 use App\Models\User;
+use App\Services\ObservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use Tests\TestCase;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
+use Tests\TestCase;
 
 class ImageProcessingTest extends TestCase
 {
@@ -29,7 +29,7 @@ class ImageProcessingTest extends TestCase
         // For now, Intervention Image's toWebp() or orient() usually handles stripping.
         // Let's verify the output file exists and is a valid image.
 
-        $service = new ObservationService();
+        $service = new ObservationService;
         $file = UploadedFile::fake()->image('nature.jpg', 2000, 2000); // Larger than 1024
 
         $observation = $service->createObservation($user, $file);
@@ -41,7 +41,7 @@ class ImageProcessingTest extends TestCase
         $this->assertTrue(Storage::disk()->exists($thumbPath));
 
         // Check dimension of processed original (should be scaled down to 1024)
-        $manager = new ImageManager(new Driver());
+        $manager = new ImageManager(new Driver);
         $image = $manager->read(Storage::disk()->get($originalPath));
 
         $this->assertLessThanOrEqual(1024, $image->width());

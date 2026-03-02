@@ -35,6 +35,7 @@ class GoogleAuthController extends Controller
             $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
             Log::error('Google OAuth callback failed', ['error' => $e->getMessage()]);
+
             return redirect()->route('login')
                 ->with('error', 'Google認証に失敗しました。');
         }
@@ -54,6 +55,7 @@ class GoogleAuthController extends Controller
         $identity = AuthIdentity::findByOidc('google', $issuer, $subject);
         if ($identity) {
             Auth::login($identity->user, true);
+
             return redirect()->intended('/dashboard');
         }
 
@@ -91,6 +93,7 @@ class GoogleAuthController extends Controller
         Log::info('New user created via Google OAuth', ['user_id' => $user->id]);
 
         Auth::login($user, true);
+
         return redirect()->intended('/dashboard');
     }
 
@@ -101,7 +104,7 @@ class GoogleAuthController extends Controller
     {
         $googleLink = $request->session()->get('google_link');
 
-        if (!$googleLink) {
+        if (! $googleLink) {
             return redirect()->route('login');
         }
 
@@ -117,7 +120,7 @@ class GoogleAuthController extends Controller
     {
         $googleLink = $request->session()->get('google_link');
 
-        if (!$googleLink) {
+        if (! $googleLink) {
             return redirect()->route('login')
                 ->with('error', 'セッションが期限切れです。');
         }
@@ -128,7 +131,7 @@ class GoogleAuthController extends Controller
 
         $user = User::find($googleLink['user_id']);
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return back()->withErrors([
                 'password' => 'パスワードが正しくありません。',
             ]);
@@ -149,6 +152,7 @@ class GoogleAuthController extends Controller
         Log::info('Google account linked to existing user', ['user_id' => $user->id]);
 
         Auth::login($user, true);
+
         return redirect()->intended('/dashboard');
     }
 }

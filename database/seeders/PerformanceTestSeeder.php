@@ -5,8 +5,8 @@ namespace Database\Seeders;
 use App\Models\Observation;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class PerformanceTestSeeder extends Seeder
@@ -76,7 +76,7 @@ class PerformanceTestSeeder extends Seeder
 
                 $disk->put($path, $contents);
             } else {
-                $disk->put($path, "DUMMY IMAGE CONTENT (GD not installed)");
+                $disk->put($path, 'DUMMY IMAGE CONTENT (GD not installed)');
             }
             $dummyFiles[] = $filename;
         }

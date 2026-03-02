@@ -6,8 +6,8 @@ use App\Models\Observation;
 use App\Models\Tag;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class ObservationListTest extends TestCase
 {
@@ -27,7 +27,7 @@ class ObservationListTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Library')
                 ->has('dateGroups', 1)
                 ->has('dateGroups.0.observations', 1)
@@ -52,7 +52,7 @@ class ObservationListTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Library')
                 ->has('dateGroups', 1)
                 ->has('dateGroups.0.observations', 1)
@@ -72,7 +72,7 @@ class ObservationListTest extends TestCase
         $response = $this->get(route('library'));
 
         $response->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->has('dateGroups', 1)
                 ->has('dateGroups.0.observations', 1)
                 ->where('dateGroups.0.observations.0.title', 'User 1 Item')

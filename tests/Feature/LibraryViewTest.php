@@ -39,7 +39,7 @@ class LibraryViewTest extends TestCase
         $response->assertStatus(200);
 
         $response->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Library')
                 ->has('dateGroups', 2)
                 ->where('dateGroups.0.yearMonth', '2026-01')
@@ -62,7 +62,7 @@ class LibraryViewTest extends TestCase
         $response->assertStatus(200);
 
         $response->assertInertia(
-            fn(Assert $page) => $page
+            fn (Assert $page) => $page
                 ->component('Library')
                 ->has('categories')
                 ->where('categories.0.id', 'animal')

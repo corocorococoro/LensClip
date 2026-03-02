@@ -10,13 +10,13 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 class AnalyzeObservationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 3;
+
     public int $backoff = 10;
 
     /**
@@ -24,8 +24,7 @@ class AnalyzeObservationJob implements ShouldQueue
      */
     public function __construct(
         public string $observationId
-    ) {
-    }
+    ) {}
 
     /**
      * Execute the job.
@@ -39,16 +38,18 @@ class AnalyzeObservationJob implements ShouldQueue
 
         $observation = Observation::find($this->observationId);
 
-        if (!$observation) {
+        if (! $observation) {
             Log::warning('AnalyzeObservationJob: Observation not found');
+
             return;
         }
 
         // Skip if not in processing status
         if ($observation->status !== 'processing') {
             Log::info('AnalyzeObservationJob: Skipping, status is not processing', [
-                'status' => $observation->status
+                'status' => $observation->status,
             ]);
+
             return;
         }
 
@@ -60,7 +61,7 @@ class AnalyzeObservationJob implements ShouldQueue
             // カテゴリをconfigの許可リストで検証
             $aiCategory = $result['ai_json']['category'] ?? 'other';
             $allowedCategories = array_column(config('categories'), 'id');
-            if (!in_array($aiCategory, $allowedCategories)) {
+            if (! in_array($aiCategory, $allowedCategories)) {
                 $aiCategory = 'other';
             }
 
@@ -86,7 +87,7 @@ class AnalyzeObservationJob implements ShouldQueue
         } catch (\Exception $e) {
             Log::error('AnalyzeObservationJob: Failed', [
                 'id' => $this->observationId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             $observation->update([
@@ -108,8 +109,9 @@ class AnalyzeObservationJob implements ShouldQueue
         $tagIds = [];
         foreach (array_slice($tagNames, 0, 10) as $name) { // Limit to 10 tags
             $name = trim($name);
-            if (empty($name))
+            if (empty($name)) {
                 continue;
+            }
 
             $tag = \App\Models\Tag::firstOrCreate(
                 ['user_id' => $observation->user_id, 'name' => $name],
@@ -130,7 +132,7 @@ class AnalyzeObservationJob implements ShouldQueue
         if ($observation) {
             $observation->update([
                 'status' => 'failed',
-                'error_message' => 'AI分析に失敗しました: ' . $exception->getMessage(),
+                'error_message' => 'AI分析に失敗しました: '.$exception->getMessage(),
             ]);
         }
     }

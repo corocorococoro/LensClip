@@ -13,8 +13,7 @@ class TtsController extends Controller
 {
     public function __construct(
         protected TtsService $ttsService
-    ) {
-    }
+    ) {}
 
     /**
      * Synthesize text to speech and return audio URL
@@ -50,7 +49,7 @@ class TtsController extends Controller
     {
         $path = TtsService::audioPath($key);
 
-        if (!Storage::disk()->exists($path)) {
+        if (! Storage::disk()->exists($path)) {
             Log::warning('TTS stream: file not found', ['key' => $key, 'path' => $path, 'disk' => config('filesystems.default')]);
             abort(404);
         }

@@ -19,7 +19,7 @@ class AiSettingsTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertInertia(
-            fn($page) => $page
+            fn ($page) => $page
                 ->component('Admin/AiSettings')
                 ->has('currentModel')
                 ->has('allowedModels')
@@ -95,7 +95,7 @@ class AiSettingsTest extends TestCase
         $response = $this->actingAs($admin)->get('/admin/settings/ai');
 
         $response->assertInertia(
-            fn($page) => $page
+            fn ($page) => $page
                 ->component('Admin/AiSettings')
                 ->has('allowedModels', 3) // 3つのモデルがある
         );

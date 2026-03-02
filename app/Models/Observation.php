@@ -13,6 +13,7 @@ class Observation extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     protected $fillable = [
@@ -88,7 +89,7 @@ class Observation extends Model
 
     public function scopeSearch($query, $keyword)
     {
-        return $query->where('title', 'like', '%' . $keyword . '%');
+        return $query->where('title', 'like', '%'.$keyword.'%');
     }
 
     public function scopeWithTag($query, $tagName)

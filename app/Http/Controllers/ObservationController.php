@@ -12,11 +12,7 @@ use App\Models\Observation;
 use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 
 class ObservationController extends Controller
 {
@@ -175,7 +171,7 @@ class ObservationController extends Controller
             $yearMonth = $date->format('Y-m');
             $label = $date->format('Y年n月');
 
-            if (!isset($groups[$yearMonth])) {
+            if (! isset($groups[$yearMonth])) {
                 $groups[$yearMonth] = [
                     'yearMonth' => $yearMonth,
                     'label' => $label,
@@ -255,7 +251,7 @@ class ObservationController extends Controller
      */
     private function getCategoriesForFrontend(): array
     {
-        return collect(config('categories'))->map(fn($c) => [
+        return collect(config('categories'))->map(fn ($c) => [
             'id' => $c['id'],
             'name' => $c['name'],
             'color' => $c['color'],
@@ -351,9 +347,9 @@ class ObservationController extends Controller
                 }
 
                 if ($obs->status === 'failed') {
-                    echo "event: failed\ndata: " . json_encode([
+                    echo "event: failed\ndata: ".json_encode([
                         'error_message' => $obs->error_message,
-                    ]) . "\n\n";
+                    ])."\n\n";
                     ob_flush();
                     flush();
                     break;
@@ -437,6 +433,7 @@ class ObservationController extends Controller
 
         if ($request->wantsJson()) {
             $observation->load('tags');
+
             return response()->json(['tags' => $observation->tags->pluck('name')]);
         }
 

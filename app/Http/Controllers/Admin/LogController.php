@@ -55,12 +55,12 @@ class LogController extends Controller
     {
         $logPath = storage_path("logs/laravel-{$date}.log");
 
-        if (!File::exists($logPath)) {
+        if (! File::exists($logPath)) {
             // Try the default laravel.log
             $logPath = storage_path('logs/laravel.log');
         }
 
-        if (!File::exists($logPath)) {
+        if (! File::exists($logPath)) {
             return ['entries' => [], 'hasMore' => false, 'total' => 0];
         }
 
@@ -71,14 +71,13 @@ class LogController extends Controller
         if ($level !== 'all') {
             $entries = array_filter(
                 $entries,
-                fn($entry) =>
-                strtolower($entry['level']) === strtolower($level)
+                fn ($entry) => strtolower($entry['level']) === strtolower($level)
             );
             $entries = array_values($entries);
         }
 
         // Sort by timestamp descending (newest first)
-        usort($entries, fn($a, $b) => strtotime($b['timestamp']) <=> strtotime($a['timestamp']));
+        usort($entries, fn ($a, $b) => strtotime($b['timestamp']) <=> strtotime($a['timestamp']));
 
         $total = count($entries);
         $offset = ($page - 1) * $perPage;

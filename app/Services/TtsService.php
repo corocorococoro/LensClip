@@ -2,19 +2,21 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 use Google\Cloud\TextToSpeech\V1\AudioConfig;
 use Google\Cloud\TextToSpeech\V1\AudioEncoding;
 use Google\Cloud\TextToSpeech\V1\Client\TextToSpeechClient;
 use Google\Cloud\TextToSpeech\V1\SynthesisInput;
 use Google\Cloud\TextToSpeech\V1\SynthesizeSpeechRequest;
 use Google\Cloud\TextToSpeech\V1\VoiceSelectionParams;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TtsService
 {
     protected string $voice;
+
     protected float $speakingRate;
+
     protected int $ttlDays;
 
     public function __construct()
@@ -27,8 +29,8 @@ class TtsService
     /**
      * Synthesize text to speech and return cache key
      *
-     * @param string $text Text to synthesize
-     * @param float|null $speakingRate Optional speaking rate override
+     * @param  string  $text  Text to synthesize
+     * @param  float|null  $speakingRate  Optional speaking rate override
      * @return array{key: string, cacheHit: bool}
      */
     public function synthesize(string $text, ?float $speakingRate = null): array
@@ -40,6 +42,7 @@ class TtsService
         // Check cache
         if ($this->isCacheValid($path)) {
             Log::debug('TTS cache hit', ['text' => $text, 'key' => $cacheKey]);
+
             return [
                 'key' => $cacheKey,
                 'cacheHit' => true,
@@ -77,6 +80,7 @@ class TtsService
     protected function getCacheKey(string $text, float $rate): string
     {
         $normalized = strtolower(trim($text));
+
         return md5("{$normalized}|{$this->voice}|{$rate}");
     }
 
@@ -105,18 +109,18 @@ class TtsService
         try {
             $client = new TextToSpeechClient(GoogleCloudClientFactory::clientOptions());
 
-            $input = (new SynthesisInput())
+            $input = (new SynthesisInput)
                 ->setText($text);
 
-            $voice = (new VoiceSelectionParams())
+            $voice = (new VoiceSelectionParams)
                 ->setLanguageCode('en-US')
                 ->setName($this->voice);
 
-            $audioConfig = (new AudioConfig())
+            $audioConfig = (new AudioConfig)
                 ->setAudioEncoding(AudioEncoding::MP3)
                 ->setSpeakingRate($rate);
 
-            $synthesizeRequest = (new SynthesizeSpeechRequest())
+            $synthesizeRequest = (new SynthesizeSpeechRequest)
                 ->setInput($input)
                 ->setVoice($voice)
                 ->setAudioConfig($audioConfig);
@@ -126,7 +130,7 @@ class TtsService
 
             $audioContent = $response->getAudioContent();
 
-            if (!$audioContent) {
+            if (! $audioContent) {
                 throw new \Exception('No audio content in TTS response');
             }
 
@@ -137,7 +141,7 @@ class TtsService
             Log::error('Google TTS API error', [
                 'error' => $e->getMessage(),
             ]);
-            throw new \Exception("Google TTS API error: " . $e->getMessage());
+            throw new \Exception('Google TTS API error: '.$e->getMessage());
         }
     }
 

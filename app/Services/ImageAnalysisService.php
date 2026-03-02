@@ -3,23 +3,24 @@
 namespace App\Services;
 
 use App\Models\Observation;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 use Google\Cloud\Vision\V1\AnnotateImageRequest;
 use Google\Cloud\Vision\V1\BatchAnnotateImagesRequest;
+use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
 use Google\Cloud\Vision\V1\Feature;
 use Google\Cloud\Vision\V1\Feature\Type;
 use Google\Cloud\Vision\V1\Image;
-use Google\Cloud\Vision\V1\Client\ImageAnnotatorClient;
 use Google\Cloud\Vision\V1\Likelihood;
 use Google\Cloud\Vision\V1\SafeSearchAnnotation;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class ImageAnalysisService
 {
     protected ?string $geminiApiKey;
+
     protected string $geminiModel;
 
     public function __construct()
@@ -59,7 +60,7 @@ class ImageAnalysisService
         if ($selectedBbox) {
             Log::info('ImageAnalysisService: Bbox selected, cropping image', [
                 'name' => $selectedBbox['name'],
-                'score' => $selectedBbox['score']
+                'score' => $selectedBbox['score'],
             ]);
             $result['crop_bbox'] = $selectedBbox;
             // cropImage はパスとエンコード済みバイト列を返す（Storage 再読み込み不要）
@@ -93,18 +94,18 @@ class ImageAnalysisService
     protected function callVisionObjectLocalization(string $imageContent): ?array
     {
         try {
-            $image = (new Image())->setContent($imageContent);
+            $image = (new Image)->setContent($imageContent);
 
             $features = [
-                (new Feature())->setType(Type::OBJECT_LOCALIZATION),
-                (new Feature())->setType(Type::SAFE_SEARCH_DETECTION),
+                (new Feature)->setType(Type::OBJECT_LOCALIZATION),
+                (new Feature)->setType(Type::SAFE_SEARCH_DETECTION),
             ];
 
-            $request = (new AnnotateImageRequest())
+            $request = (new AnnotateImageRequest)
                 ->setImage($image)
                 ->setFeatures($features);
 
-            $batchRequest = (new BatchAnnotateImagesRequest())
+            $batchRequest = (new BatchAnnotateImagesRequest)
                 ->setRequests([$request]);
 
             $client = new ImageAnnotatorClient(GoogleCloudClientFactory::clientOptions());
@@ -118,7 +119,7 @@ class ImageAnalysisService
             $response = $responses[0];
 
             if ($response->getError()) {
-                throw new \Exception("Vision API Error: " . $response->getError()->getMessage());
+                throw new \Exception('Vision API Error: '.$response->getError()->getMessage());
             }
 
             // Check SafeSearch
@@ -191,7 +192,7 @@ class ImageAnalysisService
 
         // Get image dimensions from binary content (no local path on GCS)
         $imageInfo = getimagesizefromstring($imageContent);
-        if (!$imageInfo) {
+        if (! $imageInfo) {
             return null;
         }
         $imageWidth = $imageInfo[0];
@@ -202,8 +203,9 @@ class ImageAnalysisService
 
         foreach ($objects as $obj) {
             $vertices = $obj['boundingPoly']['normalizedVertices'] ?? [];
-            if (count($vertices) < 4)
+            if (count($vertices) < 4) {
                 continue;
+            }
 
             // Calculate bbox in normalized coordinates
             $minX = min(array_column($vertices, 'x'));
@@ -262,7 +264,7 @@ class ImageAnalysisService
      */
     protected function cropImage(string $imageContent, array $bbox, Observation $observation): array
     {
-        $manager = new ImageManager(new Driver());
+        $manager = new ImageManager(new Driver);
         $image = $manager->read($imageContent);
         // orient() 不要: ObservationService で保存した WebP は既に向き補正・EXIF 除去済み
 
@@ -300,6 +302,7 @@ class ImageAnalysisService
     {
         if (empty($this->geminiApiKey)) {
             Log::warning('Gemini API key not set, using mock response');
+
             return $this->mockGeminiResponse();
         }
 
@@ -308,7 +311,7 @@ class ImageAnalysisService
         // カテゴリリストをconfigから動的生成
         $categories = config('categories');
         $categoryIds = implode('|', array_column($categories, 'id'));
-        $categoryHint = collect($categories)->map(fn($c) => "{$c['id']}({$c['description']})")->implode(' / ');
+        $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
 
         $prompt = <<<EOT
 あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
@@ -373,11 +376,11 @@ EOT;
                 ]
             );
 
-            Log::info('Gemini API Response Status: ' . $response->status());
+            Log::info('Gemini API Response Status: '.$response->status());
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::error('Gemini API error', ['body' => $response->body()]);
-                throw new \Exception('Gemini API error: ' . $response->status());
+                throw new \Exception('Gemini API error: '.$response->status());
             }
 
             $data = $response->json();
@@ -388,7 +391,7 @@ EOT;
 
             $json = json_decode($text, true);
 
-            if (!$json) {
+            if (! $json) {
                 Log::error('Gemini JSON parse error', ['text' => $text]);
                 throw new \Exception('Gemini response parse error');
             }
@@ -396,7 +399,7 @@ EOT;
             // Ensure english_name exists in candidate_cards (AI may omit it)
             if (isset($json['candidate_cards']) && is_array($json['candidate_cards'])) {
                 foreach ($json['candidate_cards'] as $index => $card) {
-                    if (!isset($card['english_name']) || empty($card['english_name'])) {
+                    if (! isset($card['english_name']) || empty($card['english_name'])) {
                         // Use name as fallback (will be in Japanese, but better than nothing)
                         $json['candidate_cards'][$index]['english_name'] = $card['name'] ?? 'unknown';
                     }
