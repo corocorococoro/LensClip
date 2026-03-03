@@ -24,5 +24,6 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 lensclip-*.json
+service-account.json
 
 .env.railway

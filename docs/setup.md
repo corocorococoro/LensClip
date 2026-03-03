@@ -22,7 +22,11 @@ GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI="http://localhost/auth/google/callback"
 
 # Google Cloud Services (GCS, Vision API, TTS API)
-GOOGLE_APPLICATION_CREDENTIALS=your-service-account-file.json
+# Set exactly one credential source
+# Local / Sail: key file path (relative or absolute)
+GOOGLE_APPLICATION_CREDENTIALS=service-account.json
+# Railway: raw JSON string
+# GOOGLE_CREDENTIALS_JSON='{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}'
 GOOGLE_CLOUD_PROJECT_ID=your-project-id
 GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
 
@@ -32,6 +36,11 @@ GEMINI_API_KEY=your-gemini-api-key
 # Storage (public for local, gcs for production)
 FILESYSTEM_DISK=public
 ```
+
+認証変数の注意:
+- `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CREDENTIALS_JSON` は **同時設定しない**
+- `GOOGLE_CREDENTIALS_JSON` は **JSON文字列そのもの**（ファイルパスではない）
+- JSON が不正 / ファイルが存在しない場合は起動時にエラーになる（fail-fast）
 
 ## 3. Docker環境を起動
 

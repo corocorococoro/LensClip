@@ -41,9 +41,11 @@ flowchart TD
 | `ready` | 分析完了 | 結果表示画面へ遷移 |
 | `failed` | 分析失敗 | エラーメッセージ + リトライボタン |
 
-### ポーリング
-- `processing` 中は 1秒間隔でステータス確認
-- 最大60秒でタイムアウト → `failed` 扱い
+### SSE（Server-Sent Events）
+- `processing` 中は `/observations/{id}/stream` への SSE 接続でステータス監視
+- サーバー側は 2秒間隔で heartbeat を送信
+- `ready` / `failed` / `timeout` イベントで遷移
+- 最大90秒でタイムアウト → `failed` 扱い
 
 ## 画面詳細
 

@@ -76,17 +76,17 @@ sequenceDiagram
 
 ## 技術的ハイライト
 
-**Vision API bbox 選定**: 複数検出オブジェクトから合成スコア `score×0.5 + areaRatio×0.3 + centerBonus×0.2` で最適な1件を選定し、10% マージン付きで crop。bbox なしの場合は原画像でフォールバック。
+**Vision API bbox 選定**: 複数検出オブジェクトから合成スコア `score×0.5 + areaRatio×0.3 + centerBonus×0.2` で1件を選定し、10%マージンでcrop。bbox未検出時は原画像へフォールバック。
 
-**Gemini 構造化 JSON 出力**: `response_mime_type: application/json` で厳格モード。最大3候補のカード情報（名前、英名、confidence、子供向け説明、見分けポイント、豆知識）を1リクエストで生成。カテゴリは `config/categories.php` から動的にプロンプト注入。
+**Gemini JSON 出力**: `response_mime_type: application/json` 指定。最大3候補のデータ（名前、英名、confidence、子供向け説明、見分けポイント、豆知識）を1リクエストで生成。カテゴリは `config/categories.php` から動的にプロンプト注入。
 
-**SSE リアルタイム通知**: `text/event-stream` でステータス変化を push。2秒間隔の heartbeat、90秒タイムアウト。ポーリングからの移行で UX を改善。
+**SSE リアルタイム通知**: `text/event-stream` でステータスをpush。2秒間隔のheartbeat、90秒タイムアウト設定。
 
-**非同期 Queue 処理**: `AnalyzeObservationJob` で Vision → Crop → Gemini を冪等に実行。Redis キュー + 状態管理 (`processing` → `ready` / `failed`) + ユーザー操作リトライ。
+**非同期 Queue 処理**: Vision → Crop → Gemini の処理を冪等実行。状態管理 (`processing` → `ready` / `failed`) + ユーザー操作リトライ。
 
-**TTS キャッシュ**: テキスト + 音声 + 速度の MD5 ハッシュをキーに、Storage ディスク（GCS / local）にキャッシュ。TTL 7日で自動クリーンアップ。
+**TTSキャッシュ**: テキスト・音声・速度のMD5ハッシュをキーとしてStorage（GCS / local）に保存。TTL7日。
 
-**ストレージ抽象化**: `FILESYSTEM_DISK` 一つで GCS / local を切替。画像・TTS 音声・サムネイルすべて同一の Storage facade 経由。
+**ストレージ抽象化**: 環境変数による GCS / local の切替。画像・音声・サムネイルのI/Oを単一Facadeへ統合。
 
 ---
 

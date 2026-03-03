@@ -1,5 +1,10 @@
 <?php
 
+$googleCloudCredentials = \App\Services\GoogleCloudCredentialsResolver::resolve(
+    env('GOOGLE_CREDENTIALS_JSON'),
+    env('GOOGLE_APPLICATION_CREDENTIALS')
+);
+
 return [
 
     /*
@@ -51,18 +56,11 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
     ],
 
-    'google_cloud' => (function () {
-        $json = env('GOOGLE_CREDENTIALS_JSON');
-        $filePath = env('GOOGLE_APPLICATION_CREDENTIALS');
-
-        return [
-            // Railway等: JSON文字列をデコード / ローカル: ファイルパス / どちらもなし: ADC
-            'credentials' => $json ? json_decode($json, true) : null,
-            'key_file_path' => (! $json && $filePath) ? base_path($filePath) : null,
-            'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
-            'storage_bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
-        ];
-    })(),
+    'google_cloud' => [
+        ...$googleCloudCredentials,
+        'project_id' => env('GOOGLE_CLOUD_PROJECT_ID'),
+        'storage_bucket' => env('GOOGLE_CLOUD_STORAGE_BUCKET'),
+    ],
 
     'tts' => [
         'voice' => env('TTS_VOICE', 'en-US-Neural2-J'),
