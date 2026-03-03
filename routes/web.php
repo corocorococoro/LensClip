@@ -36,25 +36,55 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Observations
-    Route::get('/library', [ObservationController::class, 'index'])->name('library');
-    Route::post('/observations', [ObservationController::class, 'store'])->name('observations.store');
-    Route::get('/observations/{observation}/processing', [ObservationController::class, 'processing'])->name('observations.processing');
-    Route::get('/observations/{observation}/stream', [ObservationController::class, 'stream'])->name('observations.stream');
-    Route::get('/observations/{observation}', [ObservationController::class, 'show'])->name('observations.show');
-    Route::post('/observations/{observation}/retry', [ObservationController::class, 'retry'])->name('observations.retry');
-    Route::delete('/observations/{observation}', [ObservationController::class, 'destroy'])->name('observations.destroy');
-    Route::delete('/observations', [ObservationController::class, 'destroyAll'])->name('observations.destroyAll');
-    Route::patch('/observations/{observation}/tags', [ObservationController::class, 'updateTags'])->name('observations.updateTags');
-    Route::patch('/observations/{observation}/category', [ObservationController::class, 'updateCategory'])->name('observations.updateCategory');
+    Route::get('/library', [ObservationController::class, 'index'])
+        ->middleware('throttle:api-general')
+        ->name('library');
+    Route::post('/observations', [ObservationController::class, 'store'])
+        ->middleware('throttle:observation-upload')
+        ->name('observations.store');
+    Route::get('/observations/{observation}/processing', [ObservationController::class, 'processing'])
+        ->middleware('throttle:api-general')
+        ->name('observations.processing');
+    Route::get('/observations/{observation}/stream', [ObservationController::class, 'stream'])
+        ->middleware('throttle:api-general')
+        ->name('observations.stream');
+    Route::get('/observations/{observation}', [ObservationController::class, 'show'])
+        ->middleware('throttle:api-general')
+        ->name('observations.show');
+    Route::post('/observations/{observation}/retry', [ObservationController::class, 'retry'])
+        ->middleware('throttle:observation-retry')
+        ->name('observations.retry');
+    Route::delete('/observations/{observation}', [ObservationController::class, 'destroy'])
+        ->middleware('throttle:api-general')
+        ->name('observations.destroy');
+    Route::delete('/observations', [ObservationController::class, 'destroyAll'])
+        ->middleware('throttle:api-general')
+        ->name('observations.destroyAll');
+    Route::patch('/observations/{observation}/tags', [ObservationController::class, 'updateTags'])
+        ->middleware('throttle:api-general')
+        ->name('observations.updateTags');
+    Route::patch('/observations/{observation}/category', [ObservationController::class, 'updateCategory'])
+        ->middleware('throttle:api-general')
+        ->name('observations.updateCategory');
 
     // Tags
-    Route::get('/tags', [TagController::class, 'index'])->name('tags.index');
-    Route::post('/tags', [TagController::class, 'store'])->name('tags.store');
-    Route::delete('/tags/{tag}', [TagController::class, 'destroy'])->name('tags.destroy');
+    Route::get('/tags', [TagController::class, 'index'])
+        ->middleware('throttle:api-general')
+        ->name('tags.index');
+    Route::post('/tags', [TagController::class, 'store'])
+        ->middleware('throttle:api-general')
+        ->name('tags.store');
+    Route::delete('/tags/{tag}', [TagController::class, 'destroy'])
+        ->middleware('throttle:api-general')
+        ->name('tags.destroy');
 
     // TTS
-    Route::post('/tts', [TtsController::class, 'synthesize'])->name('tts.synthesize');
-    Route::get('/tts/audio/{key}', [TtsController::class, 'stream'])->name('tts.audio');
+    Route::post('/tts', [TtsController::class, 'synthesize'])
+        ->middleware('throttle:api-general')
+        ->name('tts.synthesize');
+    Route::get('/tts/audio/{key}', [TtsController::class, 'stream'])
+        ->middleware('throttle:api-general')
+        ->name('tts.audio');
 });
 
 Route::middleware('auth')->group(function () {

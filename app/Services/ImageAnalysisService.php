@@ -373,6 +373,24 @@ EOT;
                     'generationConfig' => [
                         'response_mime_type' => 'application/json',
                     ],
+                    'safetySettings' => [
+                        [
+                            'category' => 'HARM_CATEGORY_HARASSMENT',
+                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        ],
+                        [
+                            'category' => 'HARM_CATEGORY_HATE_SPEECH',
+                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        ],
+                        [
+                            'category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        ],
+                        [
+                            'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        ],
+                    ],
                 ]
             );
 
@@ -384,7 +402,28 @@ EOT;
             }
 
             $data = $response->json();
-            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '{}';
+            $candidate = $data['candidates'][0] ?? null;
+
+            if ($this->isGeminiSafetyBlocked($data, $candidate)) {
+                throw new \Exception('安全性の理由で判定できませんでした。別の写真を撮ってください。');
+            }
+
+            if (! is_array($candidate)) {
+                $candidateCount = is_array($data['candidates'] ?? null) ? count($data['candidates']) : 0;
+                $promptFeedback = $data['promptFeedback'] ?? null;
+
+                Log::warning('Gemini response missing candidate', [
+                    'candidate_count' => $candidateCount,
+                    'has_prompt_feedback' => is_array($promptFeedback),
+                    'prompt_block_reason' => is_array($promptFeedback) && is_string($promptFeedback['blockReason'] ?? null)
+                        ? $promptFeedback['blockReason']
+                        : null,
+                ]);
+
+                throw new \Exception('Gemini response missing candidate');
+            }
+
+            $text = $candidate['content']['parts'][0]['text'] ?? '{}';
 
             // Cleanup markdown if present
             $text = preg_replace('/^```json\s*|\s*```$/', '', trim($text));
@@ -412,6 +451,37 @@ EOT;
             Log::error('Gemini API exception', ['error' => $e->getMessage()]);
             throw $e;
         }
+    }
+
+    /**
+     * Determine whether Gemini response was blocked by safety filtering.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    protected function isGeminiSafetyBlocked(array $data, mixed $candidate): bool
+    {
+        if (is_array($candidate) && ($candidate['finishReason'] ?? null) === 'SAFETY') {
+            return true;
+        }
+
+        $promptFeedback = $data['promptFeedback'] ?? null;
+        $blockReason = is_array($promptFeedback) ? ($promptFeedback['blockReason'] ?? null) : null;
+        if (is_string($blockReason) && str_contains(strtoupper($blockReason), 'SAFETY')) {
+            return true;
+        }
+
+        $safetyRatings = is_array($candidate) ? ($candidate['safetyRatings'] ?? []) : [];
+        if (! is_array($safetyRatings)) {
+            return false;
+        }
+
+        foreach ($safetyRatings as $rating) {
+            if (is_array($rating) && ($rating['blocked'] ?? false) === true) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

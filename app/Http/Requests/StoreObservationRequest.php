@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\ImageMagicBytes;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreObservationRequest extends FormRequest
@@ -25,6 +26,7 @@ class StoreObservationRequest extends FormRequest
                 'image',
                 'max:10240', // 10MB
                 'mimes:jpeg,png,webp,gif',
+                new ImageMagicBytes,
             ],
             'latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180'],

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\AuthIdentity;
 use App\Models\User;
+use App\Services\IdentifierFingerprintService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +17,10 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
 {
+    public function __construct(
+        private readonly IdentifierFingerprintService $fingerprintService
+    ) {}
+
     /**
      * Redirect to Google OAuth.
      */
@@ -47,8 +52,8 @@ class GoogleAuthController extends Controller
         $name = $googleUser->getName();
 
         Log::info('Google OAuth callback', [
-            'sub' => $subject,
-            'email' => $email,
+            'subject_hash' => $this->fingerprintService->fingerprint($subject),
+            'email_hash' => $this->fingerprintService->fingerprint($email),
         ]);
 
         // Case A: (iss, sub) already exists -> Login

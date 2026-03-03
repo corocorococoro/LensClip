@@ -4,12 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\IdentifierFingerprintService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class AiSettingsController extends Controller
 {
+    public function __construct(
+        private readonly IdentifierFingerprintService $fingerprintService
+    ) {}
+
     /**
      * Display the AI settings page.
      */
@@ -53,7 +58,7 @@ class AiSettingsController extends Controller
         // Log the change
         Log::info('AI model changed', [
             'user_id' => auth()->id(),
-            'user_email' => auth()->user()->email,
+            'user_email_hash' => $this->fingerprintService->fingerprint(auth()->user()?->email),
             'previous_model' => $previousModel,
             'new_model' => $newModel,
         ]);

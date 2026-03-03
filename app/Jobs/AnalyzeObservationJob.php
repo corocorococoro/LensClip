@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class AnalyzeObservationJob implements ShouldQueue
 {
@@ -85,14 +86,16 @@ class AnalyzeObservationJob implements ShouldQueue
             Log::info('AnalyzeObservationJob: Success', ['id' => $this->observationId]);
 
         } catch (\Exception $e) {
+            $errorId = (string) Str::uuid();
             Log::error('AnalyzeObservationJob: Failed', [
                 'id' => $this->observationId,
+                'error_id' => $errorId,
                 'error' => $e->getMessage(),
             ]);
 
             $observation->update([
                 'status' => 'failed',
-                'error_message' => $e->getMessage(),
+                'error_message' => $this->userVisibleMessageForException($e, $errorId),
             ]);
         }
     }
@@ -130,10 +133,31 @@ class AnalyzeObservationJob implements ShouldQueue
     {
         $observation = Observation::find($this->observationId);
         if ($observation) {
+            $errorId = (string) Str::uuid();
+            Log::error('AnalyzeObservationJob: Terminal failure', [
+                'id' => $this->observationId,
+                'error_id' => $errorId,
+                'error' => $exception->getMessage(),
+            ]);
+
             $observation->update([
                 'status' => 'failed',
-                'error_message' => 'AI分析に失敗しました: '.$exception->getMessage(),
+                'error_message' => $this->userVisibleMessageForException($exception, $errorId),
             ]);
         }
+    }
+
+    /**
+     * Map internal exceptions to safe user-facing messages.
+     */
+    private function userVisibleMessageForException(\Throwable $exception, string $errorId): string
+    {
+        $message = $exception->getMessage();
+
+        if (str_contains($message, '安全性')) {
+            return "この写真は安全のため判定できませんでした。別の写真を撮ってください。（エラーID: {$errorId}）";
+        }
+
+        return "AI分析に失敗しました。時間をおいてもう一度お試しください。（エラーID: {$errorId}）";
     }
 }
