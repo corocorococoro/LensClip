@@ -1,6 +1,3 @@
----
-trigger: always_on
----
 
 # Engineering Standards (2026 SV Baseline)
 
@@ -178,8 +175,6 @@ npm run build
 - `public/images/lp/` の画像を使用（ladybug, pinecone, sunflower）
 - ブラウザテスト／画像解析テストはこれらで再現性を担保する
 
-※ 詳細観点は `docs/test-plan.md` を参照
-
 ---
 
 ## 7. コード規約（MUST）
@@ -224,8 +219,9 @@ PR 前に必ず通す:
 - [ ] 想定内失敗が 500 になっていない（UIで説明できる）
 - [ ] Job が冪等（再実行安全）になっている
 - [ ] Feature テスト（重要フロー）を追加/更新した
+- [ ] テスト最低ライン: admin アクセス制御、allowlist 外モデル拒否
 - [ ] `artisan test` と `npm run build` を通した
 
 ---
 
-*Last updated: 2026-01-23*
+*Last updated: 2026-03-03*

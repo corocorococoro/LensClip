@@ -1,45 +1,28 @@
 # LensClip ドキュメント台帳
 
-> **Docs が仕様の一次ソースです。**  
-> Rules は「運用・強制・監査・優先順位」のみを保持し、仕様本文は持ちません。
+> **Docs が仕様・規約の一次ソースです。**
 
-## 一次ソース一覧
+## ドキュメント一覧
 
-| ドメイン | 一次ソース | 概要 |
-|---------|-----------|------|
-| プロダクト定義 | [prd.md](prd.md) | MVP スコープ、ターゲット、ゴール |
-| 画面・導線・文言 | [ux-flow.md](ux-flow.md) | 画面遷移図、UI状態、コピー |
+| ドメイン | ファイル | 概要 |
+|---------|---------|------|
+| プロダクト定義 | [prd.md](prd.md) | ターゲット、ユースケース、機能、UX原則 |
+| 画面・導線 | [ux-flow.md](ux-flow.md) | 画面遷移図、UI状態 |
 | API 契約 | [api-spec.md](api-spec.md) | エンドポイント、リクエスト/レスポンス |
-| データベース | [db-schema.md](db-schema.md) | テーブル、カラム、制約 |
-| AI パイプライン | [ai-pipeline.md](ai-pipeline.md) | Vision/Gemini 処理フロー |
-| AI モデル許可リスト | [ai-models.md](ai-models.md) | 使用可能な Gemini モデル（**唯一の一次ソース**） |
-| テスト計画 | [test-plan.md](test-plan.md) | テスト観点、カバレッジ方針 |
+| データベース | [db-schema.md](db-schema.md) | ER図、テーブル定義 |
+| AI パイプライン | [ai-pipeline.md](ai-pipeline.md) | Vision/Gemini/TTS 処理フロー |
+| AI モデル許可リスト | [ai-models.md](ai-models.md) | Gemini モデル allowlist（**唯一の一次ソース**） |
+| 実装規約 | [engineering-standards.md](engineering-standards.md) | アーキテクチャ原則、テスト、PRゲート |
+| Laravel 規約 | [laravel-conventions.md](laravel-conventions.md) | Laravel コード規約 |
+| セットアップ | [setup.md](setup.md) | 開発環境構築手順 |
+| デプロイ | [deploy.md](deploy.md) | Railway デプロイ手順 |
 
-## 決定ログ (ADR)
-
-| ID | タイトル |
-|----|---------|
-| [0001](decisions/0001-single-source-of-truth.md) | Single Source of Truth 戦略 |
-
-## Rules（ガバナンス・パック）
-
-Rules は「不変の強制」「運用の手順」「監査の強制」「優先順位」のみを保持します。  
-仕様本文が必要な場合は、上記 Docs を参照してください。
-
-| カテゴリ | ファイル |
-|---------|---------|
-| ガバナンス | [project-governance.md](../.agent/rules/project-governance.md) |
-| プロダクト・UI | [product-ui-principles.md](../.agent/rules/product-ui-principles.md) |
-| セキュリティ | [security-invariants.md](../.agent/rules/security-invariants.md) |
-| 実装規約 | [engineering-standards.md](../.agent/rules/engineering-standards.md) |
-| AI 責務分離 | [ai-responsibility-split.md](../.agent/rules/ai-responsibility-split.md) |
-
-### 補足リファレンス
+## セキュリティ（常時強制）
 
 | ファイル | 概要 |
 |---------|------|
-| [laravel-best-practices.md](../.agent/rules/laravel-best-practices.md) | Laravel ベストプラクティス集（詳細コード例付き） |
+| [security-invariants.md](../.agent/rules/security-invariants.md) | 認証・秘匿情報・AI モデル制御・アップロード検証 |
 
 ---
 
-*Last updated: 2026-01-22*
+*Last updated: 2026-03-03*

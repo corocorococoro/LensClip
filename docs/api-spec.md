@@ -24,6 +24,11 @@
 | DELETE | `/observations/{id}` | 単体削除 |
 | DELETE | `/observations` | 全削除（確認必須） |
 
+### SSE
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | `/observations/{id}/stream` | ステータス変更のServer-Sent Events |
+
 ### Tags
 | Method | Path | 説明 |
 |--------|------|------|
@@ -31,12 +36,24 @@
 | POST | `/tags` | タグ作成 |
 | DELETE | `/tags/{id}` | タグ削除 |
 
+### TTS
+| Method | Path | 説明 |
+|--------|------|------|
+| POST | `/tts` | テキストから音声合成 |
+| GET | `/tts/audio/{key}` | 音声ファイルのストリーム配信 |
+
 ### Admin（管理者専用）
 | Method | Path | 説明 |
 |--------|------|------|
 | GET | `/admin/logs` | アプリケーションログ閲覧 |
 | GET | `/admin/settings/ai` | AI設定ページ |
 | PUT | `/admin/settings/ai` | Geminiモデル変更 |
+
+### 法的ページ（未認証アクセス可）
+| Method | Path | 説明 |
+|--------|------|------|
+| GET | `/terms` | 利用規約 |
+| GET | `/privacy-policy` | プライバシーポリシー |
 
 ---
 
@@ -166,3 +183,50 @@ Content-Type: multipart/form-data
 ## レート制限
 - 画像アップロード: 10回/分
 - その他API: 60回/分
+
+---
+
+## 詳細仕様: TTS
+
+### POST /tts
+**リクエスト**
+```json
+{
+  "text": "読み上げテキスト",
+  "speakingRate": 0.9
+}
+```
+
+**バリデーション**
+- `text`: required, string, max:500
+- `speakingRate`: optional, numeric, 0.5〜2.0
+
+**レスポンス（200 OK）**
+```json
+{
+  "url": "/tts/audio/{key}",
+  "cacheHit": false
+}
+```
+
+キャッシュ戦略: テキスト+音声+速度のMD5ハッシュをキーに、TTL 7日。
+
+### GET /tts/audio/{key}
+音声ファイルを`audio/mpeg`でストリーム配信。
+
+---
+
+## 詳細仕様: SSE
+
+### GET /observations/{id}/stream
+処理中のObservationのステータス変化をServer-Sent Eventsで通知。
+
+**レスポンスヘッダ**: `Content-Type: text/event-stream`
+
+**イベント**
+| event | data | 説明 |
+|-------|------|------|
+| `ready` | `{}` | 分析完了 |
+| `failed` | `{"error_message": "..."}` | 分析失敗 |
+| `timeout` | `{}` | 90秒タイムアウト |
+| `: heartbeat` | - | 2秒間隔のキープアライブ |

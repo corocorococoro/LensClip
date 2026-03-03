@@ -20,11 +20,10 @@ gemini-2.5-flash-lite
 
 ## 更新手順
 
-1. **決定ログ作成**: `docs/decisions/` に ADR を追加
-2. **このファイル更新**: Allowlist に追加/削除
-3. **実装追従**: `config/services.php` の `gemini.allowed_models` を更新
-4. **Consistency Audit**: 矛盾・重複がないか監査
-5. **テスト実行**: allowlist 外モデル拒否テストを含む
+1. **このファイル更新**: Allowlist に追加/削除
+2. **実装追従**: `config/services.php` の `gemini.allowed_models` を更新
+3. **Consistency Audit**: 矛盾・重複がないか監査
+4. **テスト実行**: allowlist 外モデル拒否テストを含む
 
 ## 廃止ポリシー
 

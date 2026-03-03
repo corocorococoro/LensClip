@@ -1,265 +1,110 @@
 # LensClip 📷
 
-親子向け「これなぁに？」スクラップWebアプリ
+**散歩が、冒険になる。**
 
-写真を撮るとAIが「これはなぁに？」の答えを返し、親子で一緒に学べる図鑑体験を提供します。
+「これなぁに？」——公園の虫、散歩中の草花、空を飛ぶ鳥。
+写真を1枚撮るだけで、子どもにわかる言葉で答えが届く。親子で使う、デジタル図鑑アプリ。
 
-### デモURL
-https://lensclip.up.railway.app/
+発見は日付・カテゴリ・地図で蓄積されていき、使うたびに**世界にひとつの図鑑**が育つ。
 
+**Demo**: https://lensclip.up.railway.app/
 
-## 技術スタック
+---
 
-- **Backend**: Laravel 12 + MySQL
-- **Frontend**: Inertia.js + React + TypeScript + Tailwind CSS
-- **AI**: Google Cloud Vision API（Object Localization）+ Gemini API
-- **Environment**: Docker (Laravel Sail)
+## 機能
 
-## セットアップ
+| 機能 | 概要 |
+|------|------|
+| 📷 撮影・アップロード | カメラ or ファイル選択、位置情報取得、WebP 圧縮・EXIF 除去 |
+| 🔍 AI 同定 | Vision API で主対象を検出 → bbox 合成スコアで選定 → Gemini で同定・説明生成（最大3候補） |
+| 🔊 英名読み上げ | Cloud TTS API で同定結果の英名を発音（英単語学習、MD5 キャッシュ, 7日 TTL） |
+| 📚 ライブラリ | グリッド表示、全文検索、タグフィルタ、カテゴリビュー、マップビュー |
+| 🏷️ タグ・カテゴリ | AI 自動付与 + 手動追加・修正 |
+| ⚡ リアルタイム通知 | SSE で分析完了を即時反映（ポーリング不要） |
+| 🔐 認証 | Breeze (Email/Password) + Google OAuth (Socialite) |
+| ⚙️ 管理画面 | ログ閲覧、Gemini モデル切替（allowlist 制御） |
 
-### 1. リポジトリをクローン
+---
 
-```bash
-git clone <repository-url>
-cd LensClip
+## アーキテクチャ
+
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat&logo=laravel&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?style=flat&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat&logo=typescript&logoColor=white)
+![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
+![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
+
+| Layer | Stack |
+|-------|-------|
+| Backend | Laravel 12, PHP 8.5, MySQL |
+| Frontend | Inertia.js v2, React 18, TypeScript, Tailwind CSS v3 |
+| AI / ML | Google Cloud Vision API (Object Localization), Gemini API |
+| TTS | Google Cloud Text-to-Speech API |
+| Storage | GCS (prod) / local public (dev) |
+| Queue | Redis (prod) / database (dev) |
+| Auth | Laravel Breeze, Laravel Socialite |
+| Infra | Docker (Laravel Sail), Railway |
+
+### AI パイプライン
+
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant App as Web Server
+    participant Q as Queue Worker
+    participant Vision as Cloud Vision API
+    participant Gemini as Gemini API
+    participant GCS as Cloud Storage
+
+    User->>App: 画像アップロード
+    App->>GCS: original + thumb 保存
+    App->>Q: Job をキュー投入
+    App-->>User: { status: processing }
+
+    Q->>Vision: Object Localization
+    Vision-->>Q: bbox 座標（主対象の位置）
+    Q->>GCS: crop 画像を保存
+    Q->>Gemini: crop 画像 + プロンプト
+    Gemini-->>Q: JSON（title / summary / kid_friendly ...）
+    Q-->>Q: status = ready
+
+    User->>App: SSE /observations/{id}/stream
+    App-->>User: { status: ready, title: "テントウムシ", ... }
 ```
 
-### 2. 環境変数を設定
+---
 
-```bash
-cp .env.example .env
-```
+## 技術的ハイライト
 
-`.env` ファイルを編集して、以下のAPIキーを設定してください：
+**Vision API bbox 選定**: 複数検出オブジェクトから合成スコア `score×0.5 + areaRatio×0.3 + centerBonus×0.2` で最適な1件を選定し、10% マージン付きで crop。bbox なしの場合は原画像でフォールバック。
 
-```env
-# Google Login (Socialite)
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI="http://localhost/auth/google/callback"
+**Gemini 構造化 JSON 出力**: `response_mime_type: application/json` で厳格モード。最大3候補のカード情報（名前、英名、confidence、子供向け説明、見分けポイント、豆知識）を1リクエストで生成。カテゴリは `config/categories.php` から動的にプロンプト注入。
 
-# Google Cloud Services (GCS, Vision API, TTS API)
-GOOGLE_APPLICATION_CREDENTIALS=your-service-account-file.json
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
+**SSE リアルタイム通知**: `text/event-stream` でステータス変化を push。2秒間隔の heartbeat、90秒タイムアウト。ポーリングからの移行で UX を改善。
 
-# Google Gemini API
-GEMINI_API_KEY=your-gemini-api-key
+**非同期 Queue 処理**: `AnalyzeObservationJob` で Vision → Crop → Gemini を冪等に実行。Redis キュー + 状態管理 (`processing` → `ready` / `failed`) + ユーザー操作リトライ。
 
-# Storage (public for local, gcs for production)
-FILESYSTEM_DISK=public
-```
+**TTS キャッシュ**: テキスト + 音声 + 速度の MD5 ハッシュをキーに、Storage ディスク（GCS / local）にキャッシュ。TTL 7日で自動クリーンアップ。
 
-### 3. Docker環境を起動
+**ストレージ抽象化**: `FILESYSTEM_DISK` 一つで GCS / local を切替。画像・TTS 音声・サムネイルすべて同一の Storage facade 経由。
 
-```bash
-./vendor/bin/sail up -d
-```
+---
 
-### 4. 依存関係をインストール
+## 開発ドキュメント
 
-```bash
-./vendor/bin/sail composer install
-./vendor/bin/sail npm install
-```
+| ドキュメント | 内容 |
+|-------------|------|
+| [docs/prd.md](docs/prd.md) | プロダクト定義、ユースケース、UX原則 |
+| [docs/ux-flow.md](docs/ux-flow.md) | 画面遷移図、UI 状態 |
+| [docs/api-spec.md](docs/api-spec.md) | API エンドポイント仕様 |
+| [docs/db-schema.md](docs/db-schema.md) | ER図、テーブル定義 |
+| [docs/ai-pipeline.md](docs/ai-pipeline.md) | Vision / Gemini / TTS 処理フロー |
+| [docs/ai-models.md](docs/ai-models.md) | Gemini モデル allowlist |
+| [docs/engineering-standards.md](docs/engineering-standards.md) | アーキテクチャ原則、テスト、PRゲート |
+| [docs/laravel-conventions.md](docs/laravel-conventions.md) | Laravel コード規約 |
+| [docs/setup.md](docs/setup.md) | 開発環境構築手順 |
+| [docs/deploy.md](docs/deploy.md) | Railway デプロイ手順 |
 
-### 5. アプリケーションキー生成
-
-```bash
-./vendor/bin/sail artisan key:generate
-```
-
-### 6. データベースマイグレーション
-
-```bash
-./vendor/bin/sail artisan migrate
-```
-
-### 7. ストレージリンク作成
-
-```bash
-./vendor/bin/sail artisan storage:link
-```
-
-### 8. フロントエンドビルド
-
-開発モード:
-```bash
-./vendor/bin/sail npm run dev
-```
-
-本番ビルド:
-```bash
-./vendor/bin/sail npm run build
-```
-
-## 動作確認
-
-1. http://localhost にアクセス
-2. ユーザー登録 → ログイン
-3. 「しらべる」ボタンをタップ → 画像をアップロード
-4. AI分析待ち → 結果表示
-5. ライブラリで一覧確認
-
-## 主要機能
-
-- 📷 **撮影・アップロード**: カメラまたはファイル選択
-- 🔍 **AI分析**: Vision APIで主対象をCrop → Gemini APIで同定・説明
-- 📚 **ライブラリ**: グリッド表示、検索、タグフィルタ
-- 🏷️ **タグ**: AI自動付与＋手動追加
-
-## テスト実行
-
-```bash
-./vendor/bin/sail artisan test
-```
-
-## 管理者設定
-
-### 管理者に昇格する
-
-特定のユーザーを管理者に昇格するには、以下のコマンドを実行します：
-
-```bash
-./vendor/bin/sail artisan user:promote your-email@example.com
-```
-
-### 管理画面へのアクセス
-
-管理者としてログインすると以下のURLにアクセスできます：
-
-- `/admin/logs` - アプリケーションログの閲覧
-- `/admin/settings/ai` - Geminiモデルの切り替え
-
-### 管理者機能
-
-| 機能 | URL | 説明 |
-|------|-----|------|
-| ログ閲覧 | `/admin/logs` | レベル・日付でフィルタ、スタックトレース表示 |
-| AI設定 | `/admin/settings/ai` | Geminiモデルの切り替え（即時反映） |
-
-## 困ったときは（トラブルシューティング）
-
-アプリにアクセスできない、または画像が表示されないなどの問題が発生した場合は、以下の手順を試してください：
-
-### 1. Sailの再起動
-コンテナの状態が不安定な場合、一度停止して起動し直すのが最も効果的です。
-```bash
-./vendor/bin/sail stop
-./vendor/bin/sail up -d
-```
-
-### 2. アセット（CSS/JS）の読み込みエラー
-ブラウザ画面が真っ白な場合、Viteサーバーが起動していない可能性があります。
-```bash
-./vendor/bin/sail npm run dev
-```
-
-### 3. 画像が表示されない
-ストレージのシンボリックリンクが切れている可能性があります。
-```bash
-./vendor/bin/sail artisan storage:link
-```
-
-### 4. AI分析が進まない（処理中のまま）
-非同期ジョブを実行するワーカーが起動しているか確認してください。
-```bash
-./vendor/bin/sail artisan queue:work
-```
-
-### 5. ログの確認
-原因が不明な場合は、以下のコマンドでログを確認してください。
-```bash
-# Dockerコンテナのログ
-./vendor/bin/sail logs app
-
-# Laravelのアプリケーションログ
-./vendor/bin/sail exec app tail -f storage/logs/laravel.log
-```
-
-## 既知の制約
-
-- iOSでのカメラ起動は環境依存（HTTPS必須等）
-- API キーなしでは AI 分析はモックデータになります
-- 画像サイズ上限: 10MB
-
-## ディレクトリ構成
-
-```
-app/
-├── Http/Controllers/     # ObservationController, TagController等
-├── Jobs/                 # AnalyzeObservationJob（非同期AI処理）
-├── Models/               # Observation, Tag
-├── Policies/             # ObservationPolicy
-└── Services/             # ImageAnalysisService（Vision + Gemini）
-
-resources/js/
-├── Layouts/              # AppLayout（下部ナビ付き）
-├── Components/           # ObservationCard, ui/（Button, Card等）
-└── Pages/
-    ├── Home.tsx          # ホーム（しらべるCTA）
-    ├── Library.tsx       # ライブラリ
-    └── Observations/     # Processing, Show
-
-docs/
-├── index.md             # ドキュメント台帳
-├── prd.md               # 製品要件定義
-├── ux-flow.md           # 画面遷移
-├── api-spec.md          # API仕様
-├── db-schema.md         # DBスキーマ
-├── ai-pipeline.md       # AIパイプライン
-├── ai-models.md         # AIモデル許可リスト
-├── test-plan.md         # テスト計画
-└── decisions/           # 決定ログ (ADR)
-
-.agent/rules/
-├── project-governance.md      # ガバナンス・SSOT
-├── product-ui-principles.md   # プロダクト・UI方針
-├── security-invariants.md     # セキュリティ絶対ルール
-├── engineering-standards.md   # 実装規約
-├── ai-responsibility-split.md # AI責務分離
-└── laravel-conventions.md     # Laravel規約
-```
-
-## Railway へのデプロイ
-
-### 1. Volume の作成と接続
-Railway のダッシュボードで Volume を作成し、Laravel サービスに以下の設定でアタッチしてください。
-- **Mount Path**: `/app/storage/app`
-  - これにより `storage/app/public` 配下の画像データが永続化されます。
-
-### 2. MySQLの作成
-Railway のダッシュボードで MySQL を作成。Laravel側の環境変数は
-```
-DB_CONNECTION=mysql
-DB_HOST=${{ MySQL.MYSQLHOST }}
-DB_PORT=${{ MySQL.MYSQLPORT }}
-DB_DATABASE=${{ MySQL.MYSQLDATABASE }}
-DB_USERNAME=${{ MySQL.MYSQLUSER }}
-DB_PASSWORD=${{ MySQL.MYSQLPASSWORD }}
-```
-
-### 3. Start Command
-サービスの設定（Settings > Deploy > Start Command）に以下を設定してください。
-```bash
-bash railway/start.sh
-```
-
-### 4. 環境変数の設定
-Variables に以下を追加してください。
-- `FILESYSTEM_DISK`: `gcs` (推奨) または `public`
-- `QUEUE_CONNECTION`: `redis` (Redisサービスを別途追加し、`REDIS_URL` がある場合) または `database`
-- `GEMINI_API_KEY`, `GEMINI_MODEL`: AI連携用
-- `APP_KEY`: `php artisan key:generate --show` で生成したもの
-- `APP_ENV`: `production` 強制httpsに。
-
-**GCSを使用する場合（推奨）:**
-- `FILESYSTEM_DISK`: `gcs`
-- `GOOGLE_APPLICATION_CREDENTIALS`: サービスアカウントキーへのパス（例: `storage/gcs-key.json`）
-- `GOOGLE_CLOUD_PROJECT_ID`: GCPプロジェクトID
-- `GOOGLE_CLOUD_STORAGE_BUCKET`: GCSバケット名
-
-> これにより、Cloud Storage だけでなく、Vision API や Text-to-Speech API など、すべての Google Cloud SDK が共通の認証で動作します。
 ---
 
 ## ライセンス
