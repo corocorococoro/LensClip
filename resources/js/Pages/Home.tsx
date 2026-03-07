@@ -13,7 +13,8 @@ interface Props {
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    const { data, setData, post, processing, errors, reset } = useForm<{
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const { data, setData, post, processing, progress, errors, reset } = useForm<{
         image: File | null;
         latitude: number | null;
         longitude: number | null;
@@ -41,9 +42,19 @@ export default function Home({ stats, recent }: Props) {
         }
     }, []);
 
+    const clearPreview = useCallback(() => {
+        setPreviewUrl((url) => {
+            if (url) URL.revokeObjectURL(url);
+            return null;
+        });
+    }, []);
+
     const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Show preview immediately before resize/upload
+        setPreviewUrl(URL.createObjectURL(file));
 
         // クライアント側で 1024px WebP にリサイズしてから送ることで
         // ・ネットワーク転送量を大幅削減（例: 5MB JPEG → ~200KB WebP）
@@ -85,10 +96,12 @@ export default function Home({ stats, recent }: Props) {
             forceFormData: true,
             onSuccess: () => {
                 reset();
+                clearPreview();
                 // ファイル input をクリアしないと同じ画像を再選択しても onChange が発火しない
                 if (fileInputRef.current) fileInputRef.current.value = '';
             },
             onError: (errors) => {
+                clearPreview();
                 // リトライ時に同じ画像を再選択できるよう input をクリア
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 if (!errors.image) {
@@ -96,7 +109,7 @@ export default function Home({ stats, recent }: Props) {
                 }
             },
         });
-    }, [post, reset]);
+    }, [post, reset, clearPreview]);
 
     // ファイル選択時に自動送信
     useEffect(() => {
@@ -126,30 +139,45 @@ export default function Home({ stats, recent }: Props) {
                     </Card>
                 </div>
 
-                {/* Capture Button */}
-                <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={processing}
-                    aria-label="カメラでしらべる"
-                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-                >
-                    {processing ? (
-                        <>
-                            <span className="text-4xl animate-spin" aria-hidden="true">
-                                ⏳
+                {/* Capture Button / Upload Preview */}
+                {previewUrl ? (
+                    <div className="relative w-48 h-48 rounded-2xl overflow-hidden shadow-2xl shadow-brand-pink/25 mb-4">
+                        <img src={previewUrl} alt="選択した写真" className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1">
+                            <span className="text-3xl" aria-hidden="true">
+                                {processing ? '📤' : '⏳'}
                             </span>
-                            <span className="text-sm mt-2 font-bold">おくりちゅう…</span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="text-5xl" aria-hidden="true">
-                                📷
+                            <span className="text-white text-xs font-bold drop-shadow">
+                                {processing ? 'おくりちゅう…' : 'じゅんびちゅう…'}
                             </span>
-                            <span className="text-sm mt-2 font-bold">しらべる</span>
-                        </>
-                    )}
-                </button>
-                <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+                            <div
+                                className="h-full bg-gradient-to-r from-brand-pink to-brand-sky transition-all duration-300 ease-out"
+                                style={{ width: `${progress?.percentage ?? 0}%` }}
+                                role="progressbar"
+                                aria-valuenow={progress?.percentage ?? 0}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                            />
+                        </div>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={processing}
+                        aria-label="カメラでしらべる"
+                        className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    >
+                        <span className="text-5xl" aria-hidden="true">
+                            📷
+                        </span>
+                        <span className="text-sm mt-2 font-bold">しらべる</span>
+                    </button>
+                )}
+                {!previewUrl && (
+                    <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
+                )}
 
                 {/* Error Display */}
                 {errors.image && (

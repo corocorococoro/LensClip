@@ -1,8 +1,8 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Button } from '@/Components/ui';
 import type { ObservationStatus } from '@/types/models';
-import { Head, router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
     observation: {
@@ -12,11 +12,36 @@ interface Props {
     };
 }
 
+const STEPS = [
+    { emoji: '📸', label: '写真をかくにんちゅう', untilSeconds: 8 },
+    { emoji: '🔍', label: 'AIが分析ちゅう', untilSeconds: 25 },
+    { emoji: '✨', label: 'もうすぐ完成！', untilSeconds: Infinity },
+] as const;
+
 export default function Processing({ observation }: Props) {
     const [status, setStatus] = useState<ObservationStatus>(observation.status);
     const [error, setError] = useState<string | null>(null);
     const [retrying, setRetrying] = useState(false);
+    const [elapsedSeconds, setElapsedSeconds] = useState(0);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    // Elapsed time counter drives step transitions
+    useEffect(() => {
+        if (status !== 'processing') {
+            if (timerRef.current) clearInterval(timerRef.current);
+            return;
+        }
+
+        timerRef.current = setInterval(() => {
+            setElapsedSeconds((s) => s + 1);
+        }, 1000);
+
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, [status]);
+
+    // SSE stream
     useEffect(() => {
         if (status !== 'processing') return;
 
@@ -59,6 +84,7 @@ export default function Processing({ observation }: Props) {
                     setRetrying(false);
                     setStatus('processing');
                     setError(null);
+                    setElapsedSeconds(0);
                 },
             }
         );
@@ -68,13 +94,16 @@ export default function Processing({ observation }: Props) {
         router.visit('/dashboard');
     };
 
+    const currentStepIndex = STEPS.findIndex((step) => elapsedSeconds < step.untilSeconds);
+    const currentStep = STEPS[currentStepIndex];
+
     return (
         <AppLayout title="しらべてます">
             <Head title="しらべてます" />
 
             <div className="flex flex-col items-center justify-center min-h-[60vh]">
-                {/* Image Preview */}
-                <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-lg mb-8 relative">
+                {/* Image Preview - clearly visible */}
+                <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-lg mb-6 relative">
                     <img
                         src={observation.thumb_url}
                         alt="撮影した写真"
@@ -84,16 +113,13 @@ export default function Processing({ observation }: Props) {
                     />
 
                     {status === 'processing' && (
-                        <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center">
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
                             <div
-                                className="text-6xl animate-bounce mb-4"
+                                className="text-5xl animate-bounce"
                                 role="status"
                                 aria-label="調査中"
                             >
-                                🔍
-                            </div>
-                            <div className="text-lg font-bold text-brand-pink animate-pulse">
-                                しらべています…
+                                {currentStep.emoji}
                             </div>
                         </div>
                     )}
@@ -113,6 +139,35 @@ export default function Processing({ observation }: Props) {
                     )}
                 </div>
 
+                {/* Step progress */}
+                {status === 'processing' && (
+                    <div className="flex flex-col items-center gap-3 mb-6" aria-live="polite">
+                        <p className="text-brand-dark font-bold text-base">{currentStep.label}</p>
+
+                        <div className="flex gap-2">
+                            {STEPS.map((step, index) => (
+                                <div
+                                    key={step.label}
+                                    className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+                                        index < currentStepIndex
+                                            ? 'bg-brand-pink'
+                                            : index === currentStepIndex
+                                              ? 'bg-brand-sky animate-pulse'
+                                              : 'bg-gray-200'
+                                    }`}
+                                />
+                            ))}
+                        </div>
+
+                        <Link
+                            href="/library"
+                            className="text-brand-muted text-xs hover:text-brand-pink mt-1"
+                        >
+                            ライブラリでまつ →
+                        </Link>
+                    </div>
+                )}
+
                 {/* Actions */}
                 {status === 'failed' && (
                     <div className="flex gap-4">
@@ -123,12 +178,6 @@ export default function Processing({ observation }: Props) {
                             {retrying ? 'リトライ中…' : 'もういちどしらべる'}
                         </Button>
                     </div>
-                )}
-
-                {status === 'processing' && (
-                    <p className="text-gray-500 text-sm animate-pulse" aria-live="polite">
-                        AIがなにかしらべてるよ…
-                    </p>
                 )}
             </div>
         </AppLayout>
