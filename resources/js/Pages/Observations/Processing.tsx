@@ -66,9 +66,25 @@ export default function Processing({ observation }: Props) {
         });
 
         source.onerror = () => {
-            source.close();
-            setStatus('failed');
-            setError('接続エラーが発生しました。もう一度お試しください。');
+            // Don't immediately show an error — the SSE connection may have dropped
+            // due to a network blip or proxy timeout while analysis was still running.
+            // Poll the observation status once to check if it already completed.
+            fetch(`/observations/${observation.id}`, { headers: { Accept: 'application/json' } })
+                .then((r) => r.json())
+                .then((data: { status?: string; error_message?: string }) => {
+                    if (data.status === 'ready') {
+                        source.close();
+                        router.visit(`/observations/${observation.id}`);
+                    } else if (data.status === 'failed') {
+                        source.close();
+                        setStatus('failed');
+                        setError(data.error_message || 'AI分析に失敗しました');
+                    }
+                    // Still 'processing' → EventSource will auto-reconnect; do nothing
+                })
+                .catch(() => {
+                    // Network is down → EventSource will auto-reconnect; do nothing
+                });
         };
 
         return () => source.close();

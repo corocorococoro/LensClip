@@ -12,6 +12,8 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class AnalyzeObservationJob implements ShouldQueue
 {
@@ -130,7 +132,16 @@ class AnalyzeObservationJob implements ShouldQueue
             'thumb' => $localThumbPath,
         ]);
 
-        Storage::disk()->put($localOriginalPath, Storage::disk('local')->get($localOriginalPath));
+        // Orient, resize, and re-encode the raw original before uploading to GCS.
+        // This work was deferred from the HTTP request handler to keep the redirect fast.
+        $manager = new ImageManager(new Driver);
+        $image = $manager->read(Storage::disk('local')->get($localOriginalPath));
+        $image->orient();
+        $image->scaleDown(width: 1024);
+        $encodedOriginal = (string) $image->toWebp(quality: 80);
+        unset($image);
+
+        Storage::disk()->put($localOriginalPath, $encodedOriginal);
 
         if (Storage::disk('local')->exists($localThumbPath)) {
             Storage::disk()->put($localThumbPath, Storage::disk('local')->get($localThumbPath));
