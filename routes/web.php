@@ -42,6 +42,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/observations', [ObservationController::class, 'store'])
         ->middleware('throttle:observation-upload')
         ->name('observations.store');
+    Route::get('/observations/upload-pending', [ObservationController::class, 'uploadPending'])
+        ->name('observations.uploadPending');
     Route::get('/observations/{observation}/thumb', [ObservationController::class, 'thumb'])
         ->middleware('throttle:api-general')
         ->name('observations.thumb');

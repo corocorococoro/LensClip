@@ -304,6 +304,14 @@ class ObservationController extends Controller
     }
 
     /**
+     * Show the upload-pending page (client holds the file, uploads from there).
+     */
+    public function uploadPending(): \Inertia\Response
+    {
+        return Inertia::render('Observations/UploadPending');
+    }
+
+    /**
      * Show processing status page.
      */
     public function processing(Observation $observation)
