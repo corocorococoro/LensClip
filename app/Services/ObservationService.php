@@ -41,26 +41,28 @@ class ObservationService
         // Resize for API cost/speed (max 1024px)
         $image->scaleDown(width: 1024);
 
-        // Generate unique filenames
+        // Generate unique filenames (GCS final paths, used as local paths too)
         $hashName = Str::random(40);
         $originalPath = "observations/{$hashName}.webp";
         $thumbPath = "observations/{$hashName}_thumb.webp";
 
-        // Save Original (WebP, strip EXIF by default)
+        // Save to local disk immediately — GCS upload is deferred to AnalyzeObservationJob.
+        // This eliminates ~1–3 s of synchronous GCS latency before the redirect fires.
         $encoded = $image->toWebp(quality: 80);
-        Storage::disk()->put($originalPath, (string) $encoded);
+        Storage::disk('local')->put($originalPath, (string) $encoded);
 
-        // Save Thumbnail
+        // Save Thumbnail to local disk
         $thumb = clone $image;
         $thumb->scaleDown(width: 300);
-        Storage::disk()->put($thumbPath, (string) $thumb->toWebp(quality: 70));
+        Storage::disk('local')->put($thumbPath, (string) $thumb->toWebp(quality: 70));
 
-        // Create Observation with processing status
+        // Create Observation with processing status.
+        // Paths are prefixed with "local:" so the model knows they haven't been uploaded to GCS yet.
         $observation = Observation::create([
             'user_id' => $user->id,
             'status' => 'processing',
-            'original_path' => $originalPath,
-            'thumb_path' => $thumbPath,
+            'original_path' => 'local:'.$originalPath,
+            'thumb_path' => 'local:'.$thumbPath,
             'latitude' => $finalLatitude,
             'longitude' => $finalLongitude,
         ]);
@@ -172,15 +174,30 @@ class ObservationService
         // Get tag ids before detaching/deleting
         $tagIds = $observation->tags()->pluck('tags.id')->toArray();
 
-        // Delete files
-        $paths = array_filter([
+        // Delete files — split local vs GCS paths
+        $allPaths = array_filter([
             $observation->original_path,
             $observation->cropped_path,
             $observation->thumb_path,
         ]);
 
-        if (! empty($paths)) {
-            Storage::disk()->delete($paths);
+        $localPaths = [];
+        $gcsPaths = [];
+
+        foreach ($allPaths as $path) {
+            if (str_starts_with($path, 'local:')) {
+                $localPaths[] = substr($path, 6);
+            } else {
+                $gcsPaths[] = $path;
+            }
+        }
+
+        if (! empty($localPaths)) {
+            Storage::disk('local')->delete($localPaths);
+        }
+
+        if (! empty($gcsPaths)) {
+            Storage::disk()->delete($gcsPaths);
         }
 
         // Delete observation (cascades pivot, but let's be explicit if needed, currently delete handles it)

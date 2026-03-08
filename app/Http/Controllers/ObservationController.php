@@ -279,6 +279,31 @@ class ObservationController extends Controller
     }
 
     /**
+     * Serve the thumbnail while it is still on local disk (before GCS upload).
+     * Once the job uploads to GCS, thumb_url switches to the GCS URL automatically.
+     */
+    public function thumb(Observation $observation)
+    {
+        $this->authorize('view', $observation);
+
+        if (! str_starts_with($observation->thumb_path ?? '', 'local:')) {
+            return redirect($observation->thumb_url);
+        }
+
+        $localPath = substr($observation->thumb_path, 6);
+
+        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($localPath)) {
+            abort(404);
+        }
+
+        return response(
+            \Illuminate\Support\Facades\Storage::disk('local')->get($localPath),
+            200,
+            ['Content-Type' => 'image/webp', 'Cache-Control' => 'private, max-age=60']
+        );
+    }
+
+    /**
      * Show processing status page.
      */
     public function processing(Observation $observation)

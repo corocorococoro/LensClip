@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AnalyzeObservationJob implements ShouldQueue
@@ -57,6 +58,12 @@ class AnalyzeObservationJob implements ShouldQueue
         Log::info('AnalyzeObservationJob: Starting analysis');
 
         try {
+            // Upload local files to GCS before running AI analysis.
+            // Files are stored locally during the HTTP request to avoid blocking the redirect.
+            if (str_starts_with($observation->original_path ?? '', 'local:')) {
+                $this->uploadLocalFilesToGcs($observation);
+            }
+
             $result = $analysisService->analyze($observation);
 
             // カテゴリをconfigの許可リストで検証
@@ -98,6 +105,47 @@ class AnalyzeObservationJob implements ShouldQueue
                 'error_message' => $this->userVisibleMessageForException($e, $errorId),
             ]);
         }
+    }
+
+    /**
+     * Upload locally-stored image files to GCS and update the observation paths.
+     *
+     * Files are saved to local disk during the HTTP request cycle to avoid blocking
+     * the redirect with synchronous GCS uploads. This method is called as the first
+     * step of the job to move them to their final GCS location before AI analysis.
+     */
+    protected function uploadLocalFilesToGcs(Observation $observation): void
+    {
+        $localOriginalPath = substr($observation->original_path, 6);
+        $localThumbPath = substr($observation->thumb_path, 6);
+
+        if (! Storage::disk('local')->exists($localOriginalPath)) {
+            throw new \RuntimeException(
+                "Local image file not found (container may have restarted): {$localOriginalPath}"
+            );
+        }
+
+        Log::info('AnalyzeObservationJob: Uploading local files to GCS', [
+            'original' => $localOriginalPath,
+            'thumb' => $localThumbPath,
+        ]);
+
+        Storage::disk()->put($localOriginalPath, Storage::disk('local')->get($localOriginalPath));
+
+        if (Storage::disk('local')->exists($localThumbPath)) {
+            Storage::disk()->put($localThumbPath, Storage::disk('local')->get($localThumbPath));
+        }
+
+        $observation->update([
+            'original_path' => $localOriginalPath,
+            'thumb_path' => $localThumbPath,
+        ]);
+
+        // Clean up local copies
+        Storage::disk('local')->delete([$localOriginalPath, $localThumbPath]);
+
+        // Reload model so subsequent reads use the GCS paths
+        $observation->refresh();
     }
 
     /**

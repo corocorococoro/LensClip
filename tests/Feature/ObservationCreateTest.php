@@ -17,7 +17,7 @@ class ObservationCreateTest extends TestCase
 
     public function test_user_can_upload_image_and_create_observation(): void
     {
-        Storage::fake();
+        Storage::fake('local');
         Queue::fake();
 
         $user = User::factory()->create();
@@ -29,7 +29,7 @@ class ObservationCreateTest extends TestCase
 
         $response->assertRedirect();
 
-        // Assert observation was created
+        // Assert observation was created with local: prefixed paths
         $this->assertDatabaseHas('observations', [
             'user_id' => $user->id,
             'status' => 'processing',
@@ -38,10 +38,12 @@ class ObservationCreateTest extends TestCase
         // Assert job was dispatched
         Queue::assertPushed(AnalyzeObservationJob::class);
 
-        // Assert files were stored
+        // Files are stored on local disk (pending GCS upload by the job)
         $observation = Observation::first();
-        Storage::disk()->assertExists($observation->original_path);
-        Storage::disk()->assertExists($observation->thumb_path);
+        $this->assertStringStartsWith('local:', $observation->original_path);
+        $this->assertStringStartsWith('local:', $observation->thumb_path);
+        Storage::disk('local')->assertExists(substr($observation->original_path, 6));
+        Storage::disk('local')->assertExists(substr($observation->thumb_path, 6));
     }
 
     public function test_observation_requires_image(): void
