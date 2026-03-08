@@ -118,6 +118,80 @@ export default function Home({ stats, recent }: Props) {
         }
     }, [data.image, submitImage]);
 
+    const uploadPercent = progress?.percentage ?? 0;
+    const uploadLabel = !processing
+        ? 'じゅんびちゅう…'
+        : uploadPercent >= 100
+          ? 'もうすぐ…'
+          : 'おくりちゅう…';
+    const uploadEmoji = !processing ? '⏳' : uploadPercent >= 100 ? '✨' : '📤';
+
+    // ファイル選択直後から画面全体を Processing ビューに切り替える（楽観的 UI）
+    if (previewUrl) {
+        return (
+            <AppLayout title="しらべてます">
+                <Head title="しらべてます" />
+
+                <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFileSelect}
+                    aria-hidden="true"
+                />
+
+                <div className="flex flex-col items-center justify-center min-h-[60vh]">
+                    <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-lg mb-6 relative">
+                        <img
+                            src={previewUrl}
+                            alt="撮影した写真"
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                            <div className="text-5xl animate-bounce" aria-hidden="true">
+                                {uploadEmoji}
+                            </div>
+                        </div>
+                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
+                            <div
+                                className="h-full bg-gradient-to-r from-brand-pink to-brand-sky transition-all duration-300 ease-out"
+                                style={{ width: `${uploadPercent}%` }}
+                                role="progressbar"
+                                aria-valuenow={uploadPercent}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                            />
+                        </div>
+                    </div>
+
+                    <p className="text-brand-dark font-bold text-base" aria-live="polite">
+                        {uploadLabel}
+                    </p>
+
+                    {errors.image && (
+                        <div
+                            className="mt-6 w-full p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600"
+                            role="alert"
+                        >
+                            <span className="text-2xl" aria-hidden="true">
+                                ⚠️
+                            </span>
+                            <p className="text-sm font-bold flex-1">{errors.image}</p>
+                            <button
+                                onClick={clearPreview}
+                                className="text-sm text-red-500 underline"
+                            >
+                                もどる
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout title="ホーム">
             <Head title="ホーム" />
@@ -139,58 +213,19 @@ export default function Home({ stats, recent }: Props) {
                     </Card>
                 </div>
 
-                {/* Capture Button / Upload Preview */}
-                {previewUrl ? (
-                    <div className="relative w-48 h-48 rounded-2xl overflow-hidden shadow-2xl shadow-brand-pink/25 mb-4">
-                        <img src={previewUrl} alt="選択した写真" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center gap-1">
-                            <span className="text-3xl" aria-hidden="true">
-                                {processing ? '📤' : '⏳'}
-                            </span>
-                            <span className="text-white text-xs font-bold drop-shadow">
-                                {processing ? 'おくりちゅう…' : 'じゅんびちゅう…'}
-                            </span>
-                        </div>
-                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
-                            <div
-                                className="h-full bg-gradient-to-r from-brand-pink to-brand-sky transition-all duration-300 ease-out"
-                                style={{ width: `${progress?.percentage ?? 0}%` }}
-                                role="progressbar"
-                                aria-valuenow={progress?.percentage ?? 0}
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                            />
-                        </div>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={processing}
-                        aria-label="カメラでしらべる"
-                        className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
-                    >
-                        <span className="text-5xl" aria-hidden="true">
-                            📷
-                        </span>
-                        <span className="text-sm mt-2 font-bold">しらべる</span>
-                    </button>
-                )}
-                {!previewUrl && (
-                    <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
-                )}
-
-                {/* Error Display */}
-                {errors.image && (
-                    <div
-                        className="w-full mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-bounce-short"
-                        role="alert"
-                    >
-                        <span className="text-2xl" aria-hidden="true">
-                            ⚠️
-                        </span>
-                        <p className="text-sm font-bold">{errors.image}</p>
-                    </div>
-                )}
+                {/* Capture Button */}
+                <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={processing}
+                    aria-label="カメラでしらべる"
+                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                >
+                    <span className="text-5xl" aria-hidden="true">
+                        📷
+                    </span>
+                    <span className="text-sm mt-2 font-bold">しらべる</span>
+                </button>
+                <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
 
                 {/* Hidden File Input */}
                 <input
