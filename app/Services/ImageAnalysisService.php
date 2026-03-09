@@ -354,45 +354,47 @@ EOT;
 
         try {
             // Retry with exponential backoff (100ms, 200ms, 400ms)
-            $response = Http::retry(3, 100)->timeout(30)->post(
-                "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent?key={$this->geminiApiKey}",
-                [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $prompt],
-                                [
-                                    'inline_data' => [
-                                        'mime_type' => 'image/webp',
-                                        'data' => $imageBase64,
+            $response = Http::retry(3, 100)->timeout(30)
+                ->withHeader('x-goog-api-key', $this->geminiApiKey)
+                ->post(
+                    "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent",
+                    [
+                        'contents' => [
+                            [
+                                'parts' => [
+                                    ['text' => $prompt],
+                                    [
+                                        'inline_data' => [
+                                            'mime_type' => 'image/webp',
+                                            'data' => $imageBase64,
+                                        ],
                                     ],
                                 ],
                             ],
                         ],
-                    ],
-                    'generationConfig' => [
-                        'response_mime_type' => 'application/json',
-                    ],
-                    'safetySettings' => [
-                        [
-                            'category' => 'HARM_CATEGORY_HARASSMENT',
-                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        'generationConfig' => [
+                            'response_mime_type' => 'application/json',
                         ],
-                        [
-                            'category' => 'HARM_CATEGORY_HATE_SPEECH',
-                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                        'safetySettings' => [
+                            [
+                                'category' => 'HARM_CATEGORY_HARASSMENT',
+                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                            ],
+                            [
+                                'category' => 'HARM_CATEGORY_HATE_SPEECH',
+                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                            ],
+                            [
+                                'category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                            ],
+                            [
+                                'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                                'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
+                            ],
                         ],
-                        [
-                            'category' => 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
-                        ],
-                        [
-                            'category' => 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                            'threshold' => 'BLOCK_MEDIUM_AND_ABOVE',
-                        ],
-                    ],
-                ]
-            );
+                    ]
+                );
 
             Log::info('Gemini API Response Status: '.$response->status());
 
