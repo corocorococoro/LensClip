@@ -65,20 +65,39 @@ class Observation extends Model
         return $this->belongsToMany(Tag::class, 'observation_tag');
     }
 
-    // Accessors for image URLs
-    public function getOriginalUrlAttribute()
+    // Accessors for image URLs.
+    // Paths prefixed with "local:" are stored on local disk (pending GCS upload by the job).
+    // In that case we serve the thumbnail via a dedicated route instead of a GCS URL.
+
+    public function getOriginalUrlAttribute(): ?string
     {
-        return $this->original_path ? Storage::url($this->original_path) : null;
+        if (! $this->original_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->original_path, 'local:')) {
+            return null; // Not yet on GCS; not needed until analysis completes
+        }
+
+        return Storage::url($this->original_path);
     }
 
-    public function getCroppedUrlAttribute()
+    public function getCroppedUrlAttribute(): ?string
     {
         return $this->cropped_path ? Storage::url($this->cropped_path) : null;
     }
 
-    public function getThumbUrlAttribute()
+    public function getThumbUrlAttribute(): ?string
     {
-        return $this->thumb_path ? Storage::url($this->thumb_path) : null;
+        if (! $this->thumb_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->thumb_path, 'local:')) {
+            return route('observations.thumb', $this->id);
+        }
+
+        return Storage::url($this->thumb_path);
     }
 
     // Scopes

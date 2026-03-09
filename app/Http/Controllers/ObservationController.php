@@ -171,7 +171,7 @@ class ObservationController extends Controller
             $yearMonth = $date->format('Y-m');
             $label = $date->format('Y年n月');
 
-            if (!isset($groups[$yearMonth])) {
+            if (! isset($groups[$yearMonth])) {
                 $groups[$yearMonth] = [
                     'yearMonth' => $yearMonth,
                     'label' => $label,
@@ -234,7 +234,7 @@ class ObservationController extends Controller
             }
 
             // サムネイル用の最小限データのみ返す
-            $previews[$cat['id']] = $query->get()->map(fn($obs) => [
+            $previews[$cat['id']] = $query->get()->map(fn ($obs) => [
                 'id' => $obs->id,
                 'thumb_url' => $obs->thumb_url,
                 'status' => $obs->status,
@@ -251,7 +251,7 @@ class ObservationController extends Controller
      */
     private function getCategoriesForFrontend(): array
     {
-        return collect(config('categories'))->map(fn($c) => [
+        return collect(config('categories'))->map(fn ($c) => [
             'id' => $c['id'],
             'name' => $c['name'],
             'color' => $c['color'],
@@ -276,6 +276,39 @@ class ObservationController extends Controller
         }
 
         return redirect()->route('observations.processing', $observation);
+    }
+
+    /**
+     * Serve the thumbnail while it is still on local disk (before GCS upload).
+     * Once the job uploads to GCS, thumb_url switches to the GCS URL automatically.
+     */
+    public function thumb(Observation $observation)
+    {
+        $this->authorize('view', $observation);
+
+        if (! str_starts_with($observation->thumb_path ?? '', 'local:')) {
+            return redirect($observation->thumb_url);
+        }
+
+        $localPath = substr($observation->thumb_path, 6);
+
+        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($localPath)) {
+            abort(404);
+        }
+
+        return response(
+            \Illuminate\Support\Facades\Storage::disk('local')->get($localPath),
+            200,
+            ['Content-Type' => 'image/webp', 'Cache-Control' => 'private, max-age=60']
+        );
+    }
+
+    /**
+     * Show the upload-pending page (client holds the file, uploads from there).
+     */
+    public function uploadPending(): \Inertia\Response
+    {
+        return Inertia::render('Observations/UploadPending');
     }
 
     /**
@@ -347,9 +380,9 @@ class ObservationController extends Controller
                 }
 
                 if ($obs->status === 'failed') {
-                    echo "event: failed\ndata: " . json_encode([
+                    echo "event: failed\ndata: ".json_encode([
                         'error_message' => $obs->error_message,
-                    ]) . "\n\n";
+                    ])."\n\n";
                     ob_flush();
                     flush();
                     break;
@@ -359,7 +392,7 @@ class ObservationController extends Controller
                 ob_flush();
                 flush();
 
-                sleep(2);
+                usleep(500_000);
             }
         }, 200, [
             'Content-Type' => 'text/event-stream',

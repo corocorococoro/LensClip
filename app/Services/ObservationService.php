@@ -33,34 +33,32 @@ class ObservationService
         $finalLatitude = $gps['latitude'] ?? $latitude;
         $finalLongitude = $gps['longitude'] ?? $longitude;
 
-        // Process image
-        $manager = new ImageManager(new Driver);
-        $image = $manager->read($tempPath);
-        $image->orient();
-
-        // Resize for API cost/speed (max 1024px)
-        $image->scaleDown(width: 1024);
-
-        // Generate unique filenames
+        // Generate unique filenames (GCS final paths, used as local paths too)
         $hashName = Str::random(40);
         $originalPath = "observations/{$hashName}.webp";
         $thumbPath = "observations/{$hashName}_thumb.webp";
 
-        // Save Original (WebP, strip EXIF by default)
-        $encoded = $image->toWebp(quality: 80);
-        Storage::disk()->put($originalPath, (string) $encoded);
+        // Save raw uploaded bytes directly — skip re-encoding here.
+        // The job will orient/resize/encode before uploading to GCS.
+        // This removes the heaviest CPU work (~200–500 ms) from the request path.
+        Storage::disk('local')->put($originalPath, file_get_contents($tempPath));
 
-        // Save Thumbnail
-        $thumb = clone $image;
-        $thumb->scaleDown(width: 300);
-        Storage::disk()->put($thumbPath, (string) $thumb->toWebp(quality: 70));
+        // Generate thumbnail synchronously (fast ~50–100 ms) so the Processing page
+        // can display the photo immediately via the /observations/{id}/thumb route.
+        $manager = new ImageManager(new Driver);
+        $image = $manager->read($tempPath);
+        $image->orient();
+        $image->scaleDown(width: 300);
+        Storage::disk('local')->put($thumbPath, (string) $image->toWebp(quality: 70));
+        unset($image);
 
-        // Create Observation with processing status
+        // Create Observation with processing status.
+        // Paths are prefixed with "local:" so the model knows they haven't been uploaded to GCS yet.
         $observation = Observation::create([
             'user_id' => $user->id,
             'status' => 'processing',
-            'original_path' => $originalPath,
-            'thumb_path' => $thumbPath,
+            'original_path' => 'local:'.$originalPath,
+            'thumb_path' => 'local:'.$thumbPath,
             'latitude' => $finalLatitude,
             'longitude' => $finalLongitude,
         ]);
@@ -172,15 +170,30 @@ class ObservationService
         // Get tag ids before detaching/deleting
         $tagIds = $observation->tags()->pluck('tags.id')->toArray();
 
-        // Delete files
-        $paths = array_filter([
+        // Delete files — split local vs GCS paths
+        $allPaths = array_filter([
             $observation->original_path,
             $observation->cropped_path,
             $observation->thumb_path,
         ]);
 
-        if (! empty($paths)) {
-            Storage::disk()->delete($paths);
+        $localPaths = [];
+        $gcsPaths = [];
+
+        foreach ($allPaths as $path) {
+            if (str_starts_with($path, 'local:')) {
+                $localPaths[] = substr($path, 6);
+            } else {
+                $gcsPaths[] = $path;
+            }
+        }
+
+        if (! empty($localPaths)) {
+            Storage::disk('local')->delete($localPaths);
+        }
+
+        if (! empty($gcsPaths)) {
+            Storage::disk()->delete($gcsPaths);
         }
 
         // Delete observation (cascades pivot, but let's be explicit if needed, currently delete handles it)

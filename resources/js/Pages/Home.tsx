@@ -2,8 +2,9 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Card, EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import type { ObservationSummary, HomeStats } from '@/types/models';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { setPendingUpload } from '@/uploadPendingStore';
+import { Head, Link, router } from '@inertiajs/react';
+import { useRef, useEffect, useState } from 'react';
 
 interface Props {
     stats: HomeStats;
@@ -13,15 +14,6 @@ interface Props {
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    const { data, setData, post, processing, errors, reset } = useForm<{
-        image: File | null;
-        latitude: number | null;
-        longitude: number | null;
-    }>({
-        image: null,
-        latitude: null,
-        longitude: null,
-    });
 
     // Request location permission on mount
     useEffect(() => {
@@ -41,69 +33,12 @@ export default function Home({ stats, recent }: Props) {
         }
     }, []);
 
-    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
-        // クライアント側で 1024px WebP にリサイズしてから送ることで
-        // ・ネットワーク転送量を大幅削減（例: 5MB JPEG → ~200KB WebP）
-        // ・サーバーの orient/scaleDown/encode 処理が軽くなる
-        // 失敗時は元ファイルをそのまま使用（サーバー側でフォールバック処理）
-        let imageToUpload: File = file;
-        try {
-            const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-            const scale = Math.min(1, 1024 / bitmap.width);
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(bitmap.width * scale);
-            canvas.height = Math.round(bitmap.height * scale);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) throw new Error('canvas unavailable');
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-            bitmap.close();
-
-            const blob = await new Promise<Blob | null>((resolve) => {
-                canvas.toBlob(resolve, 'image/webp', 0.85);
-            });
-            if (blob) {
-                imageToUpload = new File([blob], 'image.webp', { type: 'image/webp' });
-            }
-        } catch {
-            // リサイズ失敗時は元ファイルをそのまま使用
-        }
-
-        setData((prev) => ({
-            ...prev,
-            image: imageToUpload,
-            latitude: location?.latitude ?? null,
-            longitude: location?.longitude ?? null,
-        }));
+        setPendingUpload(file, location?.latitude ?? null, location?.longitude ?? null);
+        router.visit('/observations/upload-pending');
     };
-
-    // useCallback でメモ化し、依存配列を正しく設定
-    const submitImage = useCallback(() => {
-        post('/observations', {
-            forceFormData: true,
-            onSuccess: () => {
-                reset();
-                // ファイル input をクリアしないと同じ画像を再選択しても onChange が発火しない
-                if (fileInputRef.current) fileInputRef.current.value = '';
-            },
-            onError: (errors) => {
-                // リトライ時に同じ画像を再選択できるよう input をクリア
-                if (fileInputRef.current) fileInputRef.current.value = '';
-                if (!errors.image) {
-                    alert('おくりものに しっぱいしちゃった。もういちど やってみてね！');
-                }
-            },
-        });
-    }, [post, reset]);
-
-    // ファイル選択時に自動送信
-    useEffect(() => {
-        if (data.image) {
-            submitImage();
-        }
-    }, [data.image, submitImage]);
 
     return (
         <AppLayout title="ホーム">
@@ -129,40 +64,15 @@ export default function Home({ stats, recent }: Props) {
                 {/* Capture Button */}
                 <button
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={processing}
                     aria-label="カメラでしらべる"
-                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed mb-4"
+                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 mb-4"
                 >
-                    {processing ? (
-                        <>
-                            <span className="text-4xl animate-spin" aria-hidden="true">
-                                ⏳
-                            </span>
-                            <span className="text-sm mt-2 font-bold">おくりちゅう…</span>
-                        </>
-                    ) : (
-                        <>
-                            <span className="text-5xl" aria-hidden="true">
-                                📷
-                            </span>
-                            <span className="text-sm mt-2 font-bold">しらべる</span>
-                        </>
-                    )}
+                    <span className="text-5xl" aria-hidden="true">
+                        📷
+                    </span>
+                    <span className="text-sm mt-2 font-bold">しらべる</span>
                 </button>
                 <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
-
-                {/* Error Display */}
-                {errors.image && (
-                    <div
-                        className="w-full mb-8 p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600 animate-bounce-short"
-                        role="alert"
-                    >
-                        <span className="text-2xl" aria-hidden="true">
-                            ⚠️
-                        </span>
-                        <p className="text-sm font-bold">{errors.image}</p>
-                    </div>
-                )}
 
                 {/* Hidden File Input */}
                 <input
@@ -200,7 +110,7 @@ export default function Home({ stats, recent }: Props) {
                 )}
 
                 {/* Empty State */}
-                {recent.length === 0 && stats.total === 0 && !errors.image && (
+                {recent.length === 0 && stats.total === 0 && (
                     <EmptyState
                         icon="🔍"
                         message={
