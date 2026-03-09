@@ -19,6 +19,10 @@ class ImageAnalysisServiceSafetyTest extends TestCase
             $this->assertSame('HARM_CATEGORY_HARASSMENT', $payload['safetySettings'][0]['category']);
             $this->assertSame('BLOCK_MEDIUM_AND_ABOVE', $payload['safetySettings'][0]['threshold']);
 
+            // API key must be in header, not URL query parameter
+            $this->assertContains('test-key', $request->header('x-goog-api-key'));
+            $this->assertStringNotContainsString('key=', $request->url());
+
             return Http::response([
                 'candidates' => [[
                     'finishReason' => 'STOP',
