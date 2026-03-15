@@ -9,6 +9,8 @@ class UpdateObservationTagsAction
 {
     public function execute(Observation $observation, array $tagNames): void
     {
+        $existingTagIds = $observation->tags()->pluck('tags.id')->all();
+
         $tagIds = [];
         foreach ($tagNames as $name) {
             $name = trim($name);
@@ -24,5 +26,16 @@ class UpdateObservationTagsAction
         }
 
         $observation->tags()->sync($tagIds);
+
+        $detachedTagIds = array_values(array_diff($existingTagIds, $tagIds));
+
+        if ($detachedTagIds === []) {
+            return;
+        }
+
+        Tag::query()
+            ->whereIn('id', $detachedTagIds)
+            ->whereDoesntHave('observations')
+            ->delete();
     }
 }

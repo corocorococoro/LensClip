@@ -56,14 +56,6 @@ class ObservationTagUpdateTest extends TestCase
 
     public function test_updating_tags_cleans_up_unused_orphans()
     {
-        // This test verifies that if we REMOVE a tag from an observation,
-        // and it was the last one using it, that tag IS NOT automatically deleted
-        // UNLESS we implement that logic in updateTags too.
-        // Current implementation only cleans up on DELETE observation.
-        // Let's check if we want it on update too. Usually YES.
-
-        // Actually, let's just test that the SYNC works correctly first.
-
         $user = User::factory()->create();
         $this->actingAs($user);
 
@@ -80,5 +72,6 @@ class ObservationTagUpdateTest extends TestCase
         $this->assertCount(1, $observation->tags);
         $this->assertTrue($observation->tags->contains('name', 'NewTag'));
         $this->assertFalse($observation->tags->contains('name', 'OldTag'));
+        $this->assertDatabaseMissing('tags', ['id' => $tag->id]);
     }
 }
