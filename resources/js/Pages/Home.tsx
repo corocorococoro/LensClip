@@ -2,8 +2,8 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Card, EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import type { ObservationSummary, HomeStats } from '@/types/models';
-import { setPendingUpload } from '@/uploadPendingStore';
-import { Head, Link, router } from '@inertiajs/react';
+import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
+import { Head, Link } from '@inertiajs/react';
 import { useRef, useEffect, useState } from 'react';
 
 interface Props {
@@ -14,6 +14,7 @@ interface Props {
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+    const handleFileSelect = usePendingUploadNavigation(location);
 
     // Request location permission on mount
     useEffect(() => {
@@ -32,13 +33,6 @@ export default function Home({ stats, recent }: Props) {
             );
         }
     }, []);
-
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setPendingUpload(file, location?.latitude ?? null, location?.longitude ?? null);
-        router.visit('/observations/upload-pending');
-    };
 
     return (
         <AppLayout title="ホーム">
