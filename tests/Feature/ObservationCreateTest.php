@@ -42,8 +42,15 @@ class ObservationCreateTest extends TestCase
         $observation = Observation::first();
         $this->assertStringStartsWith('local:', $observation->original_path);
         $this->assertStringStartsWith('local:', $observation->thumb_path);
-        Storage::disk('local')->assertExists(substr($observation->original_path, 6));
-        Storage::disk('local')->assertExists(substr($observation->thumb_path, 6));
+        $originalLocalPath = substr($observation->original_path, 6);
+        $thumbLocalPath = substr($observation->thumb_path, 6);
+
+        Storage::disk('local')->assertExists($originalLocalPath);
+        Storage::disk('local')->assertExists($thumbLocalPath);
+
+        // Original is stored as raw upload bytes; thumbnail is pre-generated WebP for immediate preview.
+        $this->assertStringNotStartsWith('RIFF', Storage::disk('local')->get($originalLocalPath));
+        $this->assertStringStartsWith('RIFF', Storage::disk('local')->get($thumbLocalPath));
     }
 
     public function test_observation_requires_image(): void

@@ -19,29 +19,8 @@ export default function UploadPending() {
         didStart.current = true;
 
         const run = async () => {
-            let imageToUpload: File = pending.file;
-            try {
-                const bitmap = await createImageBitmap(pending.file, { imageOrientation: 'from-image' });
-                const scale = Math.min(1, 1024 / bitmap.width);
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.round(bitmap.width * scale);
-                canvas.height = Math.round(bitmap.height * scale);
-                const ctx = canvas.getContext('2d');
-                if (!ctx) throw new Error('canvas unavailable');
-                ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-                bitmap.close();
-                const blob = await new Promise<Blob | null>((resolve) => {
-                    canvas.toBlob(resolve, 'image/webp', 0.85);
-                });
-                if (blob) {
-                    imageToUpload = new File([blob], 'image.webp', { type: 'image/webp' });
-                }
-            } catch {
-                // Use original file on resize failure
-            }
-
             const formData = new FormData();
-            formData.append('image', imageToUpload);
+            formData.append('image', pending.file);
             if (pending.latitude !== null) formData.append('latitude', String(pending.latitude));
             if (pending.longitude !== null) formData.append('longitude', String(pending.longitude));
 
