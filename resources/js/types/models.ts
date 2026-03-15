@@ -102,5 +102,5 @@ export interface CandidateCard {
 export interface HomeStats {
     today: number;
     total: number;
+    processing: number;
 }
-

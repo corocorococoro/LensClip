@@ -3,7 +3,7 @@ import { Card, EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import type { ObservationSummary, HomeStats } from '@/types/models';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useRef, useEffect, useState } from 'react';
 
 interface Props {
@@ -34,13 +34,28 @@ export default function Home({ stats, recent }: Props) {
         }
     }, []);
 
+    useEffect(() => {
+        if (stats.processing === 0) {
+            return;
+        }
+
+        const intervalId = window.setInterval(() => {
+            router.reload({
+                only: ['stats', 'recent'],
+            });
+        }, 5000);
+
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [stats.processing]);
     return (
         <AppLayout title="ホーム">
             <Head title="ホーム" />
 
             <div className="flex flex-col items-center">
                 {/* Stats */}
-                <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                <div className="w-full grid grid-cols-3 gap-4 mb-8">
                     <Card className="text-center">
                         <div className="text-3xl font-bold text-brand-pink tabular-nums">
                             {stats.today}
@@ -53,7 +68,19 @@ export default function Home({ stats, recent }: Props) {
                         </div>
                         <div className="text-sm text-brand-muted">ぜんぶ</div>
                     </Card>
+                    <Card className="text-center">
+                        <div className="text-3xl font-bold text-amber-500 tabular-nums">
+                            {stats.processing}
+                        </div>
+                        <div className="text-sm text-brand-muted">いましらべ中</div>
+                    </Card>
                 </div>
+
+                {stats.processing > 0 && (
+                    <p className="text-sm text-amber-600 font-medium mb-4">
+                        いま{stats.processing}件しらべ中
+                    </p>
+                )}
 
                 {/* Capture Button */}
                 <button

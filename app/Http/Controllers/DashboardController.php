@@ -20,8 +20,13 @@ class DashboardController extends Controller
 
         $total = Observation::forUser($userId)->count();
 
+        $processing = Observation::forUser($userId)
+            ->processing()
+            ->count();
+
         $recent = Observation::forUser($userId)
-            ->ready()
+            ->whereIn('status', ['processing', 'ready'])
+            ->orderByRaw("case when status = 'processing' then 0 else 1 end")
             ->latest()
             ->take(3)
             ->get();
@@ -30,6 +35,7 @@ class DashboardController extends Controller
             'stats' => [
                 'today' => $today,
                 'total' => $total,
+                'processing' => $processing,
             ],
             'recent' => $recent,
         ]);
