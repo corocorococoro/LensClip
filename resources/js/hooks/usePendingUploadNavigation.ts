@@ -7,7 +7,12 @@ interface LocationValue {
     longitude: number;
 }
 
-export function usePendingUploadNavigation(location: LocationValue | null) {
+type CaptureSource = 'home' | 'live';
+
+export function usePendingUploadNavigation(
+    location: LocationValue | null,
+    source: CaptureSource = 'live'
+) {
     return useCallback((e: ChangeEvent<HTMLInputElement>) => {
         const input = e.currentTarget;
         const file = input.files?.[0];
@@ -16,8 +21,8 @@ export function usePendingUploadNavigation(location: LocationValue | null) {
             return;
         }
 
-        setPendingUpload(file, location?.latitude ?? null, location?.longitude ?? null);
+        setPendingUpload(file, location?.latitude ?? null, location?.longitude ?? null, source);
         input.value = '';
         router.visit('/observations/upload-pending');
-    }, [location]);
+    }, [location, source]);
 }

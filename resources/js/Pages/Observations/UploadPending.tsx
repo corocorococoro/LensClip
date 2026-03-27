@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function UploadPending() {
     const [pending] = useState(() => takePendingUpload());
+    const [isPreparingUpload, setIsPreparingUpload] = useState(true);
     const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const didStart = useRef(false);
@@ -19,6 +20,12 @@ export default function UploadPending() {
         didStart.current = true;
 
         const run = async () => {
+            if (pending.source === 'home') {
+                await new Promise((resolve) => window.setTimeout(resolve, 650));
+            }
+
+            setIsPreparingUpload(false);
+
             const formData = new FormData();
             formData.append('image', pending.file);
             if (pending.latitude !== null) formData.append('latitude', String(pending.latitude));
@@ -39,7 +46,7 @@ export default function UploadPending() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const isUploading = uploadPercent < 100 && !error;
+    const isUploading = !isPreparingUpload && uploadPercent < 100 && !error;
     const emoji = error ? '⚠️' : isUploading ? '📤' : '✨';
 
     if (!pending) {
@@ -81,7 +88,13 @@ export default function UploadPending() {
                 </div>
 
                 <p className="text-brand-dark font-bold text-base mb-2" aria-live="polite">
-                    {error ? 'しっぱいしちゃった…' : isUploading ? 'おくりちゅう…' : 'もうすぐ…'}
+                    {error
+                        ? 'しっぱいしちゃった…'
+                        : isPreparingUpload
+                            ? 'じゅんびちゅう…'
+                            : isUploading
+                                ? 'おくりちゅう…'
+                                : 'もうすぐ…'}
                 </p>
 
                 {error && (
