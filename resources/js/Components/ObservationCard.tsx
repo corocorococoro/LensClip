@@ -45,11 +45,20 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
 
             {/* Processing State */}
             {observation.status === 'processing' && (
-                <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
-                    <span className="text-3xl animate-spin" role="status" aria-label="調査中">
-                        ⏳
-                    </span>
-                </div>
+                <>
+                    <div className="absolute top-2 left-2 z-10">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm bg-amber-500 text-white">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                            解析中
+                        </span>
+                    </div>
+
+                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
+                        <span className="text-3xl animate-spin" role="status" aria-label="解析中">
+                            ⏳
+                        </span>
+                    </div>
+                </>
             )}
 
             {/* Failed State */}
