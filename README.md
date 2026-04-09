@@ -108,7 +108,3 @@ sequenceDiagram
 | [docs/deploy.md](docs/deploy.md)                               | Railway デプロイ手順                 |
 
 ---
-
-## ライセンス
-
-MIT
