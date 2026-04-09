@@ -7,22 +7,24 @@
 
 発見は日付・カテゴリ・地図で蓄積されていき、使うたびに**世界にひとつの図鑑**が育つ。
 
+お子さまの「これなあに」という好奇心を大切に育みながら、親子で過ごすあたたかいコミュニケーションの時間をサポートいたします。
+
 **Demo**: https://lensclip.up.railway.app/
 
 ---
 
 ## 機能
 
-| 機能 | 概要 |
-|------|------|
-| 📷 撮影・アップロード | カメラ or ファイル選択、位置情報取得、WebP 圧縮・EXIF 除去 |
-| 🔍 AI 同定 | Vision API で主対象を検出 → bbox 合成スコアで選定 → Gemini で同定・説明生成（最大3候補） |
-| 🔊 英名読み上げ | Cloud TTS API で同定結果の英名を発音（英単語学習、MD5 キャッシュ, 7日 TTL） |
-| 📚 ライブラリ | グリッド表示、全文検索、タグフィルタ、カテゴリビュー、マップビュー |
-| 🏷️ タグ・カテゴリ | AI 自動付与 + 手動追加・修正 |
-| ⚡ リアルタイム通知 | SSE で分析完了を即時反映（ポーリング不要） |
-| 🔐 認証 | Breeze (Email/Password) + Google OAuth (Socialite) |
-| ⚙️ 管理画面 | ログ閲覧、Gemini モデル切替（allowlist 制御） |
+| 機能                 | 概要                                                                                     |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| 📷 撮影・アップロード | カメラ or ファイル選択、位置情報取得、WebP 圧縮・EXIF 除去                               |
+| 🔍 AI 同定            | Vision API で主対象を検出 → bbox 合成スコアで選定 → Gemini で同定・説明生成（最大3候補） |
+| 🔊 英名読み上げ       | Cloud TTS API で同定結果の英名を発音（英単語学習、MD5 キャッシュ, 7日 TTL）              |
+| 📚 ライブラリ         | グリッド表示、全文検索、タグフィルタ、カテゴリビュー、マップビュー                       |
+| 🏷️ タグ・カテゴリ     | AI 自動付与 + 手動追加・修正                                                             |
+| ⚡ リアルタイム通知   | SSE で分析完了を即時反映（ポーリング不要）                                               |
+| 🔐 認証               | Breeze (Email/Password) + Google OAuth (Socialite)                                       |
+| ⚙️ 管理画面           | ログ閲覧、Gemini モデル切替（allowlist 制御）                                            |
 
 ---
 
@@ -34,16 +36,16 @@
 ![Google Cloud](https://img.shields.io/badge/Google_Cloud-4285F4?style=flat&logo=googlecloud&logoColor=white)
 ![Railway](https://img.shields.io/badge/Railway-0B0D0E?style=flat&logo=railway&logoColor=white)
 
-| Layer | Stack |
-|-------|-------|
-| Backend | Laravel 12, PHP 8.5, MySQL |
-| Frontend | Inertia.js v2, React 18, TypeScript, Tailwind CSS v3 |
-| AI / ML | Google Cloud Vision API (Object Localization), Gemini API |
-| TTS | Google Cloud Text-to-Speech API |
-| Storage | GCS (prod) / local public (dev) |
-| Queue | Redis (prod) / database (dev) |
-| Auth | Laravel Breeze, Laravel Socialite |
-| Infra | Docker (Laravel Sail), Railway |
+| Layer    | Stack                                                     |
+| -------- | --------------------------------------------------------- |
+| Backend  | Laravel 12, PHP 8.5, MySQL                                |
+| Frontend | Inertia.js v2, React 18, TypeScript, Tailwind CSS v3      |
+| AI / ML  | Google Cloud Vision API (Object Localization), Gemini API |
+| TTS      | Google Cloud Text-to-Speech API                           |
+| Storage  | GCS (prod) / local public (dev)                           |
+| Queue    | Redis (prod) / database (dev)                             |
+| Auth     | Laravel Breeze, Laravel Socialite                         |
+| Infra    | Docker (Laravel Sail), Railway                            |
 
 ### AI パイプライン
 
@@ -92,18 +94,18 @@ sequenceDiagram
 
 ## 開発ドキュメント
 
-| ドキュメント | 内容 |
-|-------------|------|
-| [docs/prd.md](docs/prd.md) | プロダクト定義、ユースケース、UX原則 |
-| [docs/ux-flow.md](docs/ux-flow.md) | 画面遷移図、UI 状態 |
-| [docs/api-spec.md](docs/api-spec.md) | API エンドポイント仕様 |
-| [docs/db-schema.md](docs/db-schema.md) | ER図、テーブル定義 |
-| [docs/ai-pipeline.md](docs/ai-pipeline.md) | Vision / Gemini / TTS 処理フロー |
-| [docs/ai-models.md](docs/ai-models.md) | Gemini モデル allowlist |
+| ドキュメント                                                   | 内容                                 |
+| -------------------------------------------------------------- | ------------------------------------ |
+| [docs/prd.md](docs/prd.md)                                     | プロダクト定義、ユースケース、UX原則 |
+| [docs/ux-flow.md](docs/ux-flow.md)                             | 画面遷移図、UI 状態                  |
+| [docs/api-spec.md](docs/api-spec.md)                           | API エンドポイント仕様               |
+| [docs/db-schema.md](docs/db-schema.md)                         | ER図、テーブル定義                   |
+| [docs/ai-pipeline.md](docs/ai-pipeline.md)                     | Vision / Gemini / TTS 処理フロー     |
+| [docs/ai-models.md](docs/ai-models.md)                         | Gemini モデル allowlist              |
 | [docs/engineering-standards.md](docs/engineering-standards.md) | アーキテクチャ原則、テスト、PRゲート |
-| [docs/laravel-conventions.md](docs/laravel-conventions.md) | Laravel コード規約 |
-| [docs/setup.md](docs/setup.md) | 開発環境構築手順 |
-| [docs/deploy.md](docs/deploy.md) | Railway デプロイ手順 |
+| [docs/laravel-conventions.md](docs/laravel-conventions.md)     | Laravel コード規約                   |
+| [docs/setup.md](docs/setup.md)                                 | 開発環境構築手順                     |
+| [docs/deploy.md](docs/deploy.md)                               | Railway デプロイ手順                 |
 
 ---
 
