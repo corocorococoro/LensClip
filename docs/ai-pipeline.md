@@ -135,3 +135,44 @@ sequenceDiagram
 - キー: `md5(normalized_text|voice|rate)`
 - TTL: 7日（`config/services.php` の `tts.ttl_days`）
 - 期限切れは `TtsService::cleanupExpired()` で削除
+
+
+## 7. ローカルLLM差し替え方針（Gemma）
+
+- 画像処理フロー（アップロード/圧縮/crop）はそのまま利用
+- 同定ステップのみをローカルLLMに切り出して比較検証
+- 失敗時のフォールバック（Geminiへ切替 or failed返却）を事前に決める
+
+詳細は `docs/local-llm-gemma.md` を参照。
+
+
+### レイテンシ観点の補足
+
+- 「撮影→結果表示」の遅さは `upload + queue_wait + vision + identify` の合算
+- 回線が細い環境では `upload` が最長になりやすい
+- そのため、Gemma 切り替え時も **アップロード最適化とセット**で評価する
+
+
+## 8. Edge-first 非同期アップロード案（UX優先）
+
+```mermaid
+sequenceDiagram
+    participant U as User Device
+    participant V as Vision
+    participant L as Local LLM (Gemma)
+    participant Q as Upload Queue
+    participant S as Server
+
+    U->>U: Capture & Compress
+    U->>V: Detect object
+    V-->>U: bbox / labels
+    U->>L: Identify
+    L-->>U: result JSON
+    U-->>U: Show result immediately
+    U->>Q: Enqueue original/thumb
+    Q->>S: Upload async when online
+```
+
+- 体感速度は改善しやすい（結果先出し）
+- ただし、整合性キー・再送戦略・重複排除が必須
+- サーバー側は「解析済み・画像未到着」状態を扱える設計にする
