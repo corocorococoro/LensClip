@@ -27,3 +27,4 @@ lensclip-*.json
 service-account.json
 
 .env.railway
+.codex/config.toml
