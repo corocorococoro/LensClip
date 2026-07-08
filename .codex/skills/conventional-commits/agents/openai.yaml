@@ -1,0 +1,4 @@
+interface:
+  display_name: "Conventional Commits"
+  short_description: "Draft and normalize Conventional Commits for this repo."
+  default_prompt: "Use $conventional-commits to draft or normalize a Japanese Conventional Commit message for the current changes in this repository."
