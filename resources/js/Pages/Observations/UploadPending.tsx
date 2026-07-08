@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function UploadPending() {
     const [pending] = useState(() => takePendingUpload());
-    const [isPreparingUpload, setIsPreparingUpload] = useState(true);
+    const [isPreparingUpload, setIsPreparingUpload] = useState(() => pending?.source === 'home');
     const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [phase, setPhase] = useState<'analyzing' | 'uploading' | 'done'>('analyzing');
