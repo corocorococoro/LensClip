@@ -2,7 +2,7 @@
 # Engineering Standards (2026 SV Baseline)
 
 > **実装規約のみ記載**。具体的な API 項目は `docs/api-spec.md`、DB 項目は `docs/db-schema.md`、UX/処理フローは `docs/ux-flow.md` / `docs/ai-pipeline.md` を参照。  
-> **一次ソースは docs**。このドキュメントは「開発の強制ルール／判断基準／PRのゲート」を定義する。
+> 実装済みの挙動はソースコードを正とする。このドキュメントは「開発の強制ルール／判断基準／PRのゲート」を定義する。
 
 ---
 
@@ -12,7 +12,7 @@
 - Frontend: React + TypeScript
 - Auth: Laravel Breeze
 - Dev Env: Laravel Sail（Docker）必須
-- Queue: Redis（Sail）
+- Queue: database default。Redis は必要になった場合の選択肢
 - DB: **MySQL（Sail標準）を原則**  
   - 例外（テスト高速化等）で SQLite を使う場合は **「prod と差が出ない範囲」**に限定し、差異は明記する。
 
@@ -20,7 +20,8 @@
 
 ## 0. 変更の基本方針（最重要）
 
-- **Docs → Code の順で変更する**（仕様→実装）
+- 仕様変更時は、実装と docs を同じ作業で揃える
+- 実装済み挙動と docs が矛盾している場合は、ソースコードを正として docs を更新する
 - **破壊的変更は段階移行**（互換期間を作る）
 - **状態遷移が絡む機能は「設計してから実装」**（status / retry / 冪等性を先に決める）
 
@@ -36,9 +37,10 @@
 ./vendor/bin/sail npm ...
 ```
 
-### キュー設定（Redis）
+### キュー設定
 
-- `QUEUE_CONNECTION=redis`（開発・本番）
+- `QUEUE_CONNECTION=database` を既定とする
+- Redis を使う場合は、環境変数と worker 構成を同じ変更で揃える
 - Job 実装は **冪等（idempotent）**を前提にする（再実行されても壊れない）
 
 ### 変更反映
@@ -74,9 +76,9 @@
 - 想定される失敗は例外で 500 にせず、**`failed` 等の状態で表現**する
 - 状態は「画面で説明できる」粒度にする（ユーザーが次に何をすべきかが分かる）
 
-推奨の基本形:
-- `queued` → `processing` → `ready`
-- 失敗は `failed`（必要なら `failed_retryable` / `failed_permanent`）
+現在の基本形:
+- `processing` → `ready`
+- 失敗は `failed`
 
 ### 例外処理（MUST）
 
@@ -92,7 +94,7 @@
 - **ServiceProvider の boot/register で環境変数の存在チェックを throw する**
   - `package:discover` 等のビルドステップでも boot が走るため、Dockerビルドが壊れる
   - 設定ミスは **使用時に自然に失敗** させる（Laravel の思想）
-- **config() や env() にハードコードのフォールバック値を独自追加する**
+- **必須の本番設定を隠す独自フォールバックを追加する**
   - 設定が足りないならエラーで気づくべき。黙って動くのは問題の隠蔽
 - **Dockerfile にダミー環境変数を追加してビルドを通す**
   - 根本原因（boot 時のチェック等）を修正する
@@ -224,4 +226,4 @@ PR 前に必ず通す:
 
 ---
 
-*Last updated: 2026-03-03*
+*Last updated: 2026-07-08*

@@ -1,6 +1,8 @@
 # LensClip API 仕様書
 
-## エンドポイント一覧
+このドキュメントは、画面や外部呼び出しから見える主要な HTTP 境界をまとめる。詳細なバリデーション値、カテゴリ定義、レート制限値、ページサイズなどの定数は、FormRequest / config / ServiceProvider の実装を一次ソースにする。
+
+## 主要エンドポイント
 
 ### 認証（Breeze 標準）
 | Method | Path | 説明 |
@@ -10,14 +12,19 @@
 | GET | `/register` | 登録画面 |
 | POST | `/register` | 登録処理 |
 | POST | `/logout` | ログアウト |
+| GET | `/auth/google/redirect` | Google OAuth 開始 |
+| GET | `/auth/google/callback` | Google OAuth コールバック |
+| GET/POST | `/auth/google/link` | 既存アカウントとの Google 連携 |
 
 ### Observations
 | Method | Path | 説明 |
 |--------|------|------|
 | GET | `/library` | 一覧（検索/フィルタ対応） |
 | POST | `/observations` | 新規作成（画像アップロード） |
+| GET | `/observations/upload-pending` | クライアント保持中画像のアップロード待ち画面 |
+| GET | `/observations/{id}/thumb` | Job 完了前のローカルサムネイル配信 |
 | GET | `/observations/{id}` | 詳細取得 |
-| GET | `/observations/{id}/processing` | 処理中画面（ポーリング用） |
+| GET | `/observations/{id}/processing` | 処理中画面 |
 | POST | `/observations/{id}/retry` | 失敗時リトライ |
 | PATCH | `/observations/{id}/tags` | タグ更新 |
 | PATCH | `/observations/{id}/category` | カテゴリ更新 |
@@ -63,7 +70,7 @@
 **リクエスト**
 ```
 Content-Type: multipart/form-data
-- image: File (required, max 10MB, image/*)
+- image: File (required, supported image type)
 - latitude: float (optional, decimal degrees)
 - longitude: float (optional, decimal degrees)
 
@@ -74,9 +81,11 @@ Content-Type: multipart/form-data
 {
   "id": "uuid",
   "status": "processing",
-  "thumb_url": "/storage/observations/xxx_thumb.webp"
+  "thumb_url": "..."
 }
 ```
+
+通常の Inertia 遷移では、作成後に処理中画面へ redirect する。
 
 ### GET /observations/{id}
 **レスポンス（200 OK）**
@@ -92,11 +101,9 @@ Content-Type: multipart/form-data
   "tags": ["花", "植物", "春"],
   "fun_facts": ["チューリップはオランダが有名だよ"],
   "safety_notes": [],
-  "original_url": "/storage/observations/xxx.webp",
-  "cropped_url": "/storage/observations/xxx_cropped.webp",
-  "thumb_url": "/storage/observations/xxx_thumb.webp",
-  "latitude": 35.6895,
-  "longitude": 139.6917,
+  "original_url": "...",
+  "cropped_url": "...",
+  "thumb_url": "...",
   "created_at": "2026-01-16T10:00:00Z"
 }
 ```
@@ -106,7 +113,7 @@ Content-Type: multipart/form-data
 {
   "id": "uuid",
   "status": "processing",
-  "thumb_url": "/storage/observations/xxx_thumb.webp"
+  "thumb_url": "..."
 }
 ```
 
@@ -130,8 +137,7 @@ Content-Type: multipart/form-data
 ```
 
 **バリデーション**
-- `category`: required, `config/categories.php` の `id` に一致するもののみ許可
-- 許可値: `animal`, `insect`, `plant`, `food`, `vehicle`, `place`, `tool`, `other`
+- `category`: required。許可値は `config/categories.php` の `id` に従う
 
 **レスポンス（200 OK）**
 ```json
@@ -150,8 +156,7 @@ Content-Type: multipart/form-data
 | tag | string | タグ名フィルタ |
 | view | string | 表示モード: `date`(default), `category`, `map` |
 | category | string | カテゴリフィルタ（view=category 時に使用） |
-| page | int | ページ番号 |
-| per_page | int | 1ページあたり件数（default: 20, max: 50） |
+| cursor | string | date/category 詳細ビューの続き取得カーソル |
 
 **view=category 時の追加レスポンス**
 - `categories`: カテゴリ定義一覧（`config/categories.php` から生成）
@@ -181,8 +186,8 @@ Content-Type: multipart/form-data
 ---
 
 ## レート制限
-- 画像アップロード: 10回/分
-- その他API: 60回/分
+- `observation-upload`、`observation-retry`、`api-general` の named throttle を使う
+- 具体的な制限値は `AppServiceProvider` の RateLimiter 定義を一次ソースにする
 
 ---
 
@@ -198,8 +203,8 @@ Content-Type: multipart/form-data
 ```
 
 **バリデーション**
-- `text`: required, string, max:500
-- `speakingRate`: optional, numeric, 0.5〜2.0
+- `text`: required string
+- `speakingRate`: optional numeric
 
 **レスポンス（200 OK）**
 ```json
@@ -209,7 +214,7 @@ Content-Type: multipart/form-data
 }
 ```
 
-キャッシュ戦略: テキスト+音声+速度のMD5ハッシュをキーに、TTL 7日。
+キャッシュ戦略は `TtsService` と `config/services.php` に従う。
 
 ### GET /tts/audio/{key}
 音声ファイルを`audio/mpeg`でストリーム配信。
@@ -228,5 +233,9 @@ Content-Type: multipart/form-data
 |-------|------|------|
 | `ready` | `{}` | 分析完了 |
 | `failed` | `{"error_message": "..."}` | 分析失敗 |
-| `timeout` | `{}` | 90秒タイムアウト |
-| `: heartbeat` | - | 2秒間隔のキープアライブ |
+| `timeout` | `{}` | 接続タイムアウト |
+| `: heartbeat` | - | キープアライブ |
+
+---
+
+*Last updated: 2026-07-08*

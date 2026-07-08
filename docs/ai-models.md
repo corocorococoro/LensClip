@@ -1,41 +1,30 @@
 # AI モデル許可リスト
 
-> **これが Gemini モデルの唯一の一次ソースです。**  
-> Rules やコードからはこのファイルを参照してください。  
-> Rules にモデル名一覧を複製することは禁止です。
+Gemini モデル allowlist の実体は `config/services.php` の `services.gemini.allowed_models`。このドキュメントは、運用上の扱いと更新時の確認観点だけを書く。
 
-## 許可リスト (Allowlist)
+## 方針
 
-| モデル名 | 用途 | 備考 |
-|---------|------|------|
-| `gemini-2.5-flash-lite` | **デフォルト** | 高速・低コスト |
-| `gemini-2.5-flash` | 標準 | バランス型 |
-| `gemini-2.5-pro` | 高精度 | コスト高、必要時のみ |
-
-## デフォルトモデル
-
-```
-gemini-2.5-flash-lite
-```
+- allowlist 外モデルはサーバ側で拒否する
+- 管理画面の選択肢は allowlist から生成する
+- デフォルトモデルも `config/services.php` を一次ソースにする
 
 ## 更新手順
 
-1. **このファイル更新**: Allowlist に追加/削除
-2. **実装追従**: `config/services.php` の `gemini.allowed_models` を更新
-3. **Consistency Audit**: 矛盾・重複がないか監査
-4. **テスト実行**: allowlist 外モデル拒否テストを含む
+1. `config/services.php` の `services.gemini.allowed_models` と必要なデフォルト値を更新する
+2. 管理画面で選択肢が正しく出ることを確認する
+3. allowlist 外モデル拒否テストを含めて確認する
 
 ## 廃止ポリシー
 
-- 廃止予定モデルは「備考」欄に廃止時期を明記
+- 廃止予定モデルは変更内容や PR に廃止時期を明記
 - 廃止日の 2 週間前までに Allowlist から削除
 - 削除前にデフォルトが廃止モデルでないことを確認
 
 ## 注意事項
 
-- **Rules に Allowlist を複製しない**（参照のみ）
+- **Rules / docs に Allowlist を複製しない**（参照のみ）
 - **allowlist 外モデルはサーバ側で必ず拒否**（Security invariants 参照）
 
 ---
 
-*Last updated: 2026-01-22*
+*Last updated: 2026-07-08*

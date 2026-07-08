@@ -40,7 +40,7 @@ FILESYSTEM_DISK=public
 認証変数の注意:
 - `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CREDENTIALS_JSON` は **同時設定しない**
 - `GOOGLE_CREDENTIALS_JSON` は **JSON文字列そのもの**（ファイルパスではない）
-- JSON が不正 / ファイルが存在しない場合は起動時にエラーになる（fail-fast）
+- JSON が不正 / ファイルが存在しない場合は、設定読み込み時にエラーになる
 
 ## 3. Docker環境を起動
 
@@ -153,5 +153,5 @@ Viteサーバーが起動していない可能性:
 ## 既知の制約
 
 - iOSでのカメラ起動は環境依存（HTTPS必須等）
-- API キーなしでは AI 分析はモックデータになります
-- 画像サイズ上限: 10MB
+- Gemini API キーなしでは Gemini 同定がモック応答になる
+- Vision / TTS を使うには Google Cloud 認証が必要

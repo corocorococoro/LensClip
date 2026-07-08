@@ -17,16 +17,15 @@ flowchart TD
         Library[Library<br/>📚 ライブラリ]
     end
 
-    Home -->|カメラ/アップロード| Capture[Capture<br/>プレビュー確認]
-    Capture -->|送信| Processing[Processing<br/>🔍 しらべています...]
+    Home -->|カメラ/アップロード| UploadPending[UploadPending<br/>プレビュー + アップロード]
+    UploadPending -->|送信完了| Processing[Processing<br/>🔍 しらべています...]
     Processing -->|成功| Result[Result<br/>結果表示]
     Processing -->|失敗| Failed[Failed<br/>❌ エラー]
     Failed -->|リトライ| Processing
     Failed -->|戻る| Home
 
-    Result -->|保存| SaveDialog[SaveDialog<br/>タグ選択]
-    SaveDialog --> Library
     Result -->|戻る| Home
+    Result --> Library
 
     Library -->|写真タップ| Detail[Detail<br/>詳細表示]
     Detail --> Library
@@ -43,9 +42,9 @@ flowchart TD
 
 ### SSE（Server-Sent Events）
 - `processing` 中は `/observations/{id}/stream` への SSE 接続でステータス監視
-- サーバー側は 2秒間隔で heartbeat を送信
+- サーバー側は処理中に heartbeat を送信
 - `ready` / `failed` / `timeout` イベントで遷移
-- 最大90秒でタイムアウト → `failed` 扱い
+- 接続がタイムアウトした場合は、画面側で失敗または再確認の導線を出す
 
 ## 画面詳細
 
@@ -54,10 +53,11 @@ flowchart TD
 - 今日の撮影数（シンプル表示）
 - 最近の発見（3枚程度のプレビュー）
 
-### Capture
-- カメラプレビュー or ファイル選択
-- **位置情報リクエスト**（許可ダイアログ）
-- 確認画面（✕キャンセル / ⭕️送信）
+### UploadPending
+- カメラまたはファイル選択後のプレビュー表示
+- 位置情報が取得できた場合はアップロード時に緯度・経度を送信
+- アップロード中の進捗表示
+- 送信後は `Processing` へ遷移
 
 ### Processing
 - 全画面オーバーレイ
@@ -72,12 +72,12 @@ flowchart TD
   - AIが自動分類した結果を親が手動修正可能
   - カテゴリ定義は `config/categories.php` 参照
 - **候補カード**（これかも？: 複数候補をタップ切替）
-- **発見場所**（地図/住所）
+- **発見場所**（緯度・経度がある場合）
 - **子供向け説明**（kid_friendly）
 - **見分けポイント**（look_for）
 - **豆知識**（fun_facts）
 - **安全注意**（safety_notes、あれば目立たせる）
-- **タグ**（ライブラリへのリンク付き）
+- **タグ**
 
 ### Failed
 - エラーアイコン + メッセージ

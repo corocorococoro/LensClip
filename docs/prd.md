@@ -19,18 +19,18 @@ LensClipは、小さい子供を持つ親向けの「これなぁに？」スク
 ### 撮影・アップロード
 - カメラ or ファイル選択
 - 位置情報取得（許可時）
-- 画像圧縮（最大1024px幅、WebP 80%品質）、EXIF除去
+- 画像の正規化、サムネイル生成、EXIF除去
 
 ### AI分析
-- Vision API で主対象の bbox を検出 → 合成スコア（信頼度×面積×中心距離）で1件選定
+- Vision API で主対象の bbox を検出 → 合成スコアで1件選定
 - bbox でマージン付き crop → Gemini API で同定・説明生成
-- 最大3候補のカード情報（名前、英名、子供向け説明、見分けポイント、豆知識）
+- 複数候補のカード情報（名前、英名、子供向け説明、見分けポイント、豆知識）
 - 非同期 Queue 処理 + SSE リアルタイム通知
 
 ### 英名読み上げ（TTS）
 - Google Cloud Text-to-Speech API で同定結果の英名を発音
 - 英単語学習の補助機能として、親子で英語に触れるきっかけを提供
-- キャッシュ付き（テキスト+音声+速度のハッシュキー、7日TTL）
+- キャッシュ付き
 
 ### ライブラリ
 - グリッド表示、検索、タグフィルタ
@@ -54,7 +54,7 @@ LensClipは、小さい子供を持つ親向けの「これなぁに？」スク
 - **AI**: Google Cloud Vision API（Object Localization）+ Gemini API
 - **TTS**: Google Cloud Text-to-Speech API
 - **Storage**: GCS（本番）/ ローカル public（開発）
-- **Queue**: Redis（本番）/ database（開発）
+- **Queue**: database default / Redis optional
 - **Dev Env**: Docker（Laravel Sail）
 - **Deploy**: Railway
 

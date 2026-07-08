@@ -1,5 +1,7 @@
 # LensClip データベーススキーマ
 
+このドキュメントは主要な保存対象と関係性を示す。列型、インデックス、制約の正確な定義は migration を一次ソースにする。
+
 ## ER図
 
 ```mermaid
@@ -79,47 +81,19 @@ erDiagram
 ## テーブル詳細
 
 ### observations
-| Column | Type | Constraints | 説明 |
-|--------|------|-------------|------|
-| id | uuid | PK | 推測困難なID |
-| user_id | bigint | FK, INDEX | 所有者 |
-| status | enum | NOT NULL | processing\|ready\|failed |
-| original_path | varchar | NOT NULL | 元画像パス |
-| cropped_path | varchar | nullable | 切り抜き画像パス |
-| thumb_path | varchar | NOT NULL | サムネイルパス |
-| crop_bbox | json | nullable | Visionが返したbbox |
-| vision_objects | json | nullable | Vision全結果（将来用） |
-| ai_json | json | nullable | Gemini全結果 |
-| title | varchar | nullable | AI生成タイトル |
-| summary | text | nullable | AI生成説明 |
-| kid_friendly | text | nullable | 子供向け説明 |
-| confidence | float | nullable | 確信度 0.0-1.0 |
-| category | varchar(50) | NOT NULL, DEFAULT 'other' | カテゴリ（`config/categories.php` 参照） |
-| gemini_model | varchar | nullable | 分析に使用した Gemini モデル名 |
-| error_message | varchar | nullable | 失敗時メッセージ |
-| created_at | timestamp | | 作成日時 |
-| updated_at | timestamp | | 更新日時 |
-| deleted_at | timestamp | nullable | 論理削除 |
-| latitude | decimal | nullable | 緯度 |
-| longitude | decimal | nullable | 経度 |
+主な保存対象:
+- 所有者、処理状態、画像パス（original / cropped / thumb）
+- Vision の bbox / object 結果、Gemini の構造化結果
+- 表示用の title / summary / kid_friendly / confidence
+- 手動修正可能な category
+- 分析に使用した Gemini モデル名
+- 位置情報として緯度・経度のみ
+- 失敗時の利用者向けメッセージ
 
-**インデックス**
-- `(user_id, created_at)` - ユーザー別時系列
-- `(user_id, status)` - ステータスフィルタ
-- `(user_id, category)` - カテゴリフィルタ
-
-**カテゴリ値**
-`config/categories.php` で定義。現在の許可値: `animal`, `insect`, `plant`, `food`, `vehicle`, `place`, `tool`, `other`
+カテゴリ値は `config/categories.php` を一次ソースにする。
 
 ### tags
-| Column | Type | Constraints | 説明 |
-|--------|------|-------------|------|
-| id | bigint | PK | |
-| user_id | bigint | FK | 所有者 |
-| name | varchar | NOT NULL | タグ名 |
-
-**インデックス**
-- `(user_id, name)` UNIQUE - ユーザー内一意
+ユーザーに紐づくタグ。AI 分析結果から作成され、手動更新でも使われる。制約と重複扱いは migration と `UpdateObservationTagsAction` / `AnalyzeObservationJob` を一次ソースにする。
 
 ### observation_tag
 | Column | Type | Constraints |
@@ -140,4 +114,6 @@ erDiagram
 **用途**
 - `gemini_model`: 使用するGeminiモデル名
 
+---
 
+*Last updated: 2026-07-08*

@@ -12,8 +12,8 @@ sequenceDiagram
     participant G as Gemini API
 
     U->>W: POST /observations (image)
-    W->>W: Validate & Compress Image
-    W->>W: Save original + thumb
+    W->>W: Validate image + extract GPS
+    W->>W: Save raw original locally + create thumb
     W->>W: Create Observation (status=processing)
     W->>Q: Dispatch AnalyzeObservationJob
     W-->>U: 201 {id, status: processing}
@@ -21,7 +21,8 @@ sequenceDiagram
     U->>W: SSE GET /observations/{id}/stream
     
     Q->>J: Execute Job
-    J->>V: Object Localization Request
+    J->>J: Normalize original and move to configured disk
+    J->>V: SafeSearch + Object Localization Request
     V-->>J: localizedObjectAnnotations[]
 
     alt bbox found
@@ -48,12 +49,14 @@ sequenceDiagram
 
 ## 1. 画像アップロード
 
-### 圧縮・保存
-1. **Original**: 最大1024px幅にリサイズ、WebP 80%品質
-2. **Thumb**: 300px幅、WebP 70%品質
-3. EXIF除去（Intervention Image のデフォルト動作）
+### 保存
+1. FormRequest で画像形式、サイズ、マジックバイト、任意の緯度・経度を検証する
+2. サーバ側で EXIF の GPS だけを抽出する
+3. HTTP リクエスト中は raw original を local disk に一時保存する
+4. thumb は同期生成し、処理中画面で即時表示できるようにする
+5. Observation は `processing` で作成し、画像パスには Job 前の local 状態を示す prefix を付ける
 
-保存先: `storage/app/public/observations/{random40chars}[_thumb|_cropped].webp`
+original の正規化、EXIF 除去、最終保存先への移動は Job の最初に行う。画像サイズや品質などの具体値は `ObservationService` / `AnalyzeObservationJob` を一次ソースにする。
 
 ---
 
@@ -61,22 +64,16 @@ sequenceDiagram
 
 `google/cloud-vision` SDK、サービスアカウント認証。
 
+Vision では SafeSearch と Object Localization を実行する。不適切コンテンツが検出された場合は Job を失敗状態にし、内部詳細を出さない利用者向けメッセージに変換する。
+
 ### bbox選定
-複数オブジェクト検出時、合成スコアで1件選定:
-
-```
-finalScore = score * 0.5 + areaRatio * 0.3 + centerBonus * 0.2
-```
-
-- **score**: Vision の信頼度 (0-1)
-- **areaRatio**: 画像全体に対する bbox 面積比 (0-1)
-- **centerBonus**: bbox 中心が画像中心に近いほど高い (0-1)
+複数オブジェクト検出時は、Vision の信頼度、bbox 面積、画面中心への近さを使った合成スコアで1件選ぶ。重みの具体値は `ImageAnalysisService` を一次ソースにする。
 
 ---
 
 ## 3. Crop
 
-- bbox の各辺を **10% マージン**で拡張、画像端でクリップ
+- bbox の各辺をマージン付きで拡張し、画像端でクリップ
 - bbox なしの場合: original をそのまま Gemini に送信（cropped_path = null）
 
 ---
@@ -86,10 +83,10 @@ finalScore = score * 0.5 + areaRatio * 0.3 + centerBonus * 0.2
 - `response_mime_type: application/json` で構造化 JSON 出力を強制
 - プロンプトは `ImageAnalysisService::buildPrompt()` で動的生成
 - カテゴリリストは `config/categories.php` から注入
-- 最大3候補のカード情報（名前、`english_name`、confidence、子供向け説明、見分けポイント、豆知識）
+- 候補カード情報（名前、`english_name`、confidence、子供向け説明、見分けポイント、豆知識）
 - パース失敗時: markdown コードブロック除去後に再パース → 失敗なら `status=failed`
 
-> Gemini モデルの allowlist は [ai-models.md](ai-models.md) が唯一の一次ソース。
+> Gemini モデルの allowlist は `config/services.php` を一次ソースにし、運用方針は [ai-models.md](ai-models.md) を参照する。
 
 ---
 
@@ -113,10 +110,10 @@ sequenceDiagram
     participant T as TTS API
 
     U->>W: POST /tts {text, speakingRate?}
-    W->>W: Generate cache key (MD5: text|voice|rate)
+    W->>W: Generate cache key
     W->>C: Check cache
 
-    alt cache hit (TTL 7日以内)
+    alt cache hit
         C-->>W: cached audio
         W-->>U: {url, cacheHit: true}
     else cache miss
@@ -132,6 +129,9 @@ sequenceDiagram
 ```
 
 ### キャッシュ戦略
-- キー: `md5(normalized_text|voice|rate)`
-- TTL: 7日（`config/services.php` の `tts.ttl_days`）
+- キーと TTL は `TtsService` と `config/services.php` を一次ソースにする
 - 期限切れは `TtsService::cleanupExpired()` で削除
+
+---
+
+*Last updated: 2026-07-08*

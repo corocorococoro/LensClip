@@ -41,7 +41,7 @@
 | `GEMINI_API_KEY` | Gemini API キー |
 | `GEMINI_MODEL` | 例: `gemini-2.5-flash-lite` |
 
-### Google Cloud 認証（Vision / TTS 用。常に必須）
+### Google Cloud 認証（Vision / TTS を使う場合）
 
 | 変数 | 説明 |
 |------|------|
@@ -61,7 +61,7 @@
 1. `GOOGLE_CREDENTIALS_JSON` と `GOOGLE_APPLICATION_CREDENTIALS` は同時設定しない
 2. Railway では `GOOGLE_CREDENTIALS_JSON`（JSON文字列）を推奨
 3. `GOOGLE_APPLICATION_CREDENTIALS` を使う場合は、実在する読み取り可能なパスを指定
-4. 認証設定が不正だと起動時に fail-fast で例外になります
+4. 認証設定が不正だと、設定読み込み時にエラーになります
 
 ## 4. ストレージ戦略
 
@@ -84,7 +84,7 @@
 | なし | - |
 
 - 画像保存先はコンテナ内 `storage/app/public`
-- **Vision / TTS 用の Google 認証は引き続き必須**
+- Vision / TTS を使う場合は Google 認証が必要
 - `GOOGLE_CLOUD_STORAGE_BUCKET` は不要
 
 ## 5. Queue 設定
@@ -126,4 +126,4 @@ bash railway/start.sh
 
 ---
 
-*Last updated: 2026-03-03*
+*Last updated: 2026-07-08*
