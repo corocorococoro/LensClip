@@ -16,7 +16,6 @@
 | Laravel 規約 | [laravel-conventions.md](laravel-conventions.md) | Laravel コード規約 |
 | セットアップ | [setup.md](setup.md) | 開発環境構築手順 |
 | デプロイ | [deploy.md](deploy.md) | Railway デプロイ手順 |
-| ローカルLLM検証 | [local-llm-gemma.md](local-llm-gemma.md) | Gemma を使ったローカル推論の導入方針と検証手順 |
 
 ## セキュリティ（常時強制）
 

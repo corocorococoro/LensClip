@@ -109,15 +109,6 @@ FILESYSTEM_DISK=public
 | AI設定 | `/admin/settings/ai` | Geminiモデルの切り替え（即時反映） |
 
 
-## ローカルLLM（Gemma）検証モード
-
-外部 API ではなくローカル推論を検証する場合は、運用方針を `docs/local-llm-gemma.md` に従ってください。
-
-- まずは「Visionは現状維持 + 同定だけローカル化」から開始
-- 画像アップロード負荷はモデル切替だけで解消しないため、圧縮・再送制御も併用
-- admin向けモデルallowlist運用は `docs/ai-models.md` の手順を守る
-- UX最優先案として「解析先出し + 画像後送（非同期アップロード）」を採用する場合は、整合性キーと再送設計を先に決める
-
 ## テスト実行
 
 ```bash
