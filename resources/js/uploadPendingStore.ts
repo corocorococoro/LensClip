@@ -4,6 +4,7 @@ interface PendingUpload {
     latitude: number | null;
     longitude: number | null;
     edgeDraft: EdgeFirstDraft | null;
+    source: 'home' | 'live';
 }
 
 export interface EdgeFirstDraft {
@@ -24,10 +25,11 @@ export function setPendingUpload(
     file: File,
     latitude: number | null,
     longitude: number | null,
+    source: 'home' | 'live' = 'live',
     edgeDraft: EdgeFirstDraft | null = null
 ): void {
     if (state) URL.revokeObjectURL(state.previewUrl);
-    state = { file, previewUrl: URL.createObjectURL(file), latitude, longitude, edgeDraft };
+    state = { file, previewUrl: URL.createObjectURL(file), latitude, longitude, source, edgeDraft };
 }
 
 export function takePendingUpload(): PendingUpload | null {

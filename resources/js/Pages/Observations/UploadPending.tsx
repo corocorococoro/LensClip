@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function UploadPending() {
     const [pending] = useState(() => takePendingUpload());
+    const [isPreparingUpload, setIsPreparingUpload] = useState(true);
     const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [phase, setPhase] = useState<'analyzing' | 'uploading' | 'done'>('analyzing');
@@ -20,6 +21,12 @@ export default function UploadPending() {
         didStart.current = true;
 
         const run = async () => {
+            if (pending.source === 'home') {
+                await new Promise((resolve) => window.setTimeout(resolve, 650));
+            }
+
+            setIsPreparingUpload(false);
+
             if (pending.edgeDraft) {
                 try {
                     setPhase('analyzing');
@@ -56,7 +63,7 @@ export default function UploadPending() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const isUploading = uploadPercent < 100 && !error;
+    const isUploading = !isPreparingUpload && phase === 'uploading' && uploadPercent < 100 && !error;
     const emoji = error ? '⚠️' : isUploading ? '📤' : '✨';
 
     if (!pending) {
@@ -100,11 +107,13 @@ export default function UploadPending() {
                 <p className="text-brand-dark font-bold text-base mb-2" aria-live="polite">
                     {error
                         ? 'しっぱいしちゃった…'
-                        : phase === 'analyzing'
-                          ? 'ローカルでかいせきちゅう…'
-                          : isUploading
-                            ? 'おくりちゅう…'
-                            : 'もうすぐ…'}
+                        : isPreparingUpload
+                            ? 'じゅんびちゅう…'
+                            : phase === 'analyzing'
+                              ? 'ローカルでかいせきちゅう…'
+                              : isUploading
+                                ? 'おくりちゅう…'
+                                : 'もうすぐ…'}
                 </p>
 
                 {error && (
