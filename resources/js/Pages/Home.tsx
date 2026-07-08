@@ -14,7 +14,7 @@ interface Props {
 export default function Home({ stats, recent }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-    const handleFileSelect = usePendingUploadNavigation(location);
+    const handleFileSelect = usePendingUploadNavigation(location, 'home');
 
     // Request location permission on mount
     useEffect(() => {
