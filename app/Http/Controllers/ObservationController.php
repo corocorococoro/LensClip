@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\RetryObservationAction;
 use App\Actions\UpdateObservationTagsAction;
 use App\Http\Requests\DestroyAllObservationsRequest;
-use App\Http\Requests\StoreEdgeFirstObservationRequest;
 use App\Http\Requests\StoreObservationRequest;
-use App\Http\Requests\UploadEdgeFirstMediaRequest;
 use App\Http\Requests\UpdateObservationCategoryRequest;
 use App\Http\Requests\UpdateObservationTagsRequest;
 use App\Models\Observation;
@@ -278,42 +276,6 @@ class ObservationController extends Controller
         }
 
         return redirect()->route('observations.processing', $observation);
-    }
-
-    /**
-     * Store local (edge) AI result first, media will be uploaded later.
-     */
-    public function storeEdgeFirst(StoreEdgeFirstObservationRequest $request)
-    {
-        $observation = $this->observationService->createEdgeFirstObservation(
-            $request->user(),
-            $request->validated()
-        );
-
-        if ($request->wantsJson()) {
-            return response()->json(new \App\Http\Resources\ObservationResource($observation), 201);
-        }
-
-        return redirect()->route('observations.show', $observation);
-    }
-
-    /**
-     * Upload media later for edge-first observation.
-     */
-    public function uploadMedia(UploadEdgeFirstMediaRequest $request, Observation $observation)
-    {
-        $this->authorize('update', $observation);
-
-        $updated = $this->observationService->uploadEdgeFirstMedia(
-            $observation,
-            $request->file('image')
-        );
-
-        if ($request->wantsJson()) {
-            return response()->json(new \App\Http\Resources\ObservationResource($updated));
-        }
-
-        return redirect()->route('observations.show', $updated);
     }
 
     /**

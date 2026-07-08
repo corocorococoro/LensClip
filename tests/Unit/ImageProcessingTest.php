@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\ObservationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -16,10 +17,11 @@ class ImageProcessingTest extends TestCase
     public function test_uploaded_original_is_stored_raw_locally_and_thumb_is_webp(): void
     {
         Storage::fake('local');
+        Queue::fake();
 
         $user = User::factory()->create();
         $service = new ObservationService;
-        $file = UploadedFile::fake()->image('nature.jpg', 2000, 2000);
+        $file = UploadedFile::fake()->image('nature.jpg', 800, 600);
 
         $observation = $service->createObservation($user, $file);
 

@@ -22,9 +22,6 @@ class Observation extends Model
         'original_path',
         'cropped_path',
         'thumb_path',
-        'media_uploaded',
-        'media_uploaded_at',
-        'client_ref',
         'crop_bbox',
         'vision_objects',
         'ai_json',
@@ -44,8 +41,6 @@ class Observation extends Model
         'vision_objects' => 'array',
         'ai_json' => 'array',
         'confidence' => 'float',
-        'media_uploaded' => 'boolean',
-        'media_uploaded_at' => 'datetime',
         'latitude' => 'float',
         'longitude' => 'float',
     ];
@@ -80,10 +75,6 @@ class Observation extends Model
             return null;
         }
 
-        if (str_starts_with($this->original_path, 'pending:')) {
-            return null;
-        }
-
         if (str_starts_with($this->original_path, 'local:')) {
             return null; // Not yet on GCS; not needed until analysis completes
         }
@@ -99,10 +90,6 @@ class Observation extends Model
     public function getThumbUrlAttribute(): ?string
     {
         if (! $this->thumb_path) {
-            return null;
-        }
-
-        if (str_starts_with($this->thumb_path, 'pending:')) {
             return null;
         }
 

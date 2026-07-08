@@ -42,12 +42,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/observations', [ObservationController::class, 'store'])
         ->middleware('throttle:observation-upload')
         ->name('observations.store');
-    Route::post('/observations/edge-first', [ObservationController::class, 'storeEdgeFirst'])
-        ->middleware('throttle:api-general')
-        ->name('observations.storeEdgeFirst');
-    Route::post('/observations/{observation}/media', [ObservationController::class, 'uploadMedia'])
-        ->middleware('throttle:observation-upload')
-        ->name('observations.uploadMedia');
     Route::get('/observations/upload-pending', [ObservationController::class, 'uploadPending'])
         ->name('observations.uploadPending');
     Route::get('/observations/{observation}/thumb', [ObservationController::class, 'thumb'])

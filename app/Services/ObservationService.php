@@ -6,7 +6,6 @@ use App\Jobs\AnalyzeObservationJob;
 use App\Models\Observation;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,8 +14,6 @@ use Intervention\Image\ImageManager;
 
 class ObservationService
 {
-    private const EDGE_PENDING_PATH = 'pending://edge-first';
-
     /**
      * Create a new observation with image processing.
      */
@@ -80,73 +77,6 @@ class ObservationService
         AnalyzeObservationJob::dispatch($observation->id);
 
         return $observation;
-    }
-
-    /**
-     * Create observation from local (edge) AI result, without uploading media yet.
-     */
-    public function createEdgeFirstObservation(User $user, array $payload): Observation
-    {
-        return Observation::create([
-            'user_id' => $user->id,
-            'status' => 'ready',
-            'original_path' => self::EDGE_PENDING_PATH,
-            'thumb_path' => self::EDGE_PENDING_PATH,
-            'media_uploaded' => false,
-            'media_uploaded_at' => null,
-            'client_ref' => $payload['client_ref'] ?? null,
-            'ai_json' => $payload['ai_json'],
-            'title' => $payload['title'],
-            'summary' => $payload['summary'] ?? null,
-            'kid_friendly' => $payload['kid_friendly'] ?? null,
-            'confidence' => $payload['confidence'] ?? null,
-            'category' => $payload['category'],
-            'latitude' => $payload['latitude'] ?? null,
-            'longitude' => $payload['longitude'] ?? null,
-            'gemini_model' => 'local-edge',
-        ]);
-    }
-
-    /**
-     * Upload media for an edge-first observation.
-     */
-    public function uploadEdgeFirstMedia(Observation $observation, UploadedFile $file): Observation
-    {
-        if ($observation->media_uploaded) {
-            return $observation;
-        }
-
-        $tempPath = $file->getPathname();
-        $manager = new ImageManager(new Driver);
-        $image = $manager->read($tempPath);
-        $image->orient();
-        $image->scaleDown(width: 1024);
-
-        $thumb = $manager->read($tempPath);
-        $thumb->orient();
-        $thumb->scaleDown(width: 300);
-
-        $hashName = Str::random(40);
-        $originalPath = "observations/{$hashName}.webp";
-        $thumbPath = "observations/{$hashName}_thumb.webp";
-
-        Storage::disk()->put($originalPath, (string) $image->toWebp(quality: 80));
-        Storage::disk()->put($thumbPath, (string) $thumb->toWebp(quality: 70));
-
-        unset($image, $thumb);
-
-        $gps = $this->extractGpsFromExif($tempPath);
-
-        $observation->update([
-            'original_path' => $originalPath,
-            'thumb_path' => $thumbPath,
-            'media_uploaded' => true,
-            'media_uploaded_at' => Carbon::now(),
-            'latitude' => $observation->latitude ?? ($gps['latitude'] ?? null),
-            'longitude' => $observation->longitude ?? ($gps['longitude'] ?? null),
-        ]);
-
-        return $observation->fresh();
     }
 
     /**

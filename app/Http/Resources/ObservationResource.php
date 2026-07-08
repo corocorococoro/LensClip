@@ -30,9 +30,6 @@ class ObservationResource extends JsonResource
             'cropped_url' => $this->cropped_url,
             'thumb_url' => $this->thumb_url,
             'error_message' => $this->error_message,
-            'media_uploaded' => (bool) $this->media_uploaded,
-            'media_uploaded_at' => $this->media_uploaded_at,
-            'client_ref' => $this->client_ref,
             'created_at' => $this->created_at,
         ];
     }

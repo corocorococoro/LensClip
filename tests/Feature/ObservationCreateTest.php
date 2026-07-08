@@ -49,7 +49,7 @@ class ObservationCreateTest extends TestCase
         Storage::disk('local')->assertExists($thumbLocalPath);
 
         // Original is stored as raw upload bytes; thumbnail is pre-generated WebP for immediate preview.
-        $this->assertStringNotStartsWith('RIFF', Storage::disk('local')->get($originalLocalPath));
+        $this->assertFalse(str_starts_with(Storage::disk('local')->get($originalLocalPath), 'RIFF'));
         $this->assertStringStartsWith('RIFF', Storage::disk('local')->get($thumbLocalPath));
     }
 
