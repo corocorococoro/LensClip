@@ -27,6 +27,8 @@ class ObservationFactory extends Factory
             'status' => 'ready',
             'original_path' => 'observations/test_original.webp',
             'thumb_path' => 'observations/test_thumb.webp',
+            'media_uploaded' => true,
+            'media_uploaded_at' => now(),
             'title' => $this->faker->words(3, true),
             'summary' => $this->faker->sentence(),
             'confidence' => 0.95,

@@ -8,6 +8,7 @@ export default function UploadPending() {
     const [isPreparingUpload, setIsPreparingUpload] = useState(true);
     const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState<string | null>(null);
+    const [phase, setPhase] = useState<'analyzing' | 'uploading' | 'done'>('analyzing');
     const didStart = useRef(false);
 
     useEffect(() => {
@@ -26,11 +27,27 @@ export default function UploadPending() {
 
             setIsPreparingUpload(false);
 
+            if (pending.edgeDraft) {
+                try {
+                    setPhase('analyzing');
+                    const created = await createEdgeFirstObservation(pending.edgeDraft);
+                    setPhase('uploading');
+                    await uploadEdgeFirstMedia(created.id, pending.file, setUploadPercent);
+                    setPhase('done');
+                    router.visit(`/observations/${created.id}`);
+                } catch {
+                    setError('ローカル解析モードの送信に失敗しました。もういちど試してね。');
+                }
+
+                return;
+            }
+
             const formData = new FormData();
             formData.append('image', pending.file);
             if (pending.latitude !== null) formData.append('latitude', String(pending.latitude));
             if (pending.longitude !== null) formData.append('longitude', String(pending.longitude));
 
+            setPhase('uploading');
             router.post('/observations', formData, {
                 forceFormData: true,
                 onProgress: (p) => {
@@ -46,7 +63,7 @@ export default function UploadPending() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const isUploading = !isPreparingUpload && uploadPercent < 100 && !error;
+    const isUploading = !isPreparingUpload && phase === 'uploading' && uploadPercent < 100 && !error;
     const emoji = error ? '⚠️' : isUploading ? '📤' : '✨';
 
     if (!pending) {
@@ -92,7 +109,9 @@ export default function UploadPending() {
                         ? 'しっぱいしちゃった…'
                         : isPreparingUpload
                             ? 'じゅんびちゅう…'
-                            : isUploading
+                            : phase === 'analyzing'
+                              ? 'ローカルでかいせきちゅう…'
+                              : isUploading
                                 ? 'おくりちゅう…'
                                 : 'もうすぐ…'}
                 </p>
@@ -126,4 +145,62 @@ export default function UploadPending() {
             </div>
         </AppLayout>
     );
+}
+
+async function createEdgeFirstObservation(payload: unknown): Promise<{ id: string }> {
+    const response = await fetch('/observations/edge-first', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': getCsrfToken(),
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+        throw new Error('edge-first create failed');
+    }
+
+    return response.json();
+}
+
+async function uploadEdgeFirstMedia(
+    observationId: string,
+    file: File,
+    onProgress: (value: number) => void
+): Promise<void> {
+    const xhr = new XMLHttpRequest();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    await new Promise<void>((resolve, reject) => {
+        xhr.open('POST', `/observations/${observationId}/media`);
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-CSRF-TOKEN', getCsrfToken());
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+                onProgress(Math.round((event.loaded / event.total) * 100));
+            }
+        };
+        xhr.onerror = () => reject(new Error('media upload failed'));
+        xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                onProgress(100);
+                resolve();
+                return;
+            }
+
+            reject(new Error(`media upload failed: ${xhr.status}`));
+        };
+        xhr.send(formData);
+    });
+}
+
+function getCsrfToken(): string {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+
+    return meta?.getAttribute('content') ?? '';
 }
