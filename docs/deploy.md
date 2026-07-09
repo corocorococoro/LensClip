@@ -39,7 +39,6 @@
 | `QUEUE_CONNECTION` | `database` または `redis` |
 | `FILESYSTEM_DISK` | `gcs` または `public` |
 | `GEMINI_API_KEY` | Gemini API キー |
-| `GEMINI_MODEL` | 例: `gemini-2.5-flash-lite` |
 
 ### Google Cloud 認証（Vision / TTS を使う場合）
 
@@ -112,8 +111,9 @@ bash railway/start.sh
 1. Deploy Logs に `Starting queue worker...` と `Starting web server...` が出る
 2. `php artisan migrate` の失敗ログが出ていない
 3. `/` と `/login` にアクセスできる
-4. 画像アップロード後、`processing` から `ready` または `failed` に遷移する
-5. `failed` が連続する場合は Google 認証設定と Queue 接続を確認する
+4. 初回デプロイ時、またはこの変更を既存環境へ反映した直後は、`/admin/settings/ai` で Gemini の許可モデルと使用モデルを保存する
+5. 画像アップロード後、`processing` から `ready` または `failed` に遷移する
+6. `failed` が連続する場合は Google 認証設定、Gemini API キー、AI設定、Queue 接続を確認する
 
 ## 8. よくある詰まり
 
@@ -126,4 +126,4 @@ bash railway/start.sh
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*

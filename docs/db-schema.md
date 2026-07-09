@@ -113,7 +113,8 @@ erDiagram
 
 **用途**
 - `gemini_model`: 使用するGeminiモデル名
+- `gemini_allowed_models`: 管理画面で保存するGemini許可モデル一覧（JSON object: model => description）
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*

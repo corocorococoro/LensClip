@@ -24,7 +24,7 @@
 | 🏷️ タグ・カテゴリ     | AI 自動付与 + 手動追加・修正                                                             |
 | ⚡ リアルタイム通知   | SSE で分析完了を即時反映（ポーリング不要）                                               |
 | 🔐 認証               | Breeze (Email/Password) + Google OAuth (Socialite)                                       |
-| ⚙️ 管理画面           | ログ閲覧、Gemini モデル切替（allowlist 制御）                                            |
+| ⚙️ 管理画面           | ログ閲覧、Gemini 許可モデル一覧・疎通確認・使用モデルの更新                            |
 
 ---
 
@@ -79,7 +79,7 @@ sequenceDiagram
 
 ## 技術的ハイライト
 
-**Vision API bbox 選定**: 複数検出オブジェクトから、信頼度・面積・中心寄りを使った合成スコアで1件を選定。bbox未検出時は原画像へフォールバック。
+**Vision API bbox 選定**: 複数検出オブジェクトから、信頼度・面積・中心寄りを使った合成スコアで1件を選定。bbox未検出時は原画像を Gemini に送信。
 
 **Gemini JSON 出力**: `response_mime_type: application/json` 指定。候補データ（名前、英名、confidence、子供向け説明、見分けポイント、豆知識）を生成。カテゴリは `config/categories.php` から動的にプロンプト注入。
 
@@ -102,7 +102,6 @@ sequenceDiagram
 | [docs/api-spec.md](docs/api-spec.md)                           | API エンドポイント仕様               |
 | [docs/db-schema.md](docs/db-schema.md)                         | ER図、テーブル定義                   |
 | [docs/ai-pipeline.md](docs/ai-pipeline.md)                     | Vision / Gemini / TTS 処理フロー     |
-| [docs/ai-models.md](docs/ai-models.md)                         | Gemini モデル allowlist の運用方針   |
 | [docs/engineering-standards.md](docs/engineering-standards.md) | アーキテクチャ原則、テスト、PRゲート |
 | [docs/laravel-conventions.md](docs/laravel-conventions.md)     | Laravel コード規約                   |
 | [docs/setup.md](docs/setup.md)                                 | 開発環境構築手順                     |

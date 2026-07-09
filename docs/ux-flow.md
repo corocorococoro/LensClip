@@ -17,6 +17,11 @@ flowchart TD
         Library[Library<br/>📚 ライブラリ]
     end
 
+    subgraph Admin["管理画面（adminのみ）"]
+        AdminLogs[Admin Logs]
+        AdminAi[AI Settings]
+    end
+
     Home -->|カメラ/アップロード| UploadPending[UploadPending<br/>プレビュー + アップロード]
     UploadPending -->|送信完了| Processing[Processing<br/>🔍 しらべています...]
     Processing -->|成功| Result[Result<br/>結果表示]
@@ -29,6 +34,10 @@ flowchart TD
 
     Library -->|写真タップ| Detail[Detail<br/>詳細表示]
     Detail --> Library
+
+    Home -->|admin user: 管理| AdminLogs
+    AdminLogs --> AdminAi
+    AdminAi --> AdminLogs
 ```
 
 ## 状態管理
@@ -83,6 +92,12 @@ flowchart TD
 - エラーアイコン + メッセージ
 - 「もういちどしらべる」ボタン
 - 「もどる」ボタン
+
+### Admin: AI Settings
+- Gemini の許可モデル一覧を編集
+- 各モデルの疎通確認
+- 保存後の AI 分析で使うモデルを選択
+- 設定が未設定または不正でも、管理者が修復できる画面として表示
 
 ### Library
 - **表示モード切替**: 日付 / カテゴリ / マップ

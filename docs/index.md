@@ -11,7 +11,6 @@
 | API 契約 | [api-spec.md](api-spec.md) | エンドポイントと主要な入出力境界 |
 | データベース | [db-schema.md](db-schema.md) | ER図、主要テーブル、保存対象 |
 | AI パイプライン | [ai-pipeline.md](ai-pipeline.md) | Vision/Gemini/TTS 処理フロー |
-| AI モデル許可リスト | [ai-models.md](ai-models.md) | Gemini モデル allowlist の運用方針 |
 | セキュリティ制約 | [security-invariants.md](security-invariants.md) | 認証・秘匿情報・AI モデル制御・アップロード検証 |
 | 実装規約 | [engineering-standards.md](engineering-standards.md) | アーキテクチャ原則、テスト、PRゲート |
 | Laravel 規約 | [laravel-conventions.md](laravel-conventions.md) | Laravel コード規約 |
@@ -20,4 +19,4 @@
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*

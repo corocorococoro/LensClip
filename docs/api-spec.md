@@ -54,7 +54,8 @@
 |--------|------|------|
 | GET | `/admin/logs` | アプリケーションログ閲覧 |
 | GET | `/admin/settings/ai` | AI設定ページ |
-| PUT | `/admin/settings/ai` | Geminiモデル変更 |
+| POST | `/admin/settings/ai/probe` | Geminiモデル疎通確認 |
+| PUT | `/admin/settings/ai` | Gemini許可モデル一覧と使用モデルの更新 |
 
 ### 法的ページ（未認証アクセス可）
 | Method | Path | 説明 |
@@ -185,6 +186,73 @@ Content-Type: multipart/form-data
 
 ---
 
+## 詳細仕様: Admin AI 設定
+
+AI モデル設定は admin のみ操作可能。Gemini API キーは環境変数で管理し、モデル名と許可モデル一覧は管理画面から DB に保存する。
+
+### GET /admin/settings/ai
+AI 設定ページを返す。
+
+**主要 props**
+```json
+{
+  "currentModel": "gemini-model-name",
+  "allowedModels": {
+    "gemini-model-name": "説明"
+  },
+  "settingsError": null
+}
+```
+
+保存済みの許可モデル一覧が未設定または不正な場合でも、管理者が画面から修復できるようにページを表示する。その場合は `allowedModels` を空にし、`settingsError` に利用者向けメッセージを入れる。
+
+### POST /admin/settings/ai/probe
+指定した Gemini モデル名で疎通確認する。
+
+**リクエスト**
+```json
+{
+  "model": "gemini-model-name"
+}
+```
+
+**レスポンス（200 OK）**
+```json
+{
+  "ok": true,
+  "message": "疎通確認に成功しました。",
+  "status": 200
+}
+```
+
+失敗時も Gemini API のフルレスポンスや秘匿情報は返さない。
+
+### PUT /admin/settings/ai
+Gemini の許可モデル一覧と、実際に使用するモデルを保存する。
+
+**リクエスト**
+```json
+{
+  "model": "gemini-model-name",
+  "allowed_models": [
+    {
+      "model": "gemini-model-name",
+      "description": "説明"
+    }
+  ]
+}
+```
+
+**バリデーション**
+- `model`: required。`allowed_models` に含まれるモデルのみ許可
+- `allowed_models`: required array。重複モデル名は不可
+- `allowed_models.*.model`: required。Gemini モデル名として許可する形式のみ
+- `allowed_models.*.description`: optional
+
+保存済み current model が allowlist 外になった場合でも、別モデルへ自動的に置き換えない。
+
+---
+
 ## レート制限
 - `observation-upload`、`observation-retry`、`api-general` の named throttle を使う
 - 具体的な制限値は `AppServiceProvider` の RateLimiter 定義を一次ソースにする
@@ -238,4 +306,4 @@ Content-Type: multipart/form-data
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*

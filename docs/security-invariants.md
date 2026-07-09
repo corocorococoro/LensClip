@@ -36,11 +36,14 @@
 
 1. **allowlist 外モデルは必ず拒否**
    - サーバ側で強制（UIで選択肢を隠すだけでは不可）
-   - allowlist の実体は `config/services.php` を参照
+   - allowlist の実体は管理画面で保存する `settings.gemini_allowed_models`
+   - モデル名と allowlist は env / config では管理しない
+   - 保存済み current model が allowlist 外の場合、別モデルへ自動フォールバックしない
+   - モデル疎通確認は admin のみ実行可能にし、Gemini API のフルレスポンスは画面・ログに出さない
 
 2. **不適切コンテンツのブロック**
    - Gemini の安全設定を有効化
-   - 検出時は安全なフォールバックメッセージを返す
+   - 検出時は利用者向けの安全メッセージを返す
 
 ## アップロード検証
 
@@ -59,4 +62,4 @@
 
 ---
 
-*Last updated: 2026-07-08*
+*Last updated: 2026-07-09*
