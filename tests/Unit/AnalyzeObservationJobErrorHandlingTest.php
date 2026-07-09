@@ -5,8 +5,10 @@ namespace Tests\Unit;
 use App\Jobs\AnalyzeObservationJob;
 use App\Models\Observation;
 use App\Models\User;
+use App\Services\GeminiModelRegistry;
 use App\Services\ImageAnalysisService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use InvalidArgumentException;
 use Mockery;
 use Tests\TestCase;
 
@@ -64,5 +66,35 @@ class AnalyzeObservationJobErrorHandlingTest extends TestCase
 
         $this->assertSame('failed', $observation->status);
         $this->assertStringContainsString('この写真は安全のため判定できませんでした。', (string) $observation->error_message);
+    }
+
+    public function test_model_configuration_failure_is_caught_inside_job_handle(): void
+    {
+        $user = User::factory()->create();
+
+        $observation = Observation::create([
+            'user_id' => $user->id,
+            'status' => 'processing',
+            'original_path' => 'observations/original.webp',
+            'thumb_path' => 'observations/thumb.webp',
+        ]);
+
+        $registry = new class extends GeminiModelRegistry
+        {
+            public function currentModel(): string
+            {
+                throw new InvalidArgumentException('Configured Gemini model is not allowed.');
+            }
+        };
+
+        $analysisService = new ImageAnalysisService($registry);
+
+        $job = new AnalyzeObservationJob($observation->id);
+        $job->handle($analysisService);
+
+        $observation->refresh();
+
+        $this->assertSame('failed', $observation->status);
+        $this->assertStringContainsString('エラーID:', (string) $observation->error_message);
     }
 }

@@ -103,6 +103,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', fn () => redirect()->route('admin.logs'));
     Route::get('/logs', [\App\Http\Controllers\Admin\LogController::class, 'index'])->name('logs');
     Route::get('/settings/ai', [\App\Http\Controllers\Admin\AiSettingsController::class, 'index'])->name('settings.ai');
+    Route::post('/settings/ai/probe', [\App\Http\Controllers\Admin\AiSettingsController::class, 'probe'])
+        ->middleware('throttle:api-general')
+        ->name('settings.ai.probe');
     Route::put('/settings/ai', [\App\Http\Controllers\Admin\AiSettingsController::class, 'update'])->name('settings.ai.update');
 });
 

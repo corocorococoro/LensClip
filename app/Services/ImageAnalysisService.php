@@ -21,18 +21,11 @@ class ImageAnalysisService
 {
     protected ?string $geminiApiKey;
 
-    protected string $geminiModel;
+    protected ?string $geminiModel = null;
 
-    public function __construct()
+    public function __construct(private readonly GeminiModelRegistry $modelRegistry)
     {
-        // API Key is centralized in config/services.php (gemini.api_key)
         $this->geminiApiKey = config('services.gemini.api_key');
-
-        // Read from database settings first, then fall back to config
-        $this->geminiModel = \App\Models\Setting::get(
-            'gemini_model',
-            config('services.gemini.model', 'gemini-2.5-flash-lite')
-        );
     }
 
     /**
@@ -40,6 +33,8 @@ class ImageAnalysisService
      */
     public function analyze(Observation $observation): array
     {
+        $this->geminiModel = $this->modelRegistry->currentModel();
+
         $imageContent = Storage::disk()->get($observation->original_path);
 
         $result = [
@@ -149,8 +144,8 @@ class ImageAnalysisService
                 }
 
                 $objects[] = [
-                    'name' => $obj->getName() ?: 'Unknown',
-                    'score' => $obj->getScore() ?: 0,
+                    'name' => $obj->getName() ?: null,
+                    'score' => $obj->getScore(),
                     'boundingPoly' => [
                         'normalizedVertices' => $vertices,
                     ],
@@ -234,7 +229,7 @@ class ImageAnalysisService
             if ($finalScore > $bestScore) {
                 $bestScore = $finalScore;
                 $bestBbox = [
-                    'name' => $obj['name'] ?? 'unknown',
+                    'name' => $obj['name'] ?? null,
                     'score' => $visionScore,
                     'normalized' => [
                         'x' => $minX,
@@ -301,63 +296,22 @@ class ImageAnalysisService
     protected function callGemini(string $imageContent): array
     {
         if (empty($this->geminiApiKey)) {
-            Log::warning('Gemini API key not set, using mock response');
-
-            return $this->mockGeminiResponse();
+            Log::error('Gemini API key is not configured.');
+            throw new \Exception('Gemini API key is not configured.');
         }
+
+        $geminiModel = $this->geminiModel ??= $this->modelRegistry->currentModel();
 
         $imageBase64 = base64_encode($imageContent);
 
-        // カテゴリリストをconfigから動的生成
-        $categories = config('categories');
-        $categoryIds = implode('|', array_column($categories, 'id'));
-        $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
-
-        $prompt = <<<EOT
-あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
-
-**重要**: 可能性のある候補を最大3つまで挙げ、それぞれについてカード情報を生成してください。
-候補は確信度の高い順に並べてください。
-
-**必須**: 各候補には必ず「english_name」を含めてください（対象の英語名。例: apple, tulip, cat）。
-
-以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
-
-{
-  "title": "第1候補の名前（ひらがな/カタカナ推奨）",
-  "summary": "第1候補の簡潔な説明（大人向け、100文字以内）",
-  "kid_friendly": "第1候補の子供向けのやさしい説明（50文字以内、ひらがな多め）",
-  "category": "{$categoryIds} のいずれか。分類の参考: {$categoryHint}",
-  "confidence": 0.0-1.0,
-  "tags": ["関連タグ"],
-  "safety_notes": ["危険や注意事項があれば"],
-  "fun_facts": ["豆知識"],
-  "questions": ["子供に聞いてみたい質問"],
-  "candidate_cards": [
-    {
-      "name": "第1候補の名前",
-      "english_name": "english name (required, lowercase)",
-      "confidence": 0.0-1.0,
-      "summary": "簡潔な説明（大人向け、80文字以内）",
-      "kid_friendly": "子供向け説明（40文字以内）",
-      "look_for": ["見分けポイント1", "見分けポイント2"],
-      "fun_facts": ["この候補の豆知識"],
-      "questions": ["この候補に関する質問"],
-      "tags": ["タグ"]
-    }
-  ]
-}
-
-候補が1つしか考えられない場合は、candidate_cardsに1つだけ入れてください。
-english_nameは必ず各候補に含めてください。色や形の場合も英語で表現してください（例: red, square）。
-EOT;
+        $prompt = $this->buildPrompt();
 
         try {
             // Retry with exponential backoff (100ms, 200ms, 400ms)
             $response = Http::retry(3, 100)->timeout(30)
                 ->withHeader('x-goog-api-key', $this->geminiApiKey)
                 ->post(
-                    "https://generativelanguage.googleapis.com/v1beta/models/{$this->geminiModel}:generateContent",
+                    "https://generativelanguage.googleapis.com/v1beta/models/{$geminiModel}:generateContent",
                     [
                         'contents' => [
                             [
@@ -399,7 +353,10 @@ EOT;
             Log::info('Gemini API Response Status: '.$response->status());
 
             if (! $response->successful()) {
-                Log::error('Gemini API error', ['body' => $response->body()]);
+                Log::error('Gemini API error', [
+                    'status' => $response->status(),
+                    'body_length' => strlen($response->body()),
+                ]);
                 throw new \Exception('Gemini API error: '.$response->status());
             }
 
@@ -425,26 +382,26 @@ EOT;
                 throw new \Exception('Gemini response missing candidate');
             }
 
-            $text = $candidate['content']['parts'][0]['text'] ?? '{}';
+            $text = $candidate['content']['parts'][0]['text'] ?? null;
+
+            if (! is_string($text) || $text === '') {
+                Log::warning('Gemini response missing text part');
+                throw new \Exception('Gemini response missing text');
+            }
 
             // Cleanup markdown if present
             $text = preg_replace('/^```json\s*|\s*```$/', '', trim($text));
 
+            if (! is_string($text) || $text === '') {
+                Log::warning('Gemini response text is empty after cleanup');
+                throw new \Exception('Gemini response missing text');
+            }
+
             $json = json_decode($text, true);
 
             if (! $json) {
-                Log::error('Gemini JSON parse error', ['text' => $text]);
+                Log::error('Gemini JSON parse error', ['text_length' => strlen($text)]);
                 throw new \Exception('Gemini response parse error');
-            }
-
-            // Ensure english_name exists in candidate_cards (AI may omit it)
-            if (isset($json['candidate_cards']) && is_array($json['candidate_cards'])) {
-                foreach ($json['candidate_cards'] as $index => $card) {
-                    if (! isset($card['english_name']) || empty($card['english_name'])) {
-                        // Use name as fallback (will be in Japanese, but better than nothing)
-                        $json['candidate_cards'][$index]['english_name'] = $card['name'] ?? 'unknown';
-                    }
-                }
             }
 
             return $json;
@@ -453,6 +410,52 @@ EOT;
             Log::error('Gemini API exception', ['error' => $e->getMessage()]);
             throw $e;
         }
+    }
+
+    protected function buildPrompt(): string
+    {
+        $categories = config('categories');
+        $categoryIds = implode('|', array_column($categories, 'id'));
+        $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
+
+        return <<<EOT
+あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
+
+**重要**: 可能性のある候補を最大3つまで挙げ、それぞれについてカード情報を生成してください。
+候補は確信度の高い順に並べてください。
+
+**必須**: 各候補には必ず「english_name」を含めてください（対象の英語名。例: apple, tulip, cat）。
+
+以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
+
+{
+  "title": "第1候補の名前（ひらがな/カタカナ推奨）",
+  "summary": "第1候補の簡潔な説明（大人向け、100文字以内）",
+  "kid_friendly": "第1候補の子供向けのやさしい説明（50文字以内、ひらがな多め）",
+  "category": "{$categoryIds} のいずれか。分類の参考: {$categoryHint}",
+  "confidence": 0.0-1.0,
+  "tags": ["関連タグ"],
+  "safety_notes": ["危険や注意事項があれば"],
+  "fun_facts": ["豆知識"],
+  "questions": ["子供に聞いてみたい質問"],
+  "candidate_cards": [
+    {
+      "name": "第1候補の名前",
+      "english_name": "english name (required, lowercase)",
+      "confidence": 0.0-1.0,
+      "summary": "簡潔な説明（大人向け、80文字以内）",
+      "kid_friendly": "子供向け説明（40文字以内）",
+      "look_for": ["見分けポイント1", "見分けポイント2"],
+      "fun_facts": ["この候補の豆知識"],
+      "questions": ["この候補に関する質問"],
+      "tags": ["タグ"]
+    }
+  ]
+}
+
+候補が1つしか考えられない場合は、candidate_cardsに1つだけ入れてください。
+english_nameは必ず各候補に含めてください。色や形の場合も英語で表現してください（例: red, square）。
+EOT;
     }
 
     /**
@@ -484,48 +487,5 @@ EOT;
         }
 
         return false;
-    }
-
-    /**
-     * Mock response for development
-     */
-    protected function mockGeminiResponse(): array
-    {
-        return [
-            'title' => 'テスト画像',
-            'alt_names' => [],
-            'summary' => 'APIキーが設定されていないためモックを表示しています。',
-            'kid_friendly' => 'これはテストだよ！',
-            'category' => 'other',
-            'tags' => ['テスト'],
-            'confidence' => 0.8,
-            'safety_notes' => [],
-            'fun_facts' => ['これはモックデータです。'],
-            'questions' => ['なにがうつってる？'],
-            'candidate_cards' => [
-                [
-                    'name' => 'テスト画像',
-                    'english_name' => 'test image',
-                    'confidence' => 0.8,
-                    'summary' => 'APIキーが設定されていないためモックを表示しています。',
-                    'kid_friendly' => 'これはテストだよ！',
-                    'look_for' => ['モックデータです'],
-                    'fun_facts' => ['これは1番目の候補です'],
-                    'questions' => ['なにがうつってる？'],
-                    'tags' => ['テスト'],
-                ],
-                [
-                    'name' => 'べつのもの',
-                    'english_name' => 'something else',
-                    'confidence' => 0.5,
-                    'summary' => '2番目の候補のテストデータです。',
-                    'kid_friendly' => 'これかもしれないよ！',
-                    'look_for' => ['かたちがにてる'],
-                    'fun_facts' => ['これは2番目の候補です'],
-                    'questions' => ['どっちだとおもう？'],
-                    'tags' => ['テスト'],
-                ],
-            ],
-        ];
     }
 }

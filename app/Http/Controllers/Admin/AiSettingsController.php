@@ -3,16 +3,21 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Setting;
+use App\Http\Requests\Admin\ProbeAiModelRequest;
+use App\Http\Requests\Admin\UpdateAiSettingsRequest;
+use App\Services\GeminiModelProbe;
+use App\Services\GeminiModelRegistry;
 use App\Services\IdentifierFingerprintService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
+use InvalidArgumentException;
 
 class AiSettingsController extends Controller
 {
     public function __construct(
-        private readonly IdentifierFingerprintService $fingerprintService
+        private readonly IdentifierFingerprintService $fingerprintService,
+        private readonly GeminiModelRegistry $modelRegistry
     ) {}
 
     /**
@@ -20,49 +25,67 @@ class AiSettingsController extends Controller
      */
     public function index()
     {
-        $currentModel = Setting::get(
-            'gemini_model',
-            config('services.gemini.model', 'gemini-2.5-flash-lite')
-        );
+        $settingsError = null;
 
-        // 連想配列: モデル名 => 説明
-        $allowedModels = config('services.gemini.allowed_models', [
-            'gemini-2.5-flash-lite' => '軽量・高速版。コスト効率重視。',
-        ]);
+        try {
+            $allowedModels = $this->modelRegistry->allowedModels();
+        } catch (InvalidArgumentException $e) {
+            Log::warning('AI model settings are not ready for admin page.', [
+                'error' => $e->getMessage(),
+            ]);
+
+            $allowedModels = [];
+            $settingsError = 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。';
+        }
 
         return Inertia::render('Admin/AiSettings', [
-            'currentModel' => $currentModel,
+            'currentModel' => $this->modelRegistry->configuredModel() ?? '',
             'allowedModels' => $allowedModels,
+            'settingsError' => $settingsError,
         ]);
     }
 
     /**
      * Update the AI settings.
      */
-    public function update(Request $request)
+    public function update(UpdateAiSettingsRequest $request)
     {
-        $allowedModels = array_keys(config('services.gemini.allowed_models', []));
+        $validated = $request->validated();
 
-        $validated = $request->validate([
-            'model' => ['required', 'string', 'in:'.implode(',', $allowedModels)],
-        ], [
-            'model.required' => 'モデルを選択してください。',
-            'model.in' => '無効なモデルが選択されました。',
-        ]);
+        $allowedModels = $this->modelRegistry->normalizeAllowedModels($validated['allowed_models']);
 
-        $previousModel = Setting::get('gemini_model', config('services.gemini.model'));
+        if (count($allowedModels) !== count($validated['allowed_models'])) {
+            throw ValidationException::withMessages([
+                'allowed_models' => '同じモデル名が複数登録されています。',
+            ]);
+        }
+
+        if (! array_key_exists($validated['model'], $allowedModels)) {
+            throw ValidationException::withMessages([
+                'model' => '使用するモデルは許可モデル一覧に含めてください。',
+            ]);
+        }
+
+        $previousModel = $this->modelRegistry->configuredModel();
         $newModel = $validated['model'];
 
-        Setting::set('gemini_model', $newModel);
+        $this->modelRegistry->save($newModel, $allowedModels);
 
-        // Log the change
         Log::info('AI model changed', [
             'user_id' => auth()->id(),
             'user_email_hash' => $this->fingerprintService->fingerprint(auth()->user()?->email),
             'previous_model' => $previousModel,
             'new_model' => $newModel,
+            'allowed_models' => array_keys($allowedModels),
         ]);
 
-        return back()->with('success', 'AIモデルを更新しました。');
+        return back()->with('success', 'AIモデル設定を更新しました。');
+    }
+
+    public function probe(ProbeAiModelRequest $request, GeminiModelProbe $probe)
+    {
+        $validated = $request->validated();
+
+        return response()->json($probe->probe($validated['model']));
     }
 }
