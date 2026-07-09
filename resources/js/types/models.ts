@@ -19,7 +19,7 @@ export type CategoryId = 'animal' | 'insect' | 'plant' | 'food' | 'vehicle' | 'p
 export interface ObservationSummary {
     id: string;
     title: string;
-    thumb_url: string;
+    thumb_url: string | null;
     status: ObservationStatus;
     tags?: Tag[];
     created_at?: string;
@@ -66,7 +66,7 @@ export interface Observation extends ObservationSummary {
     summary: string;
     kid_friendly: string;
     confidence: number;
-    original_url: string;
+    original_url: string | null;
     cropped_url: string | null;
     ai_json: ObservationAIJson | null;
     created_at: string;

@@ -15,7 +15,7 @@ import type {
     CategoryPreviews,
 } from '@/types/models';
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 
 interface Props {
     observations: {
@@ -48,6 +48,71 @@ function mergeDateGroups(existing: DateGroup[], incoming: DateGroup[]): DateGrou
         }
     }
     return merged;
+}
+
+function uniqueProcessingIds(observations: ObservationSummary[]): string[] {
+    return Array.from(
+        new Set(
+            observations
+                .filter((observation) => observation.status === 'processing')
+                .map((observation) => observation.id),
+        ),
+    );
+}
+
+function replaceObservation(
+    observation: ObservationSummary,
+    updatesById: Map<string, ObservationSummary>,
+): ObservationSummary {
+    const update = updatesById.get(observation.id);
+    if (!update) return observation;
+
+    if (
+        observation.status === update.status &&
+        observation.title === update.title &&
+        observation.thumb_url === update.thumb_url &&
+        observation.category === update.category
+    ) {
+        return observation;
+    }
+
+    return { ...observation, ...update };
+}
+
+function updateDateGroups(
+    groups: DateGroup[],
+    updatesById: Map<string, ObservationSummary>,
+): DateGroup[] {
+    let changed = false;
+
+    const nextGroups = groups.map((group) => {
+        const nextObservations = group.observations.map((observation) => {
+            const nextObservation = replaceObservation(observation, updatesById);
+            if (nextObservation !== observation) changed = true;
+            return nextObservation;
+        });
+
+        return nextObservations === group.observations
+            ? group
+            : { ...group, observations: nextObservations };
+    });
+
+    return changed ? nextGroups : groups;
+}
+
+function updateObservationList(
+    observations: ObservationSummary[],
+    updatesById: Map<string, ObservationSummary>,
+): ObservationSummary[] {
+    let changed = false;
+
+    const nextObservations = observations.map((observation) => {
+        const nextObservation = replaceObservation(observation, updatesById);
+        if (nextObservation !== observation) changed = true;
+        return nextObservation;
+    });
+
+    return changed ? nextObservations : observations;
 }
 
 export default function Library({
@@ -115,6 +180,62 @@ export default function Library({
     }, [pagination.nextCursor, isLoadingMore, viewMode, filters]);
 
     const sentinelRef = useInfiniteScroll(loadMore, pagination.hasMore && !isLoadingMore);
+
+    const visibleObservations = useMemo(() => {
+        if (viewMode === 'date') {
+            return allDateGroups.flatMap((group) => group.observations);
+        }
+
+        return categoryObservations;
+    }, [allDateGroups, categoryObservations, viewMode]);
+
+    const processingIds = useMemo(
+        () => uniqueProcessingIds(visibleObservations),
+        [visibleObservations],
+    );
+
+    useEffect(() => {
+        if (processingIds.length === 0) return;
+
+        let cancelled = false;
+        let inFlight = false;
+
+        const refreshProcessingCards = async () => {
+            if (inFlight) return;
+            inFlight = true;
+
+            const params = new URLSearchParams();
+            processingIds.forEach((id) => params.append('ids[]', id));
+
+            try {
+                const res = await fetch(`/observations/statuses?${params.toString()}`, {
+                    headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (!res.ok || cancelled) return;
+
+                const data = (await res.json()) as { observations?: ObservationSummary[] };
+                const updates = data.observations ?? [];
+                if (updates.length === 0) return;
+
+                const updatesById = new Map(updates.map((observation) => [observation.id, observation]));
+
+                setAllDateGroups((groups) => updateDateGroups(groups, updatesById));
+                setCategoryObservations((current) =>
+                    updateObservationList(current, updatesById),
+                );
+            } finally {
+                inFlight = false;
+            }
+        };
+
+        refreshProcessingCards();
+        const intervalId = window.setInterval(refreshProcessingCards, 4000);
+
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [processingIds]);
 
     // --- Navigation handlers ---
     const handleSearch = (e: React.FormEvent) => {
@@ -340,7 +461,7 @@ export default function Library({
 
             {/* Map View */}
             {viewMode === 'map' && (
-                <LibraryMap observations={observations.data} onModeChange={handleViewModeChange} />
+                <LibraryMap observations={categoryObservations} onModeChange={handleViewModeChange} />
             )}
         </AppLayout>
     );

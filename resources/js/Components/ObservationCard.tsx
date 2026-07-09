@@ -18,10 +18,7 @@ interface ObservationCardProps {
  * - アクセシビリティ対応 (適切なalt属性)
  */
 export function ObservationCard({ observation, categories = [], size = 'md', showCategory = true }: ObservationCardProps) {
-    const href =
-        observation.status === 'processing'
-            ? `/observations/${observation.id}/processing`
-            : `/observations/${observation.id}`;
+    const href = `/observations/${observation.id}`;
 
     // サイズに応じたクラス
     const sizeClasses = size === 'sm' ? 'rounded-xl' : 'rounded-2xl';
@@ -34,14 +31,24 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
             href={href}
             className={`relative aspect-square ${sizeClasses} overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white block`}
         >
-            <img
-                src={observation.thumb_url}
-                alt={observation.title || '観察中の画像'}
-                width={200}
-                height={200}
-                loading="lazy"
-                className="w-full h-full object-cover"
-            />
+            {observation.thumb_url ? (
+                <img
+                    src={observation.thumb_url}
+                    alt={observation.title || '観察中の画像'}
+                    width={200}
+                    height={200}
+                    loading="lazy"
+                    className="w-full h-full object-cover"
+                />
+            ) : (
+                <div
+                    className="w-full h-full flex items-center justify-center bg-gray-100 text-3xl"
+                    role="img"
+                    aria-label={observation.title || '観察中の画像'}
+                >
+                    📷
+                </div>
+            )}
 
             {/* Processing State */}
             {observation.status === 'processing' && (

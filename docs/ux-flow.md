@@ -23,10 +23,13 @@ flowchart TD
     end
 
     Home -->|カメラ/アップロード| UploadPending[UploadPending<br/>プレビュー + アップロード]
-    UploadPending -->|送信完了| Processing[Processing<br/>🔍 しらべています...]
-    Processing -->|成功| Result[Result<br/>結果表示]
-    Processing -->|失敗| Failed[Failed<br/>❌ エラー]
-    Failed -->|リトライ| Processing
+    UploadPending -->|送信完了| ObservationShowProcessing[Observation Show<br/>🔍 しらべています...]
+    ObservationShowProcessing -->|成功| Result[Observation Show<br/>結果表示]
+    ObservationShowProcessing -->|失敗| Failed[Observation Show<br/>❌ エラー]
+    ObservationShowProcessing -->|timeout| Timeout[Observation Show<br/>状態を確認]
+    Timeout -->|状態を確認| ObservationShowProcessing
+    Timeout -->|戻る| Library
+    Failed -->|リトライ| ObservationShowProcessing
     Failed -->|戻る| Home
 
     Result -->|戻る| Home
@@ -45,15 +48,16 @@ flowchart TD
 ### Observation ステータス
 | 状態 | 意味 | UI表現 |
 |------|------|--------|
-| `processing` | AI分析中 | スピナー + 「しらべています...」 |
-| `ready` | 分析完了 | 結果表示画面へ遷移 |
-| `failed` | 分析失敗 | エラーメッセージ + リトライボタン |
+| `processing` | AI分析中 | `/observations/{id}` で待機UI |
+| `ready` | 分析完了 | `/observations/{id}` で結果表示 |
+| `failed` | 分析失敗 | `/observations/{id}` でエラーメッセージ + リトライボタン |
 
 ### SSE（Server-Sent Events）
 - `processing` 中は `/observations/{id}/stream` への SSE 接続でステータス監視
 - サーバー側は処理中に heartbeat を送信
-- `ready` / `failed` / `timeout` イベントで遷移
-- 接続がタイムアウトした場合は、画面側で失敗または再確認の導線を出す
+- `ready` / `failed` イベントでは同じ URL のままサーバ状態を再取得する
+- `timeout` は DB 状態を変更しないため、画面側で再確認または戻る導線を出す
+- Library で待つ場合は SSE を閉じ、表示中の `processing` カードだけを軽量ステータス API で定期確認する
 
 ## 画面詳細
 
@@ -66,14 +70,15 @@ flowchart TD
 - カメラまたはファイル選択後のプレビュー表示
 - 位置情報が取得できた場合はアップロード時に緯度・経度を送信
 - アップロード中の進捗表示
-- 送信後は `Processing` へ遷移
+- 送信後は `/observations/{id}` へ遷移し、`processing` UI を表示
 
-### Processing
-- 全画面オーバーレイ
+### Observation Show: Processing
+- `/observations/{id}` 内の状態表示
 - アニメーションスピナー（🔍 or カスタム）
 - 「しらべています...」テキスト
+- timeout 時はリトライではなく、状態確認またはライブラリへ戻る導線を表示
 
-### Result
+### Observation Show: Result
 - **切り抜き画像**（croppedがあれば）
 - **タイトル**（大きく表示）
 - **カテゴリバッジ**（色付きpill表示、タップで編集モード）
@@ -88,7 +93,7 @@ flowchart TD
 - **安全注意**（safety_notes、あれば目立たせる）
 - **タグ**
 
-### Failed
+### Observation Show: Failed
 - エラーアイコン + メッセージ
 - 「もういちどしらべる」ボタン
 - 「もどる」ボタン
@@ -104,6 +109,7 @@ flowchart TD
 - 写真グリッド（2~4列）
 - 検索バー
 - タグフィルタ（横スクロール chips）
+- 表示中の `processing` カードがある場合だけ、カード単位の軽量ステータス確認を行い、`ready` / `failed` へ切り替える
 
 **カテゴリビュー** (`?view=category`)
 - カテゴリカードをグリッド表示（色付き、サムネプレビュー付き）

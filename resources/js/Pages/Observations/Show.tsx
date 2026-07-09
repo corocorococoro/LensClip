@@ -2,6 +2,7 @@ import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
 import Modal from '@/Components/Modal';
 import LocationMap from '@/Components/LocationMap';
+import ProcessingView from './Partials/ProcessingView';
 import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -88,7 +89,7 @@ export default function Show({ observation, categories }: Props) {
     const questions = activeCard?.questions || aiJson.questions || [];
     const lookFor = activeCard?.look_for || [];
 
-    const displayImage = observation.cropped_url || observation.original_url;
+    const displayImage = observation.cropped_url || observation.original_url || observation.thumb_url || undefined;
 
     const handleRetry = () => {
         setRetrying(true);
@@ -144,6 +145,15 @@ export default function Show({ observation, categories }: Props) {
         }
     }, []);
 
+    if (observation.status === 'processing') {
+        return (
+            <AppLayout title="しらべてます">
+                <Head title="しらべてます" />
+                <ProcessingView observation={observation} />
+            </AppLayout>
+        );
+    }
+
     return (
         <AppLayout title={observation.title || 'けっか'}>
             <Head title={observation.title || 'けっか'} />
@@ -151,14 +161,24 @@ export default function Show({ observation, categories }: Props) {
             <div className="flex flex-col items-center">
                 {/* Main Image */}
                 <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6 group">
-                    <img
-                        src={displayImage}
-                        alt={observation.title || '観察画像'}
-                        width={400}
-                        height={400}
-                        loading="eager"
-                        className="w-full aspect-square object-cover"
-                    />
+                    {displayImage ? (
+                        <img
+                            src={displayImage}
+                            alt={observation.title || '観察画像'}
+                            width={400}
+                            height={400}
+                            loading="eager"
+                            className="w-full aspect-square object-cover"
+                        />
+                    ) : (
+                        <div
+                            className="w-full aspect-square flex items-center justify-center bg-gray-100 text-5xl"
+                            role="img"
+                            aria-label={observation.title || '観察画像'}
+                        >
+                            📷
+                        </div>
+                    )}
 
                     {/* Category Badge overlay (Top Left) - Interactive */}
                     {currentCategory && (

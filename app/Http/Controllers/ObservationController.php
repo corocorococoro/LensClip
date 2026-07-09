@@ -275,7 +275,7 @@ class ObservationController extends Controller
             return response()->json(new \App\Http\Resources\ObservationResource($observation), 201);
         }
 
-        return redirect()->route('observations.processing', $observation);
+        return redirect()->route('observations.show', $observation);
     }
 
     /**
@@ -286,7 +286,15 @@ class ObservationController extends Controller
     {
         $this->authorize('view', $observation);
 
+        if (! $observation->thumb_path) {
+            abort(404);
+        }
+
         if (! str_starts_with($observation->thumb_path ?? '', 'local:')) {
+            if (! $observation->thumb_url) {
+                abort(404);
+            }
+
             return redirect($observation->thumb_url);
         }
 
@@ -304,23 +312,44 @@ class ObservationController extends Controller
     }
 
     /**
+     * Return lightweight status snapshots for visible library cards.
+     */
+    public function statuses(Request $request)
+    {
+        $ids = collect($request->input('ids', []))
+            ->filter(fn ($id) => is_string($id) && $id !== '')
+            ->unique()
+            ->take(50)
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return response()->json(['observations' => []]);
+        }
+
+        $observations = Observation::forUser(auth()->id())
+            ->whereIn('id', $ids)
+            ->get()
+            ->map(fn (Observation $observation) => [
+                'id' => $observation->id,
+                'title' => $observation->title,
+                'thumb_url' => $observation->thumb_url,
+                'status' => $observation->status,
+                'category' => $observation->category,
+                'latitude' => $observation->latitude,
+                'longitude' => $observation->longitude,
+                'created_at' => $observation->created_at,
+            ])
+            ->values();
+
+        return response()->json(['observations' => $observations]);
+    }
+
+    /**
      * Show the upload-pending page (client holds the file, uploads from there).
      */
     public function uploadPending(): \Inertia\Response
     {
         return Inertia::render('Observations/UploadPending');
-    }
-
-    /**
-     * Show processing status page.
-     */
-    public function processing(Observation $observation)
-    {
-        $this->authorize('view', $observation);
-
-        return Inertia::render('Observations/Processing', [
-            'observation' => $observation,
-        ]);
     }
 
     /**
@@ -418,7 +447,7 @@ class ObservationController extends Controller
             ], 202);
         }
 
-        return redirect()->route('observations.processing', $observation);
+        return redirect()->route('observations.show', $observation);
     }
 
     /**

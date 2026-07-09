@@ -29,7 +29,7 @@ class ObservationRetryTest extends TestCase
         $response = $this->actingAs($user)
             ->post("/observations/{$observation->id}/retry");
 
-        $response->assertRedirect();
+        $response->assertRedirect(route('observations.show', $observation));
 
         // Assert status changed to processing
         $observation->refresh();

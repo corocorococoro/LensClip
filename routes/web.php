@@ -44,12 +44,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('observations.store');
     Route::get('/observations/upload-pending', [ObservationController::class, 'uploadPending'])
         ->name('observations.uploadPending');
+    Route::get('/observations/statuses', [ObservationController::class, 'statuses'])
+        ->middleware('throttle:api-general')
+        ->name('observations.statuses');
     Route::get('/observations/{observation}/thumb', [ObservationController::class, 'thumb'])
         ->middleware('throttle:api-general')
         ->name('observations.thumb');
-    Route::get('/observations/{observation}/processing', [ObservationController::class, 'processing'])
-        ->middleware('throttle:api-general')
-        ->name('observations.processing');
     Route::get('/observations/{observation}/stream', [ObservationController::class, 'stream'])
         ->middleware('throttle:api-general')
         ->name('observations.stream');

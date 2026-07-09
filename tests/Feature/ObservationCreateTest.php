@@ -9,6 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class ObservationCreateTest extends TestCase
@@ -27,8 +28,6 @@ class ObservationCreateTest extends TestCase
                 'image' => UploadedFile::fake()->image('test.jpg', 800, 600),
             ]);
 
-        $response->assertRedirect();
-
         // Assert observation was created with local: prefixed paths
         $this->assertDatabaseHas('observations', [
             'user_id' => $user->id,
@@ -40,6 +39,8 @@ class ObservationCreateTest extends TestCase
 
         // Files are stored on local disk (pending GCS upload by the job)
         $observation = Observation::first();
+        $response->assertRedirect(route('observations.show', $observation));
+
         $this->assertStringStartsWith('local:', $observation->original_path);
         $this->assertStringStartsWith('local:', $observation->thumb_path);
         $originalLocalPath = substr($observation->original_path, 6);
@@ -100,6 +101,74 @@ class ObservationCreateTest extends TestCase
 
         $response->assertOk();
         $response->assertJson(['id' => $observation->id, 'title' => 'Test']);
+    }
+
+    public function test_show_returns_observation_show_for_all_statuses(): void
+    {
+        $user = User::factory()->create();
+
+        foreach (['processing', 'ready', 'failed'] as $status) {
+            $observation = Observation::factory()->create([
+                'user_id' => $user->id,
+                'status' => $status,
+                'error_message' => $status === 'failed' ? 'AI分析に失敗しました' : null,
+            ]);
+
+            $response = $this->actingAs($user)->get(route('observations.show', $observation));
+
+            $response->assertOk();
+            $response->assertInertia(
+                fn (Assert $page) => $page
+                    ->component('Observations/Show')
+                    ->where('observation.id', $observation->id)
+                    ->where('observation.status', $status)
+            );
+        }
+    }
+
+    public function test_thumb_returns_404_when_thumb_path_is_empty(): void
+    {
+        $user = User::factory()->create();
+        $observation = Observation::factory()->create([
+            'user_id' => $user->id,
+            'thumb_path' => '',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('observations.thumb', $observation))
+            ->assertNotFound();
+    }
+
+    public function test_user_can_fetch_lightweight_statuses_for_own_observations(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        $ready = Observation::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'title' => 'Ready Item',
+        ]);
+        $failed = Observation::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'failed',
+            'title' => 'Failed Item',
+        ]);
+        $other = Observation::factory()->create([
+            'user_id' => $otherUser->id,
+            'status' => 'ready',
+            'title' => 'Other Item',
+        ]);
+
+        $response = $this->actingAs($user)->getJson(route('observations.statuses', [
+            'ids' => [$ready->id, $failed->id, $other->id],
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonFragment(['id' => $ready->id, 'status' => 'ready']);
+        $response->assertJsonFragment(['id' => $failed->id, 'status' => 'failed']);
+        $response->assertJsonMissing(['id' => $other->id]);
+        $this->assertCount(2, $response->json('observations'));
     }
 
     public function test_user_cannot_view_others_observation(): void
