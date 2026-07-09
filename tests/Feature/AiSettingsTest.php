@@ -69,8 +69,9 @@ class AiSettingsTest extends TestCase
         $response->assertInertia(
             fn ($page) => $page
                 ->component('Admin/AiSettings')
-                ->where('currentModel', self::MODEL_LEGACY)
+                ->where('currentModel', '')
                 ->where('allowedModels', [self::MODEL_PRIMARY => '高速版。'])
+                ->where('settingsError', 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。')
         );
     }
 
@@ -104,7 +105,7 @@ class AiSettingsTest extends TestCase
         $response->assertInertia(
             fn ($page) => $page
                 ->component('Admin/AiSettings')
-                ->where('currentModel', self::MODEL_PRIMARY)
+                ->where('currentModel', '')
                 ->where('allowedModels', [])
                 ->where('settingsError', 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。')
         );

@@ -361,7 +361,7 @@ export default function AiSettings({ currentModel, allowedModels, settingsError 
                             <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                                 <span>現在:</span>
                                 <span className="font-mono bg-gray-200 px-2 py-1 rounded">
-                                    {currentModel}
+                                    {currentModel || '未設定'}
                                 </span>
                                 <span>保存後:</span>
                                 <span className="font-mono bg-blue-50 px-2 py-1 text-blue-700 rounded">

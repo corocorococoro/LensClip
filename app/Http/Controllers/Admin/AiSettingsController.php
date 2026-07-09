@@ -26,6 +26,7 @@ class AiSettingsController extends Controller
     public function index()
     {
         $settingsError = null;
+        $currentModel = '';
 
         try {
             $allowedModels = $this->modelRegistry->allowedModels();
@@ -38,8 +39,20 @@ class AiSettingsController extends Controller
             $settingsError = 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。';
         }
 
+        if ($settingsError === null) {
+            try {
+                $currentModel = $this->modelRegistry->currentModel();
+            } catch (InvalidArgumentException $e) {
+                Log::warning('Configured AI model is not usable for admin page.', [
+                    'error' => $e->getMessage(),
+                ]);
+
+                $settingsError = 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。';
+            }
+        }
+
         return Inertia::render('Admin/AiSettings', [
-            'currentModel' => $this->modelRegistry->configuredModel() ?? '',
+            'currentModel' => $currentModel,
             'allowedModels' => $allowedModels,
             'settingsError' => $settingsError,
         ]);
