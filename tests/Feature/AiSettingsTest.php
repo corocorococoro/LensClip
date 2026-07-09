@@ -93,6 +93,27 @@ class AiSettingsTest extends TestCase
         );
     }
 
+    public function test_admin_can_view_ai_settings_when_current_model_is_missing(): void
+    {
+        Setting::where('key', 'gemini_model')->delete();
+
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $response = $this->actingAs($admin)->get('/admin/settings/ai');
+
+        $response->assertStatus(200);
+        $response->assertInertia(
+            fn ($page) => $page
+                ->component('Admin/AiSettings')
+                ->where('currentModel', '')
+                ->where('allowedModels', [
+                    self::MODEL_PRIMARY => '高速版。',
+                    self::MODEL_SECONDARY => '高精度版。',
+                ])
+                ->where('settingsError', 'Geminiモデル設定が未設定または不正です。許可モデルを登録して保存してください。')
+        );
+    }
+
     public function test_admin_can_view_ai_settings_when_saved_allowed_models_are_invalid(): void
     {
         Setting::set('gemini_allowed_models', '{not-json');
