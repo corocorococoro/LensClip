@@ -15,7 +15,7 @@ import type {
     CategoryPreviews,
 } from '@/types/models';
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 interface Props {
     observations: {
@@ -38,7 +38,10 @@ interface Props {
 
 /** dateGroups をマージ（同月は observation を結合） */
 function mergeDateGroups(existing: DateGroup[], incoming: DateGroup[]): DateGroup[] {
-    const merged = [...existing];
+    const merged = existing.map((group) => ({
+        ...group,
+        observations: [...group.observations],
+    }));
     for (const group of incoming) {
         const found = merged.find((g) => g.yearMonth === group.yearMonth);
         if (found) {
@@ -115,7 +118,31 @@ function updateObservationList(
     return changed ? nextObservations : observations;
 }
 
-export default function Library({
+function libraryContentKey(filters: Props['filters'], viewMode: LibraryViewMode): string {
+    return JSON.stringify([
+        filters.q ?? '',
+        filters.tag ?? '',
+        filters.category ?? '',
+        viewMode,
+    ]);
+}
+
+export default function Library(props: Props) {
+    const viewMode = props.viewMode ?? 'date';
+
+    return (
+        <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
+            <Head title="ライブラリ" />
+            <LibraryContent
+                key={libraryContentKey(props.filters, viewMode)}
+                {...props}
+                viewMode={viewMode}
+            />
+        </AppLayout>
+    );
+}
+
+function LibraryContent({
     observations,
     tags,
     filters,
@@ -138,20 +165,18 @@ export default function Library({
         initialPagination ?? { hasMore: false, nextCursor: null },
     );
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const loadMoreAbortRef = useRef<AbortController | null>(null);
 
-    // Props が変わったら（フィルタ変更等）ステートをリセット
-    const filterKey = `${filters.q ?? ''}_${filters.tag ?? ''}_${filters.category ?? ''}_${viewMode}`;
     useEffect(() => {
-        setAllDateGroups(initialDateGroups);
-        setCategoryObservations(observations.data);
-        setPagination(initialPagination ?? { hasMore: false, nextCursor: null });
-        setIsLoadingMore(false);
-    }, [filterKey]); // eslint-disable-line react-hooks/exhaustive-deps
+        return () => loadMoreAbortRef.current?.abort();
+    }, []);
 
     // --- Load more ---
     const loadMore = useCallback(async () => {
         if (!pagination.nextCursor || isLoadingMore) return;
         setIsLoadingMore(true);
+        const controller = new AbortController();
+        loadMoreAbortRef.current = controller;
 
         const params = new URLSearchParams();
         params.set('view', viewMode);
@@ -163,6 +188,7 @@ export default function Library({
         try {
             const res = await fetch(`/library?${params.toString()}`, {
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                signal: controller.signal,
             });
             if (!res.ok) return;
             const data = await res.json();
@@ -174,8 +200,15 @@ export default function Library({
             }
 
             setPagination(data.pagination ?? { hasMore: false, nextCursor: null });
+        } catch (error) {
+            if (!(error instanceof DOMException && error.name === 'AbortError')) {
+                throw error;
+            }
         } finally {
-            setIsLoadingMore(false);
+            if (loadMoreAbortRef.current === controller) {
+                loadMoreAbortRef.current = null;
+            }
+            if (!controller.signal.aborted) setIsLoadingMore(false);
         }
     }, [pagination.nextCursor, isLoadingMore, viewMode, filters]);
 
@@ -285,9 +318,7 @@ export default function Library({
     const sentinel = <div ref={sentinelRef} className="h-1" aria-hidden="true" />;
 
     return (
-        <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
-            <Head title="ライブラリ" />
-
+        <>
             {/* Header with View Mode Switcher - hide in map view (switcher is inside map) */}
             {viewMode !== 'map' && (
                 <div className="flex items-center justify-between mb-4">
@@ -463,6 +494,6 @@ export default function Library({
             {viewMode === 'map' && (
                 <LibraryMap observations={categoryObservations} onModeChange={handleViewModeChange} />
             )}
-        </AppLayout>
+        </>
     );
 }

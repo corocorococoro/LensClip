@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { Map as LeafletMap } from 'leaflet';
 import type { ObservationSummary, LibraryViewMode } from '@/types/models';
 import ViewModeSwitcher from './ViewModeSwitcher';
 
@@ -9,20 +10,23 @@ interface LibraryMapProps {
 
 export default function LibraryMap({ observations, onModeChange }: LibraryMapProps) {
     const mapRef = useRef<HTMLDivElement>(null);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Leaflet は動的ロードのため any
-    const mapInstanceRef = useRef<any>(null);
-    const [mapReady, setMapReady] = useState(false);
+    const mapInstanceRef = useRef<LeafletMap | null>(null);
     const [loading, setLoading] = useState(true);
 
     // Filter observations with valid coordinates
-    const withLocation = observations.filter(
-        (obs) => obs.latitude != null && obs.longitude != null
+    const withLocation = useMemo(
+        () => observations.filter(
+            (obs) => obs.latitude != null && obs.longitude != null,
+        ),
+        [observations],
     );
 
     useEffect(() => {
         if (!mapRef.current || mapInstanceRef.current) return;
 
         let isMounted = true;
+        let resizeFrame: number | null = null;
+        setLoading(true);
 
         // 動的に Leaflet をロード
         const loadLeaflet = async () => {
@@ -149,11 +153,16 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                 }
 
                 mapInstanceRef.current = map;
-                setMapReady(true);
-                setLoading(false);
+                resizeFrame = window.requestAnimationFrame(() => {
+                    if (!isMounted) return;
+
+                    // Inertia の表示モード切替直後に確定したサイズでタイルを描画する。
+                    map.invalidateSize();
+                    setLoading(false);
+                });
             } catch (error) {
                 console.error('Failed to load Leaflet:', error);
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
 
@@ -161,12 +170,13 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
 
         return () => {
             isMounted = false;
+            if (resizeFrame != null) window.cancelAnimationFrame(resizeFrame);
             if (mapInstanceRef.current) {
                 mapInstanceRef.current.remove();
                 mapInstanceRef.current = null;
             }
         };
-    }, []);
+    }, [withLocation]);
 
     // Empty state
     if (withLocation.length === 0) {

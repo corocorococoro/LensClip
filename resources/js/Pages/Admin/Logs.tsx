@@ -24,8 +24,25 @@ interface Props {
     levels: string[];
 }
 
+function createLogKey(
+    log: LogEntry,
+    index: number,
+    page: number,
+    filters: Props['filters'],
+): string {
+    return JSON.stringify([
+        filters.level,
+        filters.date,
+        page,
+        log.timestamp,
+        log.environment,
+        log.level,
+        index,
+    ]);
+}
+
 export default function Logs({ logs, pagination, filters, levels }: Props) {
-    const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const [expandedLogKey, setExpandedLogKey] = useState<string | null>(null);
 
     const handleFilterChange = (key: string, value: string) => {
         router.get(route('admin.logs'), {
@@ -115,42 +132,52 @@ export default function Logs({ logs, pagination, filters, levels }: Props) {
                     </div>
                 ) : (
                     <div className="divide-y divide-gray-200">
-                        {logs.map((log, index) => (
-                            <div key={index} className="p-4 hover:bg-gray-50">
-                                <div className="flex items-start gap-3">
-                                    <span
-                                        className={`px-2 py-1 rounded text-xs font-medium ${getLevelColor(log.level)}`}
-                                    >
-                                        {log.level.toUpperCase()}
-                                    </span>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                                            <span>{log.timestamp}</span>
-                                            <span>•</span>
-                                            <span>{log.environment}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-900 break-words whitespace-pre-wrap">
-                                            {log.message}
-                                        </p>
-                                        {log.stack_trace && (
-                                            <div className="mt-2">
-                                                <button
-                                                    onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
-                                                    className="text-xs text-blue-600 hover:text-blue-800"
-                                                >
-                                                    {expandedIndex === index ? '▲ スタックトレースを閉じる' : '▼ スタックトレースを表示'}
-                                                </button>
-                                                {expandedIndex === index && (
-                                                    <pre className="mt-2 p-3 bg-gray-900 text-gray-100 text-xs rounded-lg overflow-x-auto">
-                                                        {log.stack_trace}
-                                                    </pre>
-                                                )}
+                        {logs.map((log, index) => {
+                            const logKey = createLogKey(
+                                log,
+                                index,
+                                pagination.current_page,
+                                filters,
+                            );
+                            const isExpanded = expandedLogKey === logKey;
+
+                            return (
+                                <div key={logKey} className="p-4 hover:bg-gray-50">
+                                    <div className="flex items-start gap-3">
+                                        <span
+                                            className={`px-2 py-1 rounded text-xs font-medium ${getLevelColor(log.level)}`}
+                                        >
+                                            {log.level.toUpperCase()}
+                                        </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                                <span>{log.timestamp}</span>
+                                                <span>•</span>
+                                                <span>{log.environment}</span>
                                             </div>
-                                        )}
+                                            <p className="text-sm text-gray-900 break-words whitespace-pre-wrap">
+                                                {log.message}
+                                            </p>
+                                            {log.stack_trace && (
+                                                <div className="mt-2">
+                                                    <button
+                                                        onClick={() => setExpandedLogKey(isExpanded ? null : logKey)}
+                                                        className="text-xs text-blue-600 hover:text-blue-800"
+                                                    >
+                                                        {isExpanded ? '▲ スタックトレースを閉じる' : '▼ スタックトレースを表示'}
+                                                    </button>
+                                                    {isExpanded && (
+                                                        <pre className="mt-2 p-3 bg-gray-900 text-gray-100 text-xs rounded-lg overflow-x-auto">
+                                                            {log.stack_trace}
+                                                        </pre>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>

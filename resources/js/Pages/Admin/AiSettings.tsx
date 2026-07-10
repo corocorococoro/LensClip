@@ -30,19 +30,28 @@ const createModelRow = (model = '', description = ''): ModelRow => ({
     description,
 });
 
-export default function AiSettings({ currentModel, allowedModels, settingsError }: Props) {
+const createModelRows = (allowedModels: Record<string, string>): ModelRow[] => {
+    const entries = Object.entries(allowedModels);
+
+    return entries.length > 0
+        ? entries.map(([model, description]) => createModelRow(model, description))
+        : [createModelRow()];
+};
+
+export default function AiSettings(props: Props) {
+    const settingsKey = JSON.stringify([props.currentModel, props.allowedModels]);
+
+    return <AiSettingsForm key={settingsKey} {...props} />;
+}
+
+function AiSettingsForm({ currentModel, allowedModels, settingsError }: Props) {
     const { flash } = usePage<PageProps<{ flash: { success?: string } }>>().props;
     const [probeResults, setProbeResults] = useState<Record<string, ProbeResult>>({});
     const [probingRows, setProbingRows] = useState<Record<string, boolean>>({});
-    const allowedModelEntries = Object.entries(allowedModels);
-    const initialAllowedModels =
-        allowedModelEntries.length > 0
-            ? allowedModelEntries.map(([model, description]) => createModelRow(model, description))
-            : [createModelRow()];
 
     const { data, setData, put, processing, errors } = useForm({
         model: currentModel,
-        allowed_models: initialAllowedModels,
+        allowed_models: createModelRows(allowedModels),
     });
     const rowsRef = useRef(data.allowed_models);
 
@@ -52,7 +61,24 @@ export default function AiSettings({ currentModel, allowedModels, settingsError 
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        put(route('admin.settings.ai.update'));
+        const normalizedData = {
+            model: data.model.trim(),
+            allowed_models: data.allowed_models.map((row) => ({
+                ...row,
+                model: row.model.trim(),
+                description: row.description.trim(),
+            })),
+        };
+
+        put(route('admin.settings.ai.update'), {
+            onSuccess: () => {
+                // サーバ側の正規化（前後空白の除去）とフォーム表示を一致させる。
+                rowsRef.current = normalizedData.allowed_models;
+                setData(normalizedData);
+                setProbeResults({});
+                setProbingRows({});
+            },
+        });
     };
 
     const updateAllowedModel = (index: number, field: keyof ModelRow, value: string) => {
