@@ -41,7 +41,7 @@ class TtsService
 
         // Check cache
         if ($this->isCacheValid($path)) {
-            Log::debug('TTS cache hit', ['text' => $text, 'key' => $cacheKey]);
+            Log::debug('TTS cache hit', ['key' => $cacheKey]);
 
             return [
                 'key' => $cacheKey,
@@ -56,7 +56,6 @@ class TtsService
         Storage::disk()->put($path, $audioContent);
 
         Log::info('TTS generated', [
-            'text' => $text,
             'key' => $cacheKey,
         ]);
 
@@ -139,9 +138,9 @@ class TtsService
 
         } catch (\Exception $e) {
             Log::error('Google TTS API error', [
-                'error' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
-            throw new \Exception('Google TTS API error: '.$e->getMessage());
+            throw new \RuntimeException('Google TTS API error.', previous: $e);
         }
     }
 

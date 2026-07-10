@@ -42,8 +42,8 @@ COPY . .
 # Install PHP dependencies
 RUN composer install --no-interaction --no-dev --optimize-autoloader
 
-# Install Node dependencies and build assets
-RUN npm install --legacy-peer-deps && npm run build
+# Install the exact locked Node dependencies, build assets, then remove build-only modules.
+RUN npm ci && npm run build && rm -rf node_modules
 
 # Fix permissions
 RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache

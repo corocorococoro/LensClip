@@ -101,8 +101,9 @@ export default function ProcessingView({ observation }: Props) {
     const currentStep = STEPS[currentStepIndex];
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh]">
-            <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-lg mb-6 relative bg-gray-100">
+        <div className="flex min-h-[60vh] flex-col items-center justify-center">
+            <p className="lens-kicker mb-4">Analyzing your find</p>
+            <div className="relative mb-6 h-64 w-64 overflow-hidden rounded-2xl border border-brand-line bg-brand-sand-soft shadow-surface">
                 {observation.thumb_url ? (
                     <img
                         src={observation.thumb_url}
@@ -118,25 +119,19 @@ export default function ProcessingView({ observation }: Props) {
                 )}
 
                 {!timedOut && (
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                        <div
-                            className="text-5xl animate-bounce"
-                            role="status"
-                            aria-label="調査中"
-                        >
-                            {currentStep.emoji}
+                    <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/20 backdrop-blur-[1px]">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-sm" role="status" aria-label="調査中">
+                            <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-brand-primary/20 border-r-brand-primary" />
                         </div>
                     </div>
                 )}
 
                 {timedOut && (
                     <div
-                        className="absolute inset-0 bg-amber-50/95 flex flex-col items-center justify-center p-4"
+                        className="absolute inset-0 flex flex-col items-center justify-center bg-brand-cream-soft/95 p-4"
                         role="alert"
                     >
-                        <div className="text-5xl mb-4" aria-hidden="true">
-                            ⏳
-                        </div>
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl font-black text-amber-700" aria-hidden="true">…</div>
                         <div className="text-sm text-amber-700 text-center font-medium">
                             まだ時間がかかっています。状態を確認してください。
                         </div>
@@ -152,11 +147,11 @@ export default function ProcessingView({ observation }: Props) {
                         {STEPS.map((step, index) => (
                             <div
                                 key={step.label}
-                                className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${index < currentStepIndex
-                                    ? 'bg-brand-pink'
+                                className={`h-2.5 w-2.5 rounded-full transition-colors duration-500 ${index < currentStepIndex
+                                    ? 'bg-brand-primary'
                                     : index === currentStepIndex
-                                        ? 'bg-brand-sky animate-pulse'
-                                        : 'bg-gray-200'
+                                        ? 'bg-brand-turquoise animate-pulse'
+                                        : 'bg-brand-line'
                                     }`}
                             />
                         ))}
@@ -165,7 +160,7 @@ export default function ProcessingView({ observation }: Props) {
                     <button
                         type="button"
                         onClick={handleBack}
-                        className="text-brand-muted text-xs hover:text-brand-pink mt-1"
+                        className="mt-1 min-h-10 px-3 text-xs font-bold text-brand-muted hover:text-brand-primary-dark"
                     >
                         ライブラリでまつ →
                     </button>

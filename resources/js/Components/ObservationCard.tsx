@@ -1,111 +1,58 @@
+import type { CategoryDefinition, ObservationSummary } from '@/types/models';
 import { Link } from '@inertiajs/react';
-import type { ObservationSummary, CategoryDefinition } from '@/types/models';
 
 interface ObservationCardProps {
     observation: ObservationSummary;
     categories?: CategoryDefinition[];
-    /** カードサイズ (グリッド用) */
     size?: 'sm' | 'md';
-    /** カテゴリバッジを表示するか (デフォルト: true) */
     showCategory?: boolean;
 }
 
-/**
- * 観察記録カードコンポーネント
- * - サムネイル表示 (CLS対策のためwidth/height指定)
- * - ステータス表示 (processing, failed, ready)
- * - カテゴリ表示 (バッジ)
- * - アクセシビリティ対応 (適切なalt属性)
- */
 export function ObservationCard({ observation, categories = [], size = 'md', showCategory = true }: ObservationCardProps) {
-    const href = `/observations/${observation.id}`;
-
-    // サイズに応じたクラス
-    const sizeClasses = size === 'sm' ? 'rounded-xl' : 'rounded-2xl';
-
-    // カテゴリ取得
-    const category = categories.find(c => c.id === observation.category);
+    const category = categories.find((item) => item.id === observation.category);
+    const compact = size === 'sm';
 
     return (
         <Link
-            href={href}
-            className={`relative aspect-square ${sizeClasses} overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white block`}
+            href={`/observations/${observation.id}`}
+            className="group block min-w-0 overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99]"
         >
-            {observation.thumb_url ? (
-                <img
-                    src={observation.thumb_url}
-                    alt={observation.title || '観察中の画像'}
-                    width={200}
-                    height={200}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                />
-            ) : (
-                <div
-                    className="w-full h-full flex items-center justify-center bg-gray-100 text-3xl"
-                    role="img"
-                    aria-label={observation.title || '観察中の画像'}
-                >
-                    📷
-                </div>
-            )}
+            <div className="relative aspect-square overflow-hidden bg-brand-sand-soft">
+                {observation.thumb_url ? (
+                    <img src={observation.thumb_url} alt={observation.title || '観察中の画像'} width={320} height={320} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
+                ) : (
+                    <div className="flex h-full w-full items-center justify-center text-brand-sand" role="img" aria-label={observation.title || '観察中の画像'}>
+                        <svg className="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" /><circle cx="12" cy="13" r="4" /></svg>
+                    </div>
+                )}
 
-            {/* Processing State */}
-            {observation.status === 'processing' && (
-                <>
-                    <div className="absolute top-2 left-2 z-10">
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm bg-amber-500 text-white">
-                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                            解析中
+                {observation.status === 'processing' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/35 backdrop-blur-[1px]">
+                        <span className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm" role="status">
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />解析中
                         </span>
                     </div>
+                )}
 
-                    <div className="absolute inset-0 bg-black/35 flex items-center justify-center">
-                        <span className="text-3xl animate-spin" role="status" aria-label="解析中">
-                            ⏳
-                        </span>
+                {observation.status === 'failed' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/40">
+                        <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-red-700 shadow-sm" role="status">確認が必要</span>
                     </div>
-                </>
-            )}
+                )}
 
-            {/* Failed State */}
-            {observation.status === 'failed' && (
-                <div className="absolute inset-0 bg-red-500/50 flex items-center justify-center">
-                    <span className="text-3xl" role="img" aria-label="エラー">
-                        ❌
+                {observation.status === 'ready' && showCategory && category && (
+                    <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/92 px-2 py-1 text-[10px] font-bold text-brand-ink shadow-sm backdrop-blur-md">
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
+                        {category.name}
                     </span>
-                </div>
-            )}
+                )}
+            </div>
 
-            {/* Ready State */}
-            {observation.status === 'ready' && (
-                <>
-                    {/* Category Badge (Top Left) */}
-                    {showCategory && category && (
-                        <div className="absolute top-2 left-2 z-10">
-                            <span
-                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md bg-white/90"
-                                style={{ color: category.color }}
-                            >
-                                <span
-                                    className="w-1.5 h-1.5 rounded-full"
-                                    style={{ backgroundColor: category.color }}
-                                />
-                                {category.name}
-                            </span>
-                        </div>
-                    )}
-
-                    {/* Title (Bottom) */}
-                    {observation.title && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                            <p className="text-white text-sm font-medium truncate">
-                                {observation.title}
-                            </p>
-                        </div>
-                    )}
-                </>
-            )}
+            <div className={compact ? 'px-2.5 py-2' : 'px-3 py-2.5'}>
+                <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-brand-ink`}>
+                    {observation.title || (observation.status === 'processing' ? 'しらべています' : '名前を確認中')}
+                </p>
+            </div>
         </Link>
     );
 }

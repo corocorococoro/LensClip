@@ -22,11 +22,11 @@ export default function GoogleLinkConfirm({ email }: Props) {
         <GuestLayout>
             <Head title="アカウント連携" />
 
-            <h1 className="text-2xl font-bold text-brand-dark text-center mb-4">
+            <h1 className="mb-4 text-center text-2xl font-bold tracking-tight text-brand-ink">
                 アカウント連携
             </h1>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-sm text-blue-700">
+            <div className="mb-6 rounded-xl border border-brand-primary/20 bg-brand-primary-soft p-4 text-sm text-brand-primary-dark">
                 <p className="mb-2">
                     <strong>{email}</strong> はすでに登録されています。
                 </p>
@@ -48,9 +48,8 @@ export default function GoogleLinkConfirm({ email }: Props) {
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="current-password"
-                        autoFocus
                         onChange={(e) => setData('password', e.target.value)}
                         required
                     />
@@ -64,7 +63,7 @@ export default function GoogleLinkConfirm({ email }: Props) {
                 <div className="text-center text-sm text-gray-500">
                     <a
                         href={route('login')}
-                        className="text-brand-pink hover:text-brand-sky transition-colors"
+                        className="font-semibold text-brand-primary-dark transition-colors hover:text-brand-primary"
                     >
                         キャンセル
                     </a>

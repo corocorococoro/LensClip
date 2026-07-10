@@ -39,7 +39,7 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
                 <div style="
                     width: 32px;
                     height: 32px;
-                    background: linear-gradient(135deg, #F5B8C1 0%, #8ECFE0 100%);
+                    background: #159E96;
                     border-radius: 50% 50% 50% 0;
                     transform: rotate(-45deg);
                     border: 3px solid white;
@@ -76,10 +76,10 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
     const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
     return (
-        <div className={`w-full bg-slate-50 border border-slate-100 rounded-2xl overflow-hidden ${className}`}>
-            <div className="flex items-center gap-2 p-3 border-b border-slate-100">
-                <span className="text-xl" aria-hidden="true">📍</span>
-                <span className="font-bold text-slate-700">みつけたばしょ</span>
+        <div className={`w-full overflow-hidden rounded-2xl border border-brand-line bg-white ${className}`}>
+            <div className="flex items-center gap-2 border-b border-brand-line p-3.5 text-brand-primary-dark">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
+                <span className="font-bold text-brand-ink">みつけたばしょ</span>
             </div>
             <div
                 ref={mapRef}
@@ -90,7 +90,7 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
                 href={googleMapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block text-center text-sm text-brand-pink hover:text-brand-sky py-2 border-t border-slate-100 transition-colors"
+                className="block min-h-11 border-t border-brand-line py-3 text-center text-sm font-bold text-brand-primary-dark transition-colors hover:bg-brand-primary-soft"
             >
                 Google マップでひらく →
             </a>

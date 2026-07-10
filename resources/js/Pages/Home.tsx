@@ -1,14 +1,23 @@
-import AppLayout from '@/Layouts/AppLayout';
-import { Card, EmptyState } from '@/Components/ui';
+import { EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
-import type { ObservationSummary, HomeStats } from '@/types/models';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
+import AppLayout from '@/Layouts/AppLayout';
+import type { HomeStats, ObservationSummary } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
-import { useRef, useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface Props {
     stats: HomeStats;
     recent: ObservationSummary[];
+}
+
+function CameraIcon() {
+    return (
+        <svg className="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+            <circle cx="12" cy="13" r="4" />
+        </svg>
+    );
 }
 
 export default function Home({ stats, recent }: Props) {
@@ -16,133 +25,89 @@ export default function Home({ stats, recent }: Props) {
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const handleFileSelect = usePendingUploadNavigation(location, 'home');
 
-    // Request location permission on mount
     useEffect(() => {
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    setLocation({
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                    });
-                },
-                () => {
-                    // Location permission denied or error - continue without location
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-            );
-        }
+        if (!('geolocation' in navigator)) return;
+        navigator.geolocation.getCurrentPosition(
+            (position) => setLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude }),
+            () => undefined,
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        );
     }, []);
 
     useEffect(() => {
-        if (stats.processing === 0) {
-            return;
-        }
-
-        const intervalId = window.setInterval(() => {
-            router.reload({
-                only: ['stats', 'recent'],
-            });
-        }, 5000);
-
-        return () => {
-            window.clearInterval(intervalId);
-        };
+        if (stats.processing === 0) return;
+        const intervalId = window.setInterval(() => router.reload({ only: ['stats', 'recent'] }), 5000);
+        return () => window.clearInterval(intervalId);
     }, [stats.processing]);
+
     return (
         <AppLayout title="ホーム">
             <Head title="ホーム" />
 
-            <div className="flex flex-col items-center">
-                {/* Stats */}
-                <div className="w-full grid grid-cols-3 gap-4 mb-8">
-                    <Card className="text-center">
-                        <div className="text-3xl font-bold text-brand-pink tabular-nums">
-                            {stats.today}
+            <div className="mx-auto max-w-3xl">
+                <section className="mb-8 sm:mb-10">
+                    <p className="lens-kicker mb-2">My field guide</p>
+                    <div className="flex items-end justify-between gap-4">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">わたしの図鑑</h1>
+                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">見つけたものが、ここに少しずつ育っていきます。</p>
                         </div>
-                        <div className="text-sm text-brand-muted">きょう</div>
-                    </Card>
-                    <Card className="text-center">
-                        <div className="text-3xl font-bold text-brand-sky tabular-nums">
-                            {stats.total}
-                        </div>
-                        <div className="text-sm text-brand-muted">ぜんぶ</div>
-                    </Card>
-                    <Card className="text-center">
-                        <div className="text-3xl font-bold text-amber-500 tabular-nums">
-                            {stats.processing}
-                        </div>
-                        <div className="text-sm text-brand-muted">いましらべ中</div>
-                    </Card>
-                </div>
+                        <Link href="/library" className="hidden text-sm font-bold text-brand-primary-dark hover:text-brand-primary sm:block">すべて見る</Link>
+                    </div>
+                </section>
 
-                {stats.processing > 0 && (
-                    <p className="text-sm text-amber-600 font-medium mb-4">
-                        いま{stats.processing}件しらべ中
-                    </p>
-                )}
+                <section className="lens-surface mb-5 overflow-hidden" aria-label="発見の記録数">
+                    <div className="grid grid-cols-[1.45fr_1fr_1fr] divide-x divide-brand-line">
+                        <div className="p-4 sm:p-6">
+                            <p className="text-xs font-semibold text-brand-muted">これまでの発見</p>
+                            <div className="mt-1 flex items-baseline gap-1.5">
+                                <span className="tabular-nums text-4xl font-bold tracking-tight text-brand-ink sm:text-5xl">{stats.total}</span>
+                                <span className="text-sm font-bold text-brand-muted">件</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col justify-center p-4 text-center sm:p-6">
+                            <span className="tabular-nums text-2xl font-bold text-brand-primary-dark sm:text-3xl">{stats.today}</span>
+                            <span className="mt-1 text-xs font-semibold text-brand-muted">きょう</span>
+                        </div>
+                        <div className={`flex flex-col justify-center p-4 text-center sm:p-6 ${stats.processing > 0 ? 'bg-brand-cream-soft' : ''}`}>
+                            <span className={`tabular-nums text-2xl font-bold sm:text-3xl ${stats.processing > 0 ? 'text-amber-700' : 'text-brand-muted'}`}>{stats.processing}</span>
+                            <span className="mt-1 text-xs font-semibold text-brand-muted">しらべ中</span>
+                        </div>
+                    </div>
+                </section>
 
-                {/* Capture Button */}
                 <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     aria-label="カメラでしらべる"
-                    className="w-32 h-32 bg-gradient-to-br from-brand-pink to-brand-sky hover:brightness-110 text-white rounded-full shadow-2xl shadow-brand-pink/25 flex flex-col items-center justify-center transition-all transform hover:scale-105 active:scale-95 mb-4"
+                    className="group mb-10 flex w-full items-center gap-4 overflow-hidden rounded-2xl bg-brand-primary p-4 text-left text-white shadow-lg shadow-brand-primary/15 transition hover:bg-brand-primary-dark active:scale-[0.99] sm:p-5"
                 >
-                    <span className="text-5xl" aria-hidden="true">
-                        📷
+                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 transition group-hover:bg-white/20 sm:h-16 sm:w-16"><CameraIcon /></span>
+                    <span className="min-w-0 flex-1">
+                        <span className="block text-lg font-bold">新しいものをしらべる</span>
+                        <span className="mt-0.5 block text-sm text-white/80">写真を撮るか、ライブラリから選べます</span>
                     </span>
-                    <span className="text-sm mt-2 font-bold">しらべる</span>
+                    <svg className="h-5 w-5 shrink-0 opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
-                <p className="text-brand-muted text-sm mb-4">タップしてなにかしらべてみよう！</p>
 
-                {/* Hidden File Input */}
-                <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    aria-hidden="true"
-                />
+                <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
 
-                {/* Recent Observations */}
-                {recent.length > 0 && (
-                    <div className="w-full">
-                        <h2 className="text-lg font-bold text-brand-dark mb-3">
-                            さいきんのはっけん
-                        </h2>
-                        <div className="grid grid-cols-3 gap-2">
-                            {recent.map((obs) => (
-                                <ObservationCard
-                                    key={obs.id}
-                                    observation={obs}
-                                    size="sm"
-                                />
-                            ))}
+                {recent.length > 0 ? (
+                    <section>
+                        <div className="mb-4 flex items-end justify-between gap-4">
+                            <div>
+                                <p className="lens-kicker mb-1">Recent finds</p>
+                                <h2 className="lens-section-title">さいきんのはっけん</h2>
+                            </div>
+                            <Link href="/library" className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary">もっとみる</Link>
                         </div>
-                        <Link
-                            href="/library"
-                            className="block text-center text-brand-pink mt-4 text-sm font-medium hover:text-brand-sky"
-                        >
-                            もっとみる →
-                        </Link>
-                    </div>
-                )}
-
-                {/* Empty State */}
-                {recent.length === 0 && stats.total === 0 && (
-                    <EmptyState
-                        icon="🔍"
-                        message={
-                            <>
-                                まだはっけんがないよ
-                                <br />
-                                カメラボタンをおしてみてね！
-                            </>
-                        }
-                    />
-                )}
+                        <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+                            {recent.map((obs) => <ObservationCard key={obs.id} observation={obs} size="sm" />)}
+                        </div>
+                    </section>
+                ) : stats.total === 0 ? (
+                    <EmptyState icon="⌕" message={<>まだはっけんがありません。<br />気になったものを、最初の1枚に残してみましょう。</>} />
+                ) : null}
             </div>
         </AppLayout>
     );

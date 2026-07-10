@@ -24,9 +24,11 @@ export default function Register() {
         <GuestLayout>
             <Head title="新規登録" />
 
-            <h1 className="text-2xl font-bold text-brand-dark text-center mb-6">
+            <p className="lens-kicker mb-2 text-center">Start your collection</p>
+            <h1 className="mb-2 text-center text-2xl font-bold tracking-tight text-brand-ink">
                 新規登録
             </h1>
+            <p className="mb-6 text-center text-sm text-brand-muted">今日の「これなに？」を、最初の1枚に。</p>
 
             <form onSubmit={submit} className="space-y-4">
                 <div>
@@ -40,9 +42,8 @@ export default function Register() {
                         id="name"
                         name="name"
                         value={data.name}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="name"
-                        autoFocus
                         onChange={(e) => setData('name', e.target.value)}
                         required
                     />
@@ -61,7 +62,7 @@ export default function Register() {
                         type="email"
                         name="email"
                         value={data.email}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
                         required
@@ -81,7 +82,7 @@ export default function Register() {
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
                         required
@@ -101,7 +102,7 @@ export default function Register() {
                         type="password"
                         name="password_confirmation"
                         value={data.password_confirmation}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="new-password"
                         onChange={(e) => setData('password_confirmation', e.target.value)}
                         required
@@ -126,7 +127,7 @@ export default function Register() {
                 {/* Google Register Button */}
                 <a
                     href={route('auth.google.redirect')}
-                    className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-brand-line bg-white px-4 py-3 font-semibold text-brand-ink transition-colors hover:bg-brand-sand-soft/50"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -141,7 +142,7 @@ export default function Register() {
                     <span className="text-gray-500">すでにアカウントをお持ちの方は</span>{' '}
                     <Link
                         href={route('login')}
-                        className="text-brand-pink hover:text-brand-sky font-medium transition-colors"
+                        className="font-bold text-brand-primary-dark transition-colors hover:text-brand-primary"
                     >
                         ログイン
                     </Link>

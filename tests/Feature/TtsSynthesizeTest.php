@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use App\Services\TtsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -107,6 +108,7 @@ class TtsSynthesizeTest extends TestCase
 
     public function test_returns_500_when_tts_service_throws(): void
     {
+        Log::spy();
         $user = User::factory()->create();
 
         $this->mock(TtsService::class, function ($mock) {
@@ -120,6 +122,29 @@ class TtsSynthesizeTest extends TestCase
 
         $response->assertStatus(500)
             ->assertJsonPath('error', 'TTS synthesis failed');
+
+        Log::shouldHaveReceived('error')->with(
+            'TTS synthesis failed',
+            ['exception' => \Exception::class],
+        );
+    }
+
+    public function test_cache_hit_log_does_not_include_synthesized_text(): void
+    {
+        Storage::fake();
+        Log::spy();
+
+        $text = 'private phrase';
+        $key = md5("{$text}|en-US-Neural2-J|0.9");
+        Storage::disk()->put(TtsService::audioPath($key), 'cached-audio');
+
+        $result = app(TtsService::class)->synthesize($text);
+
+        $this->assertTrue($result['cacheHit']);
+        Log::shouldHaveReceived('debug')->with(
+            'TTS cache hit',
+            ['key' => $key],
+        );
     }
 
     // ---- GET /tts/audio/{key} ----

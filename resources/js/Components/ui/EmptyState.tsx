@@ -15,11 +15,11 @@ interface EmptyStateProps {
  */
 export function EmptyState({ icon, message, action, className = '' }: EmptyStateProps) {
     return (
-        <div className={`text-center py-16 ${className}`}>
-            <div className="text-6xl mb-4" role="img" aria-hidden="true">
+        <div className={`rounded-2xl border border-dashed border-brand-sand/70 bg-brand-cream-soft px-6 py-14 text-center ${className}`}>
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white text-3xl shadow-sm" role="img" aria-hidden="true">
                 {icon}
             </div>
-            <div className="text-gray-500 mb-4">{message}</div>
+            <div className="mb-4 text-sm font-medium leading-relaxed text-brand-muted">{message}</div>
             {action && <div>{action}</div>}
         </div>
     );

@@ -1,159 +1,60 @@
-# セットアップ
+# ローカル開発環境のセットアップ
 
-## 1. リポジトリをクローン
+この文書は、新しい作業環境を起動できる状態にするための手順だけを扱う。実行環境の要件は `composer.json` と `package.json`、依存バージョンは lockfile、環境変数は `.env.example` を一次ソースとする。
 
-```bash
-git clone <repository-url>
-cd LensClip
-```
+## 前提
 
-## 2. 環境変数を設定
+- Docker Desktop または互換の Docker 環境
+- `composer.json` の要件を満たす PHP と Composer
+- `package.json` の `engines` を満たす Node.js と npm
+
+## 初回セットアップ
 
 ```bash
 cp .env.example .env
-```
-
-`.env` ファイルを編集:
-
-```env
-# Google Login (Socialite)
-GOOGLE_CLIENT_ID=your-client-id
-GOOGLE_CLIENT_SECRET=your-client-secret
-GOOGLE_REDIRECT_URI="http://localhost/auth/google/callback"
-
-# Google Cloud Services (GCS, Vision API, TTS API)
-# Set exactly one credential source
-# Local / Sail: key file path (relative or absolute)
-GOOGLE_APPLICATION_CREDENTIALS=service-account.json
-# Railway: raw JSON string
-# GOOGLE_CREDENTIALS_JSON='{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}'
-GOOGLE_CLOUD_PROJECT_ID=your-project-id
-GOOGLE_CLOUD_STORAGE_BUCKET=your-bucket-name
-
-# Google Gemini API
-GEMINI_API_KEY=your-gemini-api-key
-
-# Storage (public for local, gcs for production)
-FILESYSTEM_DISK=public
-```
-
-認証変数の注意:
-- `GOOGLE_APPLICATION_CREDENTIALS` と `GOOGLE_CREDENTIALS_JSON` は **同時設定しない**
-- `GOOGLE_CREDENTIALS_JSON` は **JSON文字列そのもの**（ファイルパスではない）
-- JSON が不正 / ファイルが存在しない場合は、設定読み込み時にエラーになる
-
-## 3. Docker環境を起動
-
-```bash
+composer install
+npm ci
 ./vendor/bin/sail up -d
-```
-
-## 4. 依存関係をインストール
-
-```bash
-./vendor/bin/sail composer install
-./vendor/bin/sail npm install
-```
-
-## 5. アプリケーションキー生成
-
-```bash
 ./vendor/bin/sail artisan key:generate
-```
-
-## 6. データベースマイグレーション
-
-```bash
 ./vendor/bin/sail artisan migrate
-```
-
-## 7. ストレージリンク作成
-
-```bash
 ./vendor/bin/sail artisan storage:link
 ```
 
-## 8. フロントエンドビルド
+フロントエンドの開発サーバー:
 
-開発モード:
 ```bash
-./vendor/bin/sail npm run dev
+npm run dev
 ```
 
-本番ビルド:
-```bash
-./vendor/bin/sail npm run build
-```
+アプリは通常 `http://localhost` で開く。
 
-## 動作確認
+## 外部サービスを使う場合
 
-1. http://localhost にアクセス
-2. ユーザー登録 → ログイン
-3. AI分析まで確認する場合は、下の「管理者設定」で管理者に昇格し、`/admin/settings/ai` で Gemini の許可モデルと使用モデルを保存
-4. 「しらべる」ボタンをタップ → 画像をアップロード
-5. AI分析待ち → 結果表示
-6. ライブラリで一覧確認
+- Google OAuth、Cloud Vision、Cloud TTS、GCS、Gemini の変数名は `.env.example` を参照する
+- Application Default Credentials を使わない場合、Google Cloud の認証情報はファイルパスまたは JSON 文字列のどちらか一方だけを設定する
+- Gemini のモデル名と allowlist は環境変数ではなく、管理画面から保存する
+- AI 分析を確認する前に、対象ユーザーを管理者へ昇格し、管理画面でモデル設定を完了する
 
-## 管理者設定
-
-### 管理者に昇格する
+管理者への昇格:
 
 ```bash
 ./vendor/bin/sail artisan user:promote your-email@example.com
 ```
 
-### 管理画面
-
-| 機能 | URL | 説明 |
-|------|-----|------|
-| ログ閲覧 | `/admin/logs` | レベル・日付でフィルタ、スタックトレース表示 |
-| AI設定 | `/admin/settings/ai` | Gemini許可モデル一覧、疎通確認、使用モデルの更新（保存後の解析から反映） |
-
-Gemini のモデル名と許可モデル一覧は `.env` ではなく管理画面で登録する。初回セットアップ後、AI分析を使う前に `/admin/settings/ai` で許可モデルと使用モデルを保存する。
-
-## テスト実行
+## 完了確認
 
 ```bash
-./vendor/bin/sail artisan test
+npm run build
+./vendor/bin/sail test
 ```
 
-## トラブルシューティング
+## 切り分けの入口
 
-### Sailの再起動
-```bash
-./vendor/bin/sail stop
-./vendor/bin/sail up -d
-```
+| 症状 | 最初に確認するもの |
+|---|---|
+| Sail が起動しない | `./vendor/bin/sail ps`、Docker の状態、`compose.yaml` |
+| CSS / JS が更新されない | Vite の起動状態、`public/hot` |
+| 分析中のまま進まない | Queue worker、AI 設定、アプリログ |
+| 画像が表示されない | storage link と `FILESYSTEM_DISK` |
 
-### アセット（CSS/JS）の読み込みエラー
-Viteサーバーが起動していない可能性:
-```bash
-./vendor/bin/sail npm run dev
-```
-
-### 画像が表示されない
-ストレージのシンボリックリンクを再作成:
-```bash
-./vendor/bin/sail artisan storage:link
-```
-
-### AI分析が進まない（処理中のまま）
-キューワーカーを起動:
-```bash
-./vendor/bin/sail artisan queue:work
-```
-
-### ログの確認
-```bash
-# Dockerコンテナのログ
-./vendor/bin/sail logs app
-
-# Laravelのアプリケーションログ
-./vendor/bin/sail exec app tail -f storage/logs/laravel.log
-```
-
-## 既知の制約
-
-- iOSでのカメラ起動は環境依存（HTTPS必須等）
-- Gemini API キーなしでは Gemini 同定は失敗する
-- Vision / TTS を使うには Google Cloud 認証が必要
+具体的な設定値やコマンドの追加オプションは、対応する設定ファイルと CLI のヘルプを参照する。

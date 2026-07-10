@@ -18,8 +18,12 @@ export default function Edit({
         <AppLayout>
             <Head title="プロフィール" />
 
-            <div className="space-y-6">
-                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F8D1D7]">
+            <div className="mx-auto max-w-2xl space-y-5">
+                <div className="mb-8">
+                    <p className="lens-kicker mb-1">Account</p>
+                    <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">プロフィール</h1>
+                </div>
+                <div className="lens-surface p-5 sm:p-8">
                     <UpdateProfileInformationForm
                         mustVerifyEmail={mustVerifyEmail}
                         status={status}
@@ -27,11 +31,11 @@ export default function Edit({
                     />
                 </div>
 
-                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F8D1D7]">
+                <div className="lens-surface p-5 sm:p-8">
                     <UpdatePasswordForm className="max-w-xl" />
                 </div>
 
-                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F8D1D7]">
+                <div className="lens-surface p-5 sm:p-8">
                     <div className="max-w-xl">
                         <header>
                             <h2 className="text-lg font-medium text-gray-900">
@@ -46,7 +50,7 @@ export default function Edit({
                         <form onSubmit={handleLogout} className="mt-6">
                             <button
                                 type="submit"
-                                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-[#F5B8C1] to-[#8ECFE0] text-white rounded-xl font-bold shadow-lg hover:translate-y-[-2px] transition-all active:scale-95"
+                                className="min-h-11 w-full rounded-xl border border-brand-line bg-white px-6 py-2.5 font-bold text-brand-ink shadow-sm transition hover:border-brand-sand hover:bg-brand-sand-soft/50 active:scale-[0.98] sm:w-auto"
                             >
                                 ログアウト
                             </button>
@@ -54,7 +58,7 @@ export default function Edit({
                     </div>
                 </div>
 
-                <div className="bg-white p-4 shadow sm:rounded-2xl sm:p-8 border border-[#F8D1D7]">
+                <div className="rounded-2xl border border-red-200 bg-white p-5 sm:p-8">
                     <DeleteUserForm className="max-w-xl" />
                 </div>
             </div>

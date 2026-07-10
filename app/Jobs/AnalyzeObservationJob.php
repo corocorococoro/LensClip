@@ -68,11 +68,11 @@ class AnalyzeObservationJob implements ShouldQueue
 
             $result = $analysisService->analyze($observation);
 
-            // カテゴリをconfigの許可リストで検証
-            $aiCategory = $result['ai_json']['category'] ?? 'other';
+            // AI category must be explicit and valid; do not silently substitute another value.
+            $aiCategory = $result['ai_json']['category'] ?? null;
             $allowedCategories = array_column(config('categories'), 'id');
-            if (! in_array($aiCategory, $allowedCategories)) {
-                $aiCategory = 'other';
+            if (! is_string($aiCategory) || ! in_array($aiCategory, $allowedCategories, true)) {
+                throw new \UnexpectedValueException('AI response category is missing or invalid.');
             }
 
             $observation->update([
@@ -99,7 +99,7 @@ class AnalyzeObservationJob implements ShouldQueue
             Log::error('AnalyzeObservationJob: Failed', [
                 'id' => $this->observationId,
                 'error_id' => $errorId,
-                'error' => $e->getMessage(),
+                'exception' => $e::class,
             ]);
 
             $observation->update([
@@ -196,7 +196,7 @@ class AnalyzeObservationJob implements ShouldQueue
             Log::error('AnalyzeObservationJob: Terminal failure', [
                 'id' => $this->observationId,
                 'error_id' => $errorId,
-                'error' => $exception->getMessage(),
+                'exception' => $exception::class,
             ]);
 
             $observation->update([

@@ -155,7 +155,7 @@ class ImageAnalysisService
             return $objects;
 
         } catch (\Exception $e) {
-            Log::error('Vision API exception', ['error' => $e->getMessage()]);
+            Log::error('Vision API exception', ['exception' => $e::class]);
             throw $e;
         }
     }
@@ -407,7 +407,7 @@ class ImageAnalysisService
             return $json;
 
         } catch (\Exception $e) {
-            Log::error('Gemini API exception', ['error' => $e->getMessage()]);
+            Log::error('Gemini API exception', ['exception' => $e::class]);
             throw $e;
         }
     }

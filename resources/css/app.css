@@ -8,6 +8,23 @@
     html {
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
+        background: #fcfbf8;
+        color: #3d342c;
+        color-scheme: light;
+    }
+
+    body {
+        min-width: 320px;
+        background: #fcfbf8;
+    }
+
+    ::selection {
+        background: rgba(48, 213, 200, 0.28);
+    }
+
+    :focus-visible {
+        outline: 3px solid rgba(21, 158, 150, 0.3);
+        outline-offset: 3px;
     }
 
     /* Safe Area対応 (ノッチ、ホームバー) */
@@ -17,6 +34,28 @@
 
     .safe-area-top {
         padding-top: env(safe-area-inset-top, 0px);
+    }
+}
+
+@layer components {
+    .lens-surface {
+        @apply rounded-2xl border border-brand-line bg-white shadow-surface;
+    }
+
+    .lens-field {
+        @apply w-full rounded-xl border-brand-line bg-white text-brand-ink shadow-sm placeholder:text-stone-400 focus:border-brand-primary focus:ring-brand-primary/20;
+    }
+
+    .lens-kicker {
+        @apply text-xs font-bold uppercase tracking-[0.16em] text-brand-primary-dark;
+    }
+
+    .lens-section-title {
+        @apply text-xl font-bold tracking-tight text-brand-ink;
+    }
+
+    .lens-icon-button {
+        @apply inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brand-line bg-white text-brand-muted transition hover:border-brand-primary/40 hover:text-brand-primary-dark active:scale-95;
     }
 }
 
@@ -40,5 +79,20 @@
 
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
+    }
+
+    .text-balance {
+        text-wrap: balance;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            scroll-behavior: auto !important;
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
     }
 }
