@@ -126,6 +126,8 @@ class ImageAnalysisServiceSafetyTest extends TestCase
 
     public function test_gemini_request_uses_registry_resolved_model(): void
     {
+        config(['services.gemini.api_key' => 'test-key']);
+
         Http::fake(function (Request $request) {
             $this->assertStringContainsString('/models/'.self::MODEL_PRIMARY.':generateContent', $request->url());
             $this->assertStringNotContainsString('/models/'.self::MODEL_LEGACY.':generateContent', $request->url());

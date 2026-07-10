@@ -94,4 +94,21 @@ class ObservationCategoryUpdateTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_uncategorized_processing_observation_is_not_counted_as_other(): void
+    {
+        $user = User::factory()->create();
+        Observation::factory()->for($user)->create([
+            'status' => 'processing',
+            'category' => null,
+            'title' => null,
+        ]);
+
+        $response = $this->actingAs($user)->get('/library?view=category');
+
+        $response->assertOk()
+            ->assertInertia(fn ($page) => $page
+                ->where('categoryCounts.other', 0)
+            );
+    }
 }

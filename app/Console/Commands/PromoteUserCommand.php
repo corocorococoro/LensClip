@@ -43,7 +43,6 @@ class PromoteUserCommand extends Command
 
         Log::info('User promoted to admin', [
             'user_id' => $user->id,
-            'email' => $user->email,
             'promoted_by' => 'artisan command',
         ]);
 

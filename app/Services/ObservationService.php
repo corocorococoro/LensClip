@@ -110,7 +110,7 @@ class ObservationService
                 'longitude' => $longitude,
             ];
         } catch (\Exception $e) {
-            Log::debug('Failed to extract GPS from EXIF', ['error' => $e->getMessage()]);
+            Log::debug('Failed to extract GPS from EXIF', ['exception' => $e::class]);
 
             return [];
         }

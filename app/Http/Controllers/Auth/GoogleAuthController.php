@@ -39,7 +39,7 @@ class GoogleAuthController extends Controller
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
-            Log::error('Google OAuth callback failed', ['error' => $e->getMessage()]);
+            Log::error('Google OAuth callback failed', ['exception' => $e::class]);
 
             return redirect()->route('login')
                 ->with('error', 'Google認証に失敗しました。');

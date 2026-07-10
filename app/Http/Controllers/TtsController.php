@@ -33,7 +33,7 @@ class TtsController extends Controller
                 'cacheHit' => $result['cacheHit'],
             ]);
         } catch (\Exception $e) {
-            Log::error('TTS synthesis failed', ['error' => $e->getMessage()]);
+            Log::error('TTS synthesis failed', ['exception' => $e::class]);
 
             return response()->json([
                 'error' => 'TTS synthesis failed',
@@ -65,7 +65,7 @@ class TtsController extends Controller
                 'Cache-Control' => 'private, max-age=86400',
             ]);
         } catch (\Exception $e) {
-            Log::error('TTS stream: read failed', ['key' => $key, 'error' => $e->getMessage()]);
+            Log::error('TTS stream: read failed', ['key' => $key, 'exception' => $e::class]);
             abort(500);
         }
     }

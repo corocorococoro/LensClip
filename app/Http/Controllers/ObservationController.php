@@ -201,7 +201,8 @@ class ObservationController extends Controller
             $query->withTag($request->tag);
         }
 
-        $raw = $query->selectRaw('COALESCE(category, ?) as cat, count(*) as cnt', ['other'])
+        $raw = $query->whereNotNull('category')
+            ->selectRaw('category as cat, count(*) as cnt')
             ->groupBy('cat')
             ->pluck('cnt', 'cat')
             ->toArray();

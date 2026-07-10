@@ -23,7 +23,7 @@ export interface ObservationSummary {
     status: ObservationStatus;
     tags?: Tag[];
     created_at?: string;
-    category?: CategoryId;
+    category?: CategoryId | null;
     latitude?: number | null;
     longitude?: number | null;
 }
@@ -81,7 +81,7 @@ export interface ObservationAIJson {
     fun_facts?: string[];
     safety_notes?: string[];
     questions?: string[];
-    category?: CategoryId;
+    category?: CategoryId | null;
     candidate_cards?: CandidateCard[];
 }
 
