@@ -26,17 +26,16 @@ interface ButtonAsLinkProps extends ButtonBaseProps {
 type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 const variantClasses: Record<ButtonVariant, string> = {
-    primary:
-        'bg-gradient-to-r from-brand-pink to-brand-sky text-white shadow-lg hover:translate-y-[-2px] active:scale-95',
-    secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-700',
-    danger: 'bg-red-500 hover:bg-red-600 text-white',
-    ghost: 'bg-transparent hover:bg-gray-100 text-gray-600',
+    primary: 'bg-brand-primary text-white shadow-sm hover:bg-brand-primary-dark active:scale-[0.98]',
+    secondary: 'border border-brand-line bg-white text-brand-ink shadow-sm hover:border-brand-sand hover:bg-brand-sand-soft/50 active:scale-[0.98]',
+    danger: 'bg-red-600 text-white shadow-sm hover:bg-red-700 active:scale-[0.98]',
+    ghost: 'bg-transparent text-brand-muted hover:bg-brand-sand-soft hover:text-brand-ink active:scale-[0.98]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-    sm: 'px-3 py-1.5 text-sm rounded-lg',
-    md: 'px-4 py-2.5 text-base rounded-xl',
-    lg: 'px-6 py-3 text-lg rounded-2xl',
+    sm: 'min-h-9 px-3 py-1.5 text-sm rounded-lg',
+    md: 'min-h-11 px-4 py-2.5 text-sm rounded-xl',
+    lg: 'min-h-12 px-6 py-3 text-base rounded-xl',
 };
 
 /**
@@ -57,7 +56,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
     } = props;
 
     const baseClasses =
-        'inline-flex items-center justify-center font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed';
+        'inline-flex items-center justify-center gap-2 font-bold transition duration-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-primary/20 disabled:cursor-not-allowed disabled:opacity-45';
     const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? 'w-full' : ''} ${className}`;
 
     // Link として使用
@@ -89,7 +88,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>((props, ref) => {
         >
             {loading ? (
                 <>
-                    <span className="animate-spin mr-2">⏳</span>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden="true" />
                     {children}
                 </>
             ) : (
@@ -103,4 +102,3 @@ Button.displayName = 'Button';
 
 export { Button };
 export type { ButtonProps, ButtonVariant, ButtonSize };
-

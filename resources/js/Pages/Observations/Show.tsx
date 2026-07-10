@@ -158,9 +158,9 @@ export default function Show({ observation, categories }: Props) {
         <AppLayout title={observation.title || 'けっか'}>
             <Head title={observation.title || 'けっか'} />
 
-            <div className="flex flex-col items-center">
+            <div className="mx-auto flex max-w-2xl flex-col items-center">
                 {/* Main Image */}
-                <div className="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-lg mb-6 group">
+                <div className="group relative mb-7 w-full max-w-xl overflow-hidden rounded-2xl border border-brand-line bg-white shadow-surface">
                     {displayImage ? (
                         <img
                             src={displayImage}
@@ -185,7 +185,7 @@ export default function Show({ observation, categories }: Props) {
                         <div className="absolute top-3 left-3 z-10">
                             <button
                                 onClick={() => setShowCategoryModal(true)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm backdrop-blur-md bg-white/90 transition-transform active:scale-95 group/badge"
+                                className="group/badge inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold text-brand-ink shadow-sm backdrop-blur-md transition active:scale-95"
                                 style={{
                                     color: currentCategory.color,
                                 }}
@@ -206,7 +206,7 @@ export default function Show({ observation, categories }: Props) {
                             href={`https://www.google.com/search?tbm=isch&safe=active&q=${encodeURIComponent(displayTitle)}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm pl-2.5 pr-3 py-1.5 rounded-full text-xs font-medium text-brand-dark shadow-sm hover:bg-white hover:text-brand-pink transition-all flex items-center gap-1.5 opacity-90 hover:opacity-100 hover:shadow-md"
+                            className="absolute bottom-3 right-3 flex min-h-10 items-center gap-1.5 rounded-full bg-white/95 py-1.5 pl-2.5 pr-3 text-xs font-bold text-brand-ink shadow-sm backdrop-blur-sm transition hover:text-brand-primary-dark hover:shadow-md"
                             title="Google画像検索で確認する"
                         >
                             <MagnifyingGlassIcon className="w-3.5 h-3.5" />
@@ -217,8 +217,8 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Title with fade transition */}
                 {/* Title & Badge */}
-                <div className="flex items-center justify-center gap-3 mb-1">
-                    <h1 className="text-3xl font-bold text-gray-800">
+                <div className="mb-1 flex items-center justify-center gap-3 text-center">
+                    <h1 className="text-3xl font-bold tracking-[-0.035em] text-brand-ink sm:text-4xl">
                         {displayTitle}
                     </h1>
                     {observation.status === 'ready' && displayConfidence > 0 && (
@@ -248,11 +248,11 @@ export default function Show({ observation, categories }: Props) {
                             <button
                                 onClick={() => playTts(activeCard.english_name!)}
                                 disabled={ttsLoading}
-                                className={`p-1.5 rounded-full transition-all duration-200 ${ttsLoading
+                                className={`min-h-10 min-w-10 rounded-full p-1.5 transition-colors duration-200 ${ttsLoading
                                     ? 'text-gray-400 cursor-wait'
                                     : ttsError
                                         ? 'text-red-400 hover:text-red-500 hover:bg-red-50 active:scale-95'
-                                        : 'text-slate-400 hover:text-brand-pink hover:bg-brand-cream active:scale-95'
+                                        : 'text-brand-muted hover:bg-brand-primary-soft hover:text-brand-primary-dark active:scale-95'
                                     }`}
                                 aria-label={`${activeCard.english_name}を読み上げる`}
                                 title="発音を聞く"
@@ -273,10 +273,10 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Candidate Selector - これかも？ */}
                 {observation.status === 'ready' && hasCandidates && (
-                    <div className="w-full bg-violet-50 border border-violet-100 rounded-2xl p-4 mb-4">
+                    <div className="mb-4 w-full rounded-2xl border border-brand-line bg-brand-cream-soft p-4">
                         <div className="flex items-center gap-2 mb-3">
-                            <span className="text-lg" aria-hidden="true">🤔</span>
-                            <span className="font-bold text-violet-700">これかも？</span>
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-cream text-xs font-black text-brand-ink" aria-hidden="true">?</span>
+                            <span className="font-bold text-brand-ink">これかも？</span>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
                             {candidateCards.map((card, index) => (
@@ -284,8 +284,8 @@ export default function Show({ observation, categories }: Props) {
                                     key={index}
                                     onClick={() => handleCandidateSelect(index)}
                                     className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors duration-150 ${index === activeCandidateIndex
-                                        ? 'bg-violet-600 text-white shadow-md'
-                                        : 'bg-white text-violet-700 border border-violet-200 hover:bg-violet-100'
+                                        ? 'bg-brand-primary text-white shadow-sm'
+                                        : 'border border-brand-line bg-white text-brand-ink hover:border-brand-sand'
                                         }`}
                                 >
                                     {card.name}
@@ -300,8 +300,8 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Failed State */}
                 {observation.status === 'failed' && (
-                    <div className="w-full bg-red-50 border border-red-200 rounded-2xl p-6 mb-6 text-center">
-                        <div className="text-4xl mb-3">😢</div>
+                    <div className="mb-6 w-full rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                        <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-black text-red-600">!</div>
                         <h2 className="text-lg font-bold text-red-700 mb-2">しらべられなかった…</h2>
                         <p className="text-sm text-red-600 mb-4">
                             {observation.error_message || 'もういちどためしてね'}
@@ -312,7 +312,7 @@ export default function Show({ observation, categories }: Props) {
                             variant="primary"
                             disabled={retrying}
                         >
-                            {retrying ? 'リトライちゅう…' : '🔄 もういちどしらべる'}
+                            {retrying ? 'リトライちゅう…' : 'もういちどしらべる'}
                         </Button>
                     </div>
                 )}
@@ -321,9 +321,9 @@ export default function Show({ observation, categories }: Props) {
                 {observation.status === 'ready' && (
                     <Card
                         key={`card-${activeCandidateIndex}`}
-                        className="w-full mb-4 bg-sky-50 border-sky-100"
+                        className="mb-4 w-full border-brand-primary/15 bg-brand-primary-soft"
                     >
-                        <p className="text-lg text-sky-800 text-center leading-relaxed">
+                        <p className="text-center text-lg font-medium leading-relaxed text-brand-ink">
                             {displayKidFriendly}
                         </p>
                     </Card>
@@ -331,12 +331,12 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Look For - 見分けポイント */}
                 {lookFor.length > 0 && (
-                    <div className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 mb-4">
+                    <div className="mb-4 w-full rounded-2xl border border-brand-line bg-white p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">👀</span>
-                            <span className="font-bold text-slate-700">みわけポイント</span>
+                            <span className="h-2 w-2 rounded-full bg-brand-sand" aria-hidden="true" />
+                            <span className="font-bold text-brand-ink">みわけポイント</span>
                         </div>
-                        <ul className="text-sm text-slate-600 space-y-1">
+                        <ul className="space-y-1 pl-4 text-sm leading-relaxed text-brand-muted">
                             {lookFor.map((point, i) => (
                                 <li key={i}>• {point}</li>
                             ))}
@@ -347,14 +347,14 @@ export default function Show({ observation, categories }: Props) {
                 {/* Safety Notes - Always visible, prominent */}
                 {safetyNotes.length > 0 && (
                     <div
-                        className="w-full bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4"
+                        className="mb-4 w-full rounded-2xl border border-brand-coral/25 bg-brand-coral-soft p-4"
                         role="alert"
                     >
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">⚠️</span>
-                            <span className="font-bold text-amber-700">ちゅうい</span>
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-coral text-xs font-black text-white" aria-hidden="true">!</span>
+                            <span className="font-bold text-red-800">ちゅうい</span>
                         </div>
-                        <ul className="text-sm text-amber-700 space-y-1">
+                        <ul className="space-y-1 pl-4 text-sm leading-relaxed text-red-800">
                             {safetyNotes.map((note, i) => (
                                 <li key={i}>• {note}</li>
                             ))}
@@ -364,15 +364,15 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Fun Facts - Now always visible (no toggle) */}
                 {funFacts.length > 0 && (
-                    <div className="w-full bg-fuchsia-50 border border-fuchsia-100 rounded-2xl p-4 mb-4">
+                    <div className="mb-4 w-full rounded-2xl border border-brand-sand/35 bg-brand-cream-soft p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">💡</span>
-                            <span className="font-bold text-fuchsia-700">まめちしき</span>
+                            <span className="text-lg text-brand-sand" aria-hidden="true">✦</span>
+                            <span className="font-bold text-brand-ink">まめちしき</span>
                         </div>
-                        <ul className="text-sm text-fuchsia-700 space-y-2">
+                        <ul className="space-y-2 text-sm leading-relaxed text-brand-muted">
                             {funFacts.map((fact, i) => (
                                 <li key={i} className="flex items-start gap-2">
-                                    <span aria-hidden="true">✨</span>
+                                    <span className="text-brand-sand" aria-hidden="true">•</span>
                                     <span>{fact}</span>
                                 </li>
                             ))}
@@ -382,12 +382,12 @@ export default function Show({ observation, categories }: Props) {
 
                 {/* Questions - Always visible */}
                 {questions.length > 0 && (
-                    <div className="w-full bg-emerald-50 border border-emerald-100 rounded-2xl p-4 mb-4">
+                    <div className="mb-4 w-full rounded-2xl border border-brand-line bg-white p-4">
                         <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xl" aria-hidden="true">❓</span>
-                            <span className="font-bold text-emerald-700">きいてみよう</span>
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-primary-soft text-xs font-black text-brand-primary-dark" aria-hidden="true">?</span>
+                            <span className="font-bold text-brand-ink">きいてみよう</span>
                         </div>
-                        <ul className="text-sm text-emerald-700 space-y-1">
+                        <ul className="space-y-1 pl-4 text-sm leading-relaxed text-brand-muted">
                             {questions.map((q, i) => (
                                 <li key={i}>• {q}</li>
                             ))}
@@ -403,7 +403,7 @@ export default function Show({ observation, categories }: Props) {
                                 <Link
                                     key={tag.id}
                                     href={`/library?tag=${tag.name}`}
-                                    className="px-4 py-2 bg-brand-cream hover:bg-brand-blush rounded-full text-sm text-brand-dark transition-colors"
+                                    className="min-h-10 rounded-full border border-brand-line bg-white px-4 py-2 text-sm font-semibold text-brand-muted transition-colors hover:border-brand-sand hover:text-brand-ink"
                                 >
                                     #{tag.name}
                                 </Link>
@@ -424,13 +424,13 @@ export default function Show({ observation, categories }: Props) {
                 {/* Actions */}
                 <div className="w-full mb-8">
                     <Button href="/dashboard" variant="primary" fullWidth size="lg">
-                        📷 ほかのものをしらべる
+                        ほかのものをしらべる
                     </Button>
                 </div>
 
                 {/* Metadata - subtle display */}
                 {observation.status === 'ready' && (
-                    <div className="w-full text-center text-xs text-gray-400 mb-4 space-y-0.5">
+                    <div className="mb-4 w-full space-y-0.5 text-center text-xs text-brand-muted/70">
                         <div>
                             {new Date(observation.created_at).toLocaleDateString('ja-JP', {
                                 year: 'numeric',
@@ -450,7 +450,7 @@ export default function Show({ observation, categories }: Props) {
                 <button
                     onClick={handleDelete}
                     aria-label="この発見を削除"
-                    className="text-red-400 hover:text-red-600 text-sm py-2 px-4 transition-colors"
+                    className="min-h-11 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:text-red-700"
                 >
                     この発見を削除
                 </button>
@@ -459,7 +459,7 @@ export default function Show({ observation, categories }: Props) {
             {/* Category Selection Modal */}
             <Modal show={showCategoryModal} onClose={() => setShowCategoryModal(false)}>
                 <div className="p-6">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">
+                    <h2 className="mb-4 text-xl font-bold text-brand-ink">
                         カテゴリをへんこう
                     </h2>
                     <div className="flex flex-wrap gap-3">
@@ -468,7 +468,7 @@ export default function Show({ observation, categories }: Props) {
                                 key={cat.id}
                                 onClick={() => handleCategoryChange(cat.id)}
                                 disabled={categoryUpdating}
-                                className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl text-base font-bold transition-all w-full sm:w-auto justify-center ${cat.id === observation.category
+                                className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-base font-bold transition-[opacity,box-shadow] sm:w-auto ${cat.id === observation.category
                                     ? 'ring-2 ring-offset-2'
                                     : 'hover:opacity-80'
                                     } ${categoryUpdating ? 'cursor-wait opacity-50' : ''}`}

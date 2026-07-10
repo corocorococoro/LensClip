@@ -310,8 +310,8 @@ function LibraryContent({
 
     // --- Loading indicator ---
     const loadingIndicator = isLoadingMore && (
-        <div className="flex justify-center py-6">
-            <span className="text-2xl animate-spin">⏳</span>
+        <div className="flex justify-center py-8" role="status" aria-label="読み込み中">
+            <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-primary/25 border-r-brand-primary" />
         </div>
     );
 
@@ -321,29 +321,28 @@ function LibraryContent({
         <>
             {/* Header with View Mode Switcher - hide in map view (switcher is inside map) */}
             {viewMode !== 'map' && (
-                <div className="flex items-center justify-between mb-4">
-                    <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
+                <div className="mb-6">
+                    <p className="lens-kicker mb-1">Your collection</p>
+                    <h1 className="mb-5 text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">ライブラリ</h1>
+                    <div className="max-w-sm">
+                        <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
+                    </div>
                 </div>
             )}
 
             {/* Search - hide in map view */}
             {viewMode !== 'map' && (
-                <form onSubmit={handleSearch} className="mb-4">
+                <form onSubmit={handleSearch} className="mb-5 max-w-xl">
                     <div className="relative">
                         <input
                             type="search"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="なまえでさがす…"
-                            className="w-full px-4 py-3 pl-10 bg-white rounded-xl border-0 shadow-sm focus:ring-2 focus:ring-brand-rose"
+                            className="lens-field min-h-12 py-3 pl-11 pr-4"
                             aria-label="観察記録を検索"
                         />
-                        <span
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                            aria-hidden="true"
-                        >
-                            🔍
-                        </span>
+                        <svg className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                     </div>
                 </form>
             )}
@@ -351,7 +350,7 @@ function LibraryContent({
             {/* Tag Filters - hide in map and category view */}
             {viewMode === 'date' && tags.length > 0 && (
                 <div
-                    className="flex gap-2 overflow-x-auto pb-4 mb-4 -mx-4 px-4"
+                    className="scrollbar-hide -mx-4 mb-7 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
                     role="group"
                     aria-label="タグでフィルタ"
                 >
@@ -360,10 +359,10 @@ function LibraryContent({
                             key={tag.id}
                             onClick={() => handleTagFilter(tag.name)}
                             aria-pressed={activeTag === tag.name}
-                            className={`px-3 py-1 rounded-full text-sm whitespace-nowrap transition-colors ${
+                            className={`min-h-10 whitespace-nowrap rounded-full border px-3.5 py-2 text-sm font-semibold transition-colors ${
                                 activeTag === tag.name
-                                    ? 'bg-brand-pink text-white'
-                                    : 'bg-brand-cream text-brand-dark hover:bg-brand-blush'
+                                    ? 'border-brand-primary bg-brand-primary text-white'
+                                    : 'border-brand-line bg-white text-brand-muted hover:border-brand-sand hover:text-brand-ink'
                             }`}
                         >
                             #{tag.name}
@@ -376,13 +375,13 @@ function LibraryContent({
             {viewMode === 'date' && (
                 <>
                     {allDateGroups.length > 0 ? (
-                        <div className="space-y-6">
+                        <div className="space-y-9">
                             {allDateGroups.map((group) => (
                                 <div key={group.yearMonth}>
-                                    <h2 className="text-xl font-bold text-brand-dark mb-3">
+                                    <h2 className="mb-4 text-lg font-bold tracking-tight text-brand-ink">
                                         {group.label}
                                     </h2>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                                         {group.observations.map((obs) => (
                                             <ObservationCard
                                                 key={obs.id}
@@ -408,7 +407,7 @@ function LibraryContent({
                                 (filters.q || filters.tag) && (
                                     <button
                                         onClick={handleClearFilters}
-                                        className="text-brand-pink text-sm hover:text-brand-sky"
+                                        className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
                                     >
                                         フィルタをクリア
                                     </button>
@@ -425,8 +424,11 @@ function LibraryContent({
                     {!filters.category ? (
                         // カテゴリ一覧グリッド
                         <div>
-                            <h2 className="text-xl font-bold text-brand-dark mb-4">カテゴリ</h2>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="mb-4 flex items-baseline justify-between gap-4">
+                                <h2 className="lens-section-title">カテゴリ</h2>
+                                <span className="text-xs font-semibold text-brand-muted">見つけたものを種類ごとに</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                                 {categories.map((category) => (
                                     <CategoryCard
                                         key={category.id}
@@ -443,7 +445,7 @@ function LibraryContent({
                         <div>
                             <button
                                 onClick={() => handleCategorySelect('')}
-                                className="flex items-center gap-2 text-brand-pink hover:text-brand-sky mb-4"
+                                className="mb-5 flex min-h-11 items-center gap-2 text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
                             >
                                 <svg
                                     className="w-5 h-5"
@@ -461,13 +463,13 @@ function LibraryContent({
                                 カテゴリ一覧に戻る
                             </button>
 
-                            <h2 className="text-xl font-bold text-brand-dark mb-4">
+                            <h2 className="lens-section-title mb-4">
                                 {categories.find((c) => c.id === filters.category)?.name ||
                                     filters.category}
                             </h2>
 
                             {categoryObservations.length > 0 ? (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                                     {categoryObservations.map((obs) => (
                                         <ObservationCard
                                             key={obs.id}

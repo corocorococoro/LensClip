@@ -29,9 +29,11 @@ export default function Login({
         <GuestLayout>
             <Head title="ログイン" />
 
-            <h1 className="text-2xl font-bold text-brand-dark text-center mb-6">
+            <p className="lens-kicker mb-2 text-center">Welcome back</p>
+            <h1 className="mb-2 text-center text-2xl font-bold tracking-tight text-brand-ink">
                 ログイン
             </h1>
+            <p className="mb-6 text-center text-sm text-brand-muted">あなたの発見の続きを見にいきましょう。</p>
 
             {status && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm font-medium text-green-700 text-center">
@@ -52,9 +54,8 @@ export default function Login({
                         type="email"
                         name="email"
                         value={data.email}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="username"
-                        autoFocus
                         onChange={(e) => setData('email', e.target.value)}
                     />
                     <InputError message={errors.email} className="mt-1" />
@@ -72,7 +73,7 @@ export default function Login({
                         type="password"
                         name="password"
                         value={data.password}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-brand-pink focus:ring-2 focus:ring-brand-cream transition-colors"
+                        className="lens-field min-h-12 px-4 py-3"
                         autoComplete="current-password"
                         onChange={(e) => setData('password', e.target.value)}
                     />
@@ -86,7 +87,7 @@ export default function Login({
                         name="remember"
                         checked={data.remember}
                         onChange={(e) => setData('remember', e.target.checked)}
-                        className="w-4 h-4 rounded border-gray-300 text-brand-pink focus:ring-brand-pink"
+                        className="h-4 w-4 rounded border-brand-line text-brand-primary focus:ring-brand-primary/25"
                     />
                     <label htmlFor="remember" className="ml-2 text-sm text-gray-600">
                         ログイン状態を保持する
@@ -110,7 +111,7 @@ export default function Login({
                 {/* Google Login Button */}
                 <a
                     href={route('auth.google.redirect')}
-                    className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+                    className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-brand-line bg-white px-4 py-3 font-semibold text-brand-ink transition-colors hover:bg-brand-sand-soft/50"
                 >
                     <svg className="w-5 h-5" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -125,14 +126,14 @@ export default function Login({
                     {canResetPassword && (
                         <Link
                             href={route('password.request')}
-                            className="text-brand-muted hover:text-brand-pink transition-colors"
+                            className="text-brand-muted transition-colors hover:text-brand-primary-dark"
                         >
                             パスワードを忘れた方
                         </Link>
                     )}
                     <Link
                         href={route('register')}
-                        className="text-brand-pink hover:text-brand-sky font-medium transition-colors"
+                        className="font-bold text-brand-primary-dark transition-colors hover:text-brand-primary"
                     >
                         新規登録はこちら
                     </Link>

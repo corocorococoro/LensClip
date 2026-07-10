@@ -1,219 +1,133 @@
+import BrandMark from '@/Components/BrandMark';
 import { PageProps } from '@/types';
 import { Head, Link } from '@inertiajs/react';
 
-export default function Welcome({
-    auth,
-}: PageProps) {
-    return (
-        <div className="min-h-screen bg-[#FFFDFB] text-[#4A4A4A] font-sans selection:bg-[#FFE0CE]">
-            <Head title="LensClip - “これなに？”を学ぶ、親子図鑑" />
+const steps = [
+    { number: '01', title: 'みつける', body: '散歩中、気になったものを撮るだけ。' },
+    { number: '02', title: 'しらべる', body: 'AIが名前や特徴をすぐにお教えします。' },
+    { number: '03', title: 'のこす', body: '自分だけの図鑑に保存して、あとから見返せます。' },
+];
 
-            {/* Header */}
-            <header className="fixed top-0 left-0 right-0 z-50 bg-[#FFFDFB]/80 backdrop-blur-md border-b border-[#F8D1D7]">
-                <div className="max-w-screen-xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-[#F5B8C1] to-[#E8A0AB] rounded-lg shadow-sm flex items-center justify-center">
-                            <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <circle cx="12" cy="13" r="4" />
-                            </svg>
-                        </div>
-                        <span className="text-xl font-bold tracking-tight text-[#2D2D2D]">LensClip</span>
-                    </div>
-                    <nav>
-                        <Link
-                            href={route('login')}
-                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#F5B8C1] transition-colors"
-                        >
-                            ログイン
-                        </Link>
-                    </nav>
+const samples = [
+    { image: '/images/lp/sunflower.webp', width: 1024, height: 1024, title: 'ひまわり', label: 'なつのはな', note: 'おひさまのほうをむいているかな？' },
+    { image: '/images/lp/ladybug.webp', width: 2816, height: 1536, title: 'ななほしてんとう', label: 'むし', note: 'せなかの ほしを かぞえてみよう。' },
+    { image: '/images/lp/pinecone.webp', width: 1024, height: 1024, title: 'まつぼっくり', label: 'きのみ', note: 'うろこみたいな かたちは なんだろう？' },
+];
+
+export default function Welcome({ auth }: PageProps) {
+    const primaryHref = auth?.user ? route('dashboard') : route('register');
+    const primaryLabel = auth?.user ? '図鑑をひらく' : '無料ではじめる';
+
+    return (
+        <div className="min-h-screen bg-white font-sans text-brand-ink selection:bg-brand-turquoise/25">
+            <Head title="LensClip - “これなに？”を学ぶ、親子図鑑" />
+            <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">本文へ移動</a>
+
+            <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-line/80 bg-white/92 backdrop-blur-xl">
+                <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+                    <Link href="/" className="flex items-center gap-2.5" aria-label="LensClip トップ">
+                        <BrandMark className="h-9 w-9" compact />
+                        <span className="text-lg font-bold tracking-[-0.03em]">LensClip</span>
+                    </Link>
+                    <Link href={auth?.user ? route('dashboard') : route('login')} className="min-h-10 rounded-full px-4 py-2 text-sm font-bold text-brand-primary-dark transition hover:bg-brand-primary-soft">
+                        {auth?.user ? '図鑑をひらく' : 'ログイン'}
+                    </Link>
                 </div>
             </header>
 
-            <main className="pt-16 pb-20">
-                {/* Hero Section */}
-                <section className="relative pt-16 pb-20 text-center overflow-hidden isolate">
-                    {/* Background Image */}
-                    <div className="absolute inset-0 -z-10">
-                        <picture>
-                            {/* PC: WebP */}
-                            <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.webp" type="image/webp" />
-                            {/* PC: PNG */}
-                            <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.png" />
+            <main id="main-content" className="pt-16">
+                <section className="relative isolate flex min-h-[660px] items-center overflow-hidden sm:min-h-[720px]">
+                    <picture className="absolute inset-0 -z-20">
+                        <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.webp" type="image/webp" />
+                        <source media="(min-width: 640px)" srcSet="/images/lp/hero_bg_pc.png" />
+                        <source srcSet="/images/lp/hero_bg_sp.webp" type="image/webp" />
+                        <img src="/images/lp/hero_bg_sp.png" alt="" width={1536} height={2752} className="h-full w-full object-cover object-center" />
+                    </picture>
+                    <div className="absolute inset-0 -z-10 bg-white/62 sm:bg-gradient-to-r sm:from-white/95 sm:via-white/72 sm:to-white/15" />
 
-                            {/* SP: WebP */}
-                            <source srcSet="/images/lp/hero_bg_sp.webp" type="image/webp" />
-
-                            {/* SP: PNG (Fallback & Default) */}
-                            <img
-                                src="/images/lp/hero_bg_sp.png"
-                                alt=""
-                                className="w-full h-full object-cover opacity-100"
-                            />
-                        </picture>
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/50 to-[#FFFDFB]"></div>
-                    </div>
-
-                    {/* Content Container */}
-                    <div className="max-w-screen-md mx-auto px-6 relative z-10">
-                        <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-white/80 backdrop-blur-sm text-[#8ECFE0] text-xs font-bold tracking-wider uppercase shadow-sm border border-white/40">
-                            子どもの目は、世界をひろげる。
-                        </div>
-                        <h1 className="text-4xl md:text-5xl font-extrabold text-[#2D2D2D] leading-[1.2] mb-6 drop-shadow-sm">
-                            「気になる」を宝物に。
-                        </h1>
-                        <p className="text-lg text-[#6B6B6B] leading-relaxed mb-10 font-medium drop-shadow-sm">
-                            子供の好奇心を育てる、親子で楽しむ図鑑アプリ
-                        </p>
-                        <div className="flex flex-col items-center gap-4">
-                            <Link
-                                href={route('register')}
-                                className="w-full sm:w-64 py-4 px-8 bg-gradient-to-r from-[#F5B8C1] to-[#8ECFE0] text-white rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(255,107,107,0.3)] hover:translate-y-[-2px] transition-all active:scale-95 text-center"
-                            >
-                                無料ではじめる
-                            </Link>
-
-                            <div className="flex items-center gap-8 mt-4 bg-white/60 backdrop-blur-md px-6 py-3 rounded-full shadow-sm border border-white/50">
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="w-10 h-10 rounded-full bg-[#F0F9FF] border border-[#BAE6FD] flex items-center justify-center">
-                                        <svg className="w-5 h-5 text-[#38BDF8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-[#94A3B8]">みつける</span>
-                                </div>
-                                <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="w-10 h-10 rounded-full bg-[#F0FDF4] border border-[#BBF7D0] flex items-center justify-center">
-                                        <svg className="w-5 h-5 text-[#22C55E]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-[#94A3B8]">しらべる</span>
-                                </div>
-                                <div className="w-4 h-[2px] bg-[#E2E8F0] mt-[-10px]"></div>
-                                <div className="flex flex-col items-center gap-1">
-                                    <div className="w-10 h-10 rounded-full bg-[#FEF2F2] border border-[#FECACA] flex items-center justify-center">
-                                        <svg className="w-5 h-5 text-[#EF4444]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" /></svg>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-[#94A3B8]">のこす</span>
-                                </div>
+                    <div className="mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
+                        <div className="max-w-xl">
+                            <p className="lens-kicker mb-5">子どもの目は、世界をひろげる。</p>
+                            <h1 className="text-balance text-4xl font-bold leading-[1.15] tracking-[-0.055em] text-brand-ink sm:text-6xl">
+                                「気になる」を、<br />育っていく図鑑に。
+                            </h1>
+                            <p className="mt-6 max-w-lg text-base font-medium leading-8 text-brand-muted sm:text-lg">
+                                見つけて、名前を知って、あとから一緒に見返す。親子の日常の発見を、写真から始まる自分だけの図鑑へ。
+                            </p>
+                            <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
+                                <Link href={primaryHref} className="inline-flex min-h-13 items-center justify-center rounded-xl bg-brand-primary px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-primary/15 transition hover:bg-brand-primary-dark active:scale-[0.98]">
+                                    {primaryLabel}
+                                </Link>
+                                {!auth?.user && (
+                                    <Link href={route('login')} className="inline-flex min-h-12 items-center justify-center px-5 text-sm font-bold text-brand-ink transition hover:text-brand-primary-dark">
+                                        すでにアカウントをお持ちの方
+                                    </Link>
+                                )}
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Steps Detail */}
-                <section className="px-6 py-12 bg-[#FDFCF8] border-y border-[#F8D1D7]">
-                    <div className="max-w-screen-md mx-auto space-y-10">
-                        <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">1</div>
-                            <div>
-                                <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">みつける</h3>
-                                <p className="text-[#7D7D7D]">散歩中、気になったものを撮るだけ。</p>
-                            </div>
+                <section className="border-y border-brand-line bg-brand-canvas px-5 py-16 sm:px-8 sm:py-20">
+                    <div className="mx-auto max-w-6xl">
+                        <div className="mb-10 max-w-xl">
+                            <p className="lens-kicker mb-2">How it works</p>
+                            <h2 className="text-3xl font-bold tracking-[-0.04em]">発見が、知る体験につながる。</h2>
                         </div>
-                        <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">2</div>
-                            <div>
-                                <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">しらべる</h3>
-                                <p className="text-[#7D7D7D]">AIが名前や特徴をすぐにお教えします。</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-6 items-start">
-                            <div className="shrink-0 w-12 h-12 bg-white rounded-2xl shadow-sm border border-[#F8D1D7] flex items-center justify-center text-xl font-bold text-[#E8A0AB]">3</div>
-                            <div>
-                                <h3 className="text-xl font-bold text-[#2D2D2D] mb-1">のこす</h3>
-                                <p className="text-[#7D7D7D]">スクラップに保存して、自分だけの図鑑を作ろう。</p>
-                            </div>
+                        <div className="grid gap-4 md:grid-cols-3">
+                            {steps.map((step) => (
+                                <article key={step.number} className="rounded-2xl border border-brand-line bg-white p-6 shadow-sm">
+                                    <span className="text-xs font-bold tracking-[0.15em] text-brand-primary-dark">{step.number}</span>
+                                    <h3 className="mt-8 text-xl font-bold">{step.title}</h3>
+                                    <p className="mt-2 text-sm leading-7 text-brand-muted">{step.body}</p>
+                                </article>
+                            ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Sample Scraps */}
-                <section className="px-6 py-20 max-w-screen-md mx-auto text-center">
-                    <h2 className="text-2xl font-bold text-[#2D2D2D] mb-12">親子で作る、ちいさな発見の記録</h2>
-
-                    <div className="grid gap-8">
-                        {/* Card 1 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[-1deg] transition-transform hover:rotate-0">
-                            <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
-                                <img src="/images/lp/sunflower.webp" className="w-full h-full object-cover" alt="ひまわり" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">なつのはな</div>
-                            </div>
-                            <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ひまわり</h4>
-                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
-                                <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
-                                <span>親子で観察：おひさまのほうをむいているかな？</span>
-                            </p>
+                <section className="px-5 py-20 sm:px-8 sm:py-28">
+                    <div className="mx-auto max-w-6xl">
+                        <div className="mb-10 text-center">
+                            <p className="lens-kicker mb-2">A growing collection</p>
+                            <h2 className="text-balance text-3xl font-bold tracking-[-0.04em] sm:text-4xl">親子で作る、ちいさな発見の記録</h2>
                         </div>
-
-                        {/* Card 2 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[1deg] transition-transform hover:rotate-0">
-                            <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
-                                <img src="/images/lp/ladybug.webp" className="w-full h-full object-cover" alt="ななほしてんとう" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">むし</div>
-                            </div>
-                            <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">ななほしてんとう</h4>
-                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
-                                <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
-                                <span>親子で観察：せなかの ほしを かぞえてみよう！</span>
-                            </p>
-                        </div>
-
-                        {/* Card 3 */}
-                        <div className="bg-white p-4 rounded-[2rem] shadow-xl shadow-[#F8D1D7] border border-[#F8D1D7] text-left transform rotate-[-0.5deg] transition-transform hover:rotate-0">
-                            <div className="aspect-[4/3] rounded-[1.5rem] bg-[#F1F5F9] overflow-hidden mb-4 relative">
-                                <img src="/images/lp/pinecone.webp" className="w-full h-full object-cover" alt="まつぼっくり" />
-                                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur rounded-full text-[10px] font-bold text-[#F5B8C1]">きのみ</div>
-                            </div>
-                            <h4 className="text-xl font-bold text-[#2D2D2D] mb-2 px-2">まつぼっくり</h4>
-                            <p className="text-sm text-[#8ECFE0] font-bold px-2 flex items-start gap-1">
-                                <svg className="w-4 h-4 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
-                                <span>親子で観察：うろこみたいな かたちは なんだろう？</span>
-                            </p>
+                        <div className="grid gap-5 sm:grid-cols-3">
+                            {samples.map((sample) => (
+                                <article key={sample.title} className="overflow-hidden rounded-2xl border border-brand-line bg-white shadow-surface">
+                                    <div className="relative aspect-square overflow-hidden bg-brand-sand-soft">
+                                        <img src={sample.image} alt={sample.title} width={sample.width} height={sample.height} loading="lazy" className="h-full w-full object-cover" />
+                                        <span className="absolute left-3 top-3 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-brand-ink shadow-sm backdrop-blur">{sample.label}</span>
+                                    </div>
+                                    <div className="p-5">
+                                        <h3 className="text-xl font-bold">{sample.title}</h3>
+                                        <p className="mt-2 text-sm leading-6 text-brand-muted">親子で観察：{sample.note}</p>
+                                    </div>
+                                </article>
+                            ))}
                         </div>
                     </div>
                 </section>
 
-                {/* Final CTA */}
-                <section className="px-6 py-20 text-center bg-gradient-to-b from-[#FFFDFB] to-[#FDE8EC]">
-                    <h2 className="text-2xl font-bold text-[#2D2D2D] mb-8">さあ、ちいさな冒険に出かけよう。</h2>
-                    <div className="flex flex-col items-center gap-6">
-                        <Link
-                            href={route('register')}
-                            className="w-full sm:w-64 py-4 px-8 bg-[#2D2D2D] text-white rounded-2xl font-bold text-lg shadow-lg hover:bg-black transition-all active:scale-95 text-center"
-                        >
-                            無料ではじめる
-                        </Link>
-                        <Link
-                            href={route('login')}
-                            className="text-sm font-medium text-[#7D7D7D] hover:text-[#F5B8C1] transition-colors"
-                        >
-                            すでにアカウントをお持ちの方はこちら
+                <section className="border-y border-brand-line bg-brand-primary-soft px-5 py-16 text-center sm:px-8 sm:py-20">
+                    <div className="mx-auto max-w-xl">
+                        <p className="lens-kicker mb-3">Your next discovery</p>
+                        <h2 className="text-balance text-3xl font-bold tracking-[-0.04em]">次の「これなに？」を、残してみよう。</h2>
+                        <Link href={primaryHref} className="mt-8 inline-flex min-h-13 items-center justify-center rounded-xl bg-brand-primary px-8 py-3.5 font-bold text-white shadow-sm transition hover:bg-brand-primary-dark active:scale-[0.98]">
+                            {primaryLabel}
                         </Link>
                     </div>
                 </section>
             </main>
 
-            {/* Footer */}
-            <footer className="px-6 py-12 border-t border-[#F8D1D7] bg-white">
-                <div className="max-w-screen-xl mx-auto flex flex-col items-center gap-8">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-[#F5B8C1] to-[#E8A0AB] rounded flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <circle cx="12" cy="13" r="4" />
-                            </svg>
-                        </div>
-                        <span className="font-bold text-[#2D2D2D]">LensClip</span>
-                    </div>
-
-                    <div className="flex gap-6 text-[10px] sm:text-xs font-medium text-[#94A3B8]">
-                        <Link href={route('terms')} className="hover:text-[#F5B8C1]">利用規約</Link>
-                        <Link href={route('privacy-policy')} className="hover:text-[#F5B8C1]">プライバシーポリシー</Link>
-                    </div>
-
-                    <p className="text-[10px] text-[#CBD5E1]">
-                        &copy; {new Date().getFullYear()} LensClip
-                    </p>
+            <footer className="bg-white px-5 py-10 sm:px-8">
+                <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row">
+                    <div className="flex items-center gap-2.5"><BrandMark className="h-8 w-8" compact /><span className="font-bold">LensClip</span></div>
+                    <nav className="flex gap-6 text-xs font-semibold text-brand-muted">
+                        <Link href={route('terms')} className="hover:text-brand-primary-dark">利用規約</Link>
+                        <Link href={route('privacy-policy')} className="hover:text-brand-primary-dark">プライバシーポリシー</Link>
+                    </nav>
+                    <p className="text-xs text-brand-muted/70">© {new Date().getFullYear()} LensClip</p>
                 </div>
             </footer>
         </div>

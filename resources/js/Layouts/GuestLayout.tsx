@@ -1,46 +1,24 @@
+import BrandMark from '@/Components/BrandMark';
 import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 
-/**
- * ゲスト用レイアウト（ログイン・登録ページ用）
- * LensClipブランドテーマを適用
- */
 export default function GuestLayout({ children }: PropsWithChildren) {
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-sky-50 via-white to-purple-50 px-4 py-8">
-            {/* Logo */}
-            <div className="mb-8">
-                <Link href="/" className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-brand-pink to-brand-rose rounded-xl shadow-lg flex items-center justify-center">
-                        <svg
-                            className="w-7 h-7 text-white"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            aria-hidden="true"
-                        >
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                            <circle cx="12" cy="13" r="4" />
-                        </svg>
-                    </div>
-                    <span className="text-2xl font-bold tracking-tight text-brand-dark">
-                        LensClip
-                    </span>
+        <div className="relative min-h-screen overflow-hidden bg-brand-canvas px-4 py-8 text-brand-ink sm:py-12">
+            <a href="#main-content" className="sr-only z-50 rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">本文へ移動</a>
+            <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-brand-primary-soft/80 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-32 -left-28 h-72 w-72 rounded-full bg-brand-cream/60 blur-3xl" />
+
+            <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-md flex-col justify-center">
+                <Link href="/" className="mx-auto mb-7 flex items-center gap-3 rounded-xl" aria-label="LensClip トップ">
+                    <BrandMark className="h-11 w-11 shadow-sm" />
+                    <span className="text-2xl font-bold tracking-[-0.03em]">LensClip</span>
                 </Link>
-            </div>
 
-            {/* Card */}
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-brand-blush p-6 sm:p-8">
-                {children}
-            </div>
+                <main id="main-content" className="lens-surface w-full p-6 sm:p-8">{children}</main>
 
-            {/* Footer */}
-            <p className="mt-8 text-sm text-gray-400">
-                © {new Date().getFullYear()} LensClip
-            </p>
+                <p className="mt-7 text-center text-xs text-brand-muted">© {new Date().getFullYear()} LensClip</p>
+            </div>
         </div>
     );
 }
