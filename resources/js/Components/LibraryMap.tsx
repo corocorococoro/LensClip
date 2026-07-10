@@ -204,7 +204,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
     }
 
     return (
-        <div className="relative h-full w-full">
+        <div className="relative isolate h-full w-full">
             {/* Loading state */}
             {loading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-brand-canvas">
