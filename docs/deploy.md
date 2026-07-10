@@ -1,129 +1,50 @@
-# Railway デプロイ
+# Railway 運用
 
-このドキュメントは、LensClip を Railway に本番デプロイするときの手順と運用上の注意点をまとめたものです。
+この文書は Railway でデプロイ・障害切り分けを行うための運用手順だけを扱う。イメージの内容は `Dockerfile` と `.dockerignore`、起動処理は `railway/start.sh`、環境変数は `.env.example` と `config/` を一次ソースとする。
 
-## 0. 前提（実装準拠）
+## 構成
 
-このリポジトリは Dockerfile でビルドされ、起動時に `railway/start.sh` を実行します。  
-`start.sh` は次を実行します。
+- Web アプリケーション
+- MySQL
+- Queue worker。現在は Web と同じサービス内で起動する
+- Redis は Queue 接続に採用した場合だけ必要
+- 画像をローカルディスクへ保存する場合は永続 Volume、GCS を使う場合は対象バケットと権限が必要
 
-1. `php artisan migrate --force || true`
-2. `php artisan storage:link || true`
-3. `php artisan queue:work --tries=3 --timeout=90 &`
-4. `php artisan serve --host=0.0.0.0 --port=$PORT`
+ローカルディスクを選ぶ場合、Railway Volume は現在のコンテナ内保存先である `/app/storage/app` へマウントする。このパスの一次ソースは `Dockerfile`、`railway/start.sh`、`config/filesystems.php` とする。
 
-`migrate` / `storage:link` は失敗しても起動継続するため、デプロイ直後にログ確認が必要です。
+## デプロイ
 
-## 1. Railway 側で用意するサービス
-
-1. Web サービス（このリポジトリ）
-2. MySQL（必須）
-3. Redis（任意。`QUEUE_CONNECTION=redis` のときのみ）
-
-## 2. 必須環境変数
-
-### アプリ共通
-
-| 変数 | 例 / 値 |
-|------|---------|
-| `APP_KEY` | `php artisan key:generate --show` の出力 |
-| `APP_ENV` | `production` |
-| `APP_DEBUG` | `false` |
-| `APP_URL` | `https://<your-service>.up.railway.app` |
-| `DB_CONNECTION` | `mysql` |
-| `DB_HOST` | `${{ MySQL.MYSQLHOST }}` |
-| `DB_PORT` | `${{ MySQL.MYSQLPORT }}` |
-| `DB_DATABASE` | `${{ MySQL.MYSQLDATABASE }}` |
-| `DB_USERNAME` | `${{ MySQL.MYSQLUSER }}` |
-| `DB_PASSWORD` | `${{ MySQL.MYSQLPASSWORD }}` |
-| `QUEUE_CONNECTION` | `database` または `redis` |
-| `FILESYSTEM_DISK` | `gcs` または `public` |
-| `GEMINI_API_KEY` | Gemini API キー |
-
-### Google Cloud 認証（Vision / TTS を使う場合）
-
-| 変数 | 説明 |
-|------|------|
-| `GOOGLE_CREDENTIALS_JSON` **または** `GOOGLE_APPLICATION_CREDENTIALS` | どちらか一方のみ設定 |
-| `GOOGLE_CLOUD_PROJECT_ID` | GCP プロジェクト ID |
-
-### Google OAuth（Google ログインを使う場合のみ）
-
-| 変数 | 説明 |
-|------|------|
-| `GOOGLE_CLIENT_ID` | OAuth クライアントID |
-| `GOOGLE_CLIENT_SECRET` | OAuth クライアントシークレット |
-| `GOOGLE_REDIRECT_URI` | `https://<domain>/auth/google/callback` |
-
-## 3. Google 認証の設定ルール（重要）
-
-1. `GOOGLE_CREDENTIALS_JSON` と `GOOGLE_APPLICATION_CREDENTIALS` は同時設定しない
-2. Railway では `GOOGLE_CREDENTIALS_JSON`（JSON文字列）を推奨
-3. `GOOGLE_APPLICATION_CREDENTIALS` を使う場合は、実在する読み取り可能なパスを指定
-4. 認証設定が不正だと、設定読み込み時にエラーになります
-
-## 4. ストレージ戦略
-
-### A. `FILESYSTEM_DISK=gcs`（推奨）
-
-| 追加で必要な変数 | 値 |
-|-----------------|----|
-| `GOOGLE_CLOUD_STORAGE_BUCKET` | GCS バケット名 |
-
-- 画像保存先は GCS
-- Railway Volume は不要
-
-### B. `FILESYSTEM_DISK=public`（ローカルディスク）
-
-1. Railway で Volume を作成して Web サービスにアタッチ
-2. Mount Path は `/app/storage/app`
-
-| 追加で必要な変数 | 値 |
-|-----------------|----|
-| なし | - |
-
-- 画像保存先はコンテナ内 `storage/app/public`
-- Vision / TTS を使う場合は Google 認証が必要
-- `GOOGLE_CLOUD_STORAGE_BUCKET` は不要
-
-## 5. Queue 設定
-
-### A. `QUEUE_CONNECTION=database`（シンプル）
-
-- 追加サービス不要
-- Worker は `start.sh` が起動
-
-### B. `QUEUE_CONNECTION=redis`
-
-- Railway に Redis サービスを追加
-- `REDIS_URL`（または `REDIS_HOST` / `REDIS_PORT` 等）を設定
-
-## 6. Start Command
-
-Railway Settings > Deploy > Start Command:
+Railway の Start Command は次を使う。
 
 ```bash
 bash railway/start.sh
 ```
 
-## 7. デプロイ後の確認
+環境変数の名前は `.env.example` を入口にし、本番の値は Railway のリソース参照と各プロバイダーの設定から確定する。ローカル用の値を本番へコピーせず、秘密情報をリポジトリへ保存しない。
 
-1. Deploy Logs に `Starting queue worker...` と `Starting web server...` が出る
-2. `php artisan migrate` の失敗ログが出ていない
-3. `/` と `/login` にアクセスできる
-4. 初回デプロイ時、またはこの変更を既存環境へ反映した直後は、`/admin/settings/ai` で Gemini の許可モデルと使用モデルを保存する
-5. 画像アップロード後、`processing` から `ready` または `failed` に遷移する
-6. `failed` が連続する場合は Google 認証設定、Gemini API キー、AI設定、Queue 接続を確認する
+## 現在の起動方式で注意すること
 
-## 8. よくある詰まり
+- 起動時 migration と storage link は失敗してもプロセスが継続するため、デプロイ成功表示だけでは正常性を判断できない
+- Queue worker は Web プロセスと同居しているため、再起動・メモリ・ログを同じサービスで監視する
+- ローカル保存を選ぶ場合、Volume がないと再デプロイで画像が失われる
+- Gemini の allowlist と current model は DB 上の管理設定なので、新しい DB では管理画面から設定が必要
 
-| 症状 | 主な原因 | 対処 |
-|------|---------|------|
-| 起動直後に例外で落ちる | Google 認証変数の二重設定 / JSON不正 / パス不正 | `GOOGLE_CREDENTIALS_JSON` と `GOOGLE_APPLICATION_CREDENTIALS` を見直す |
-| 画像は保存できるが分析が進まない | Queue worker が動いていない / Queue 接続不一致 | `QUEUE_CONNECTION` と worker 起動ログを確認 |
-| `FILESYSTEM_DISK=public` で画像が消える | Volume 未アタッチ | `/app/storage/app` に Volume を接続 |
-| `FILESYSTEM_DISK=gcs` で保存失敗 | バケット未設定 / 権限不足 | `GOOGLE_CLOUD_STORAGE_BUCKET` とサービスアカウント権限を確認 |
+## デプロイ後の確認
 
----
+1. 起動ログで migration、storage link、Queue worker、Web server の開始を確認する
+2. トップページとログイン画面が開くことを確認する
+3. 管理画面で AI 設定が有効か確認する
+4. 画像を1件アップロードし、分析中から成功または説明可能な失敗へ遷移することを確認する
+5. 保存した画像が再表示できることを確認する
 
-*Last updated: 2026-07-09*
+## 障害切り分け
+
+| 症状 | 確認する境界 |
+|---|---|
+| 起動直後に落ちる | 起動ログ、DB 接続、Google 認証情報の競合 |
+| migration が反映されない | 起動ログと DB、`railway/start.sh` の migration 結果 |
+| 分析が進まない | Queue worker、Queue 接続、AI 設定、外部サービス認証 |
+| 画像保存に失敗する | `FILESYSTEM_DISK`、Volume または GCS の権限 |
+| 再デプロイ後に画像が消える | ローカル保存と Volume の接続 |
+
+具体的な変数名、worker オプション、ビルド手順は実装ファイルを確認し、この文書へ転記しない。
