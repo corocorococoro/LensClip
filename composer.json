@@ -9,7 +9,7 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.2",
+        "php": "^8.4",
         "google/cloud-text-to-speech": "^2.6",
         "google/cloud-vision": "^2.1",
         "inertiajs/inertia-laravel": "^2.0",

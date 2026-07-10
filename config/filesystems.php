@@ -4,6 +4,10 @@ $googleCloudCredentials = \App\Services\GoogleCloudCredentialsResolver::resolve(
     env('GOOGLE_CREDENTIALS_JSON'),
     env('GOOGLE_APPLICATION_CREDENTIALS')
 );
+$appUrl = env('APP_URL');
+$publicStorageUrl = is_string($appUrl) && $appUrl !== ''
+    ? rtrim($appUrl, '/').'/storage'
+    : null;
 
 return [
 
@@ -46,7 +50,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => rtrim(env('APP_URL'), '/').'/storage',
+            'url' => $publicStorageUrl,
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
