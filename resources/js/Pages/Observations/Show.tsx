@@ -89,7 +89,9 @@ export default function Show({ observation, categories }: Props) {
     const questions = activeCard?.questions || aiJson.questions || [];
     const lookFor = activeCard?.look_for || [];
 
-    const displayImage = observation.cropped_url || observation.original_url || observation.thumb_url || undefined;
+    // 検知クロップ（cropped_url）は縦長画像などで切り抜きが不自然になるため、
+    // ライブラリのサムネイルと同じ全体写真を表示する
+    const displayImage = observation.original_url || observation.thumb_url || undefined;
 
     const handleRetry = () => {
         setRetrying(true);

@@ -23,7 +23,7 @@ export default function Welcome({ auth }: PageProps) {
             <Head title="LensClip - “これなに？”を学ぶ、親子図鑑" />
             <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">本文へ移動</a>
 
-            <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-line/80 bg-white/92 backdrop-blur-xl">
+            <header className="fixed inset-x-0 top-0 z-50 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
                     <Link href="/" className="flex items-center gap-2.5" aria-label="LensClip トップ">
                         <BrandMark className="h-9 w-9" compact />
@@ -43,7 +43,7 @@ export default function Welcome({ auth }: PageProps) {
                         <source srcSet="/images/lp/hero_bg_sp.webp" type="image/webp" />
                         <img src="/images/lp/hero_bg_sp.png" alt="" width={1536} height={2752} className="h-full w-full object-cover object-center" />
                     </picture>
-                    <div className="absolute inset-0 -z-10 bg-white/62 sm:bg-gradient-to-r sm:from-white/95 sm:via-white/72 sm:to-white/15" />
+                    <div className="absolute inset-0 -z-10 bg-white/60 sm:bg-gradient-to-r sm:from-white/95 sm:via-white/70 sm:to-white/15" />
 
                     <div className="mx-auto w-full max-w-6xl px-5 py-20 sm:px-8">
                         <div className="max-w-xl">

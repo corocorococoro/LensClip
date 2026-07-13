@@ -67,7 +67,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
     return (
         <div className={`min-h-screen bg-brand-canvas text-brand-ink ${fullScreen ? 'h-screen overflow-hidden' : 'pb-28'}`}>
             <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">本文へ移動</a>
-            <header className="safe-area-top sticky top-0 z-40 border-b border-brand-line/80 bg-white/92 backdrop-blur-xl">
+            <header className="safe-area-top sticky top-0 z-40 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl">
                 <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
                     <Link href="/dashboard" className="flex items-center gap-2.5 rounded-lg" aria-label="LensClip ホーム">
                         <BrandMark className="h-9 w-9 shadow-sm" compact />

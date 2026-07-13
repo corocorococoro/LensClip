@@ -41,7 +41,7 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
                 )}
 
                 {observation.status === 'ready' && showCategory && category && (
-                    <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/92 px-2 py-1 text-[10px] font-bold text-brand-ink shadow-sm backdrop-blur-md">
+                    <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-brand-ink shadow-sm backdrop-blur-md">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
                         {category.name}
                     </span>
