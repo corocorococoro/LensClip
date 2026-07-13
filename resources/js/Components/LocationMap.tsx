@@ -76,7 +76,7 @@ export default function LocationMap({ latitude, longitude, className = '' }: Loc
     const googleMapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
     return (
-        <div className={`w-full overflow-hidden rounded-2xl border border-brand-line bg-white ${className}`}>
+        <div className={`relative isolate w-full overflow-hidden rounded-2xl border border-brand-line bg-white ${className}`}>
             <div className="flex items-center gap-2 border-b border-brand-line p-3.5 text-brand-primary-dark">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg>
                 <span className="font-bold text-brand-ink">みつけたばしょ</span>
