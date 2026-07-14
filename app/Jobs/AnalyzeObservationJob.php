@@ -79,14 +79,21 @@ class AnalyzeObservationJob implements ShouldQueue
 
             // 節目の判定と ready 遷移を同一トランザクションで行い、
             // SSE 経由の再取得が「ready だが節目未判定」の状態を見ないようにする
-            DB::transaction(function () use ($observation, $result, $aiCategory) {
+            $updated = DB::transaction(function () use ($observation, $result, $aiCategory): bool {
                 // 同一ユーザーの同時解析による節目の二重付与を防ぐ
                 User::whereKey($observation->user_id)->lockForUpdate()->first();
 
-                // 節目は「初めて ready になった時」の一度だけ判定する(再判定・遡及なし)
-                $milestones = $observation->milestones ?? $this->judgeMilestones($observation, $aiCategory);
+                // 同一観察の重複ジョブ対策: ロック後に最新状態を取り直し、
+                // 先行ジョブが確定済みなら上書きしない
+                $current = Observation::whereKey($observation->id)->lockForUpdate()->first();
+                if (! $current || $current->status !== 'processing') {
+                    return false;
+                }
 
-                $observation->update([
+                // 節目は「初めて ready になった時」の一度だけ判定する(再判定・遡及なし)
+                $milestones = $current->milestones ?? $this->judgeMilestones($current, $aiCategory);
+
+                $current->update([
                     'status' => 'ready',
                     'cropped_path' => $result['cropped_path'] ?? null,
                     'crop_bbox' => $result['crop_bbox'] ?? null,
@@ -100,7 +107,17 @@ class AnalyzeObservationJob implements ShouldQueue
                     'category' => $aiCategory,
                     'milestones' => $milestones,
                 ]);
+
+                return true;
             });
+
+            if (! $updated) {
+                Log::info('AnalyzeObservationJob: Skipping, observation was finalized by another job', [
+                    'id' => $this->observationId,
+                ]);
+
+                return;
+            }
 
             // Sync tags from AI result
             $this->syncTags($observation, $result['ai_json']['tags'] ?? []);

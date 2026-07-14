@@ -81,6 +81,28 @@ class ObservationTitleUpdateTest extends TestCase
         );
     }
 
+    public function test_confirming_candidate_with_empty_tags_clears_previous_tags(): void
+    {
+        $user = User::factory()->create();
+        $observation = $this->readyObservationWithCandidates($user);
+
+        // 候補1(タグあり)を確定してから、タグが空配列の候補を確定する
+        $this->actingAs($user)
+            ->patchJson("/observations/{$observation->id}/title", ['candidate_index' => 0])
+            ->assertOk();
+
+        $aiJson = $observation->fresh()->ai_json;
+        $aiJson['candidate_cards'][1]['tags'] = [];
+        $observation->update(['ai_json' => $aiJson]);
+
+        $this->actingAs($user)
+            ->patchJson("/observations/{$observation->id}/title", ['candidate_index' => 1])
+            ->assertOk();
+
+        // 確定カードの内容(タグなし)と食い違う旧タグが残らない
+        $this->assertSame([], $observation->fresh()->tags()->pluck('name')->all());
+    }
+
     public function test_invalid_candidate_index_is_rejected(): void
     {
         $user = User::factory()->create();

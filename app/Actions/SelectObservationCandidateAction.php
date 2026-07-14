@@ -33,7 +33,8 @@ class SelectObservationCandidateAction
             'confidence' => $card['confidence'] ?? $observation->confidence,
         ]);
 
-        if (! empty($card['tags']) && is_array($card['tags'])) {
+        // カードに tags キーがある場合は空配列でも同期し、確定内容と食い違う旧タグを残さない
+        if (isset($card['tags']) && is_array($card['tags'])) {
             $this->updateTagsAction->execute($observation, $card['tags']);
         }
     }

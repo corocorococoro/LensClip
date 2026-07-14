@@ -122,6 +122,35 @@ class AnalyzeObservationJobMilestoneTest extends TestCase
         ], $observation->fresh()->milestones);
     }
 
+    public function test_duplicate_job_does_not_overwrite_result_finalized_by_another_job(): void
+    {
+        $user = User::factory()->create();
+        $observation = $this->processingObservation($user);
+
+        $analysisService = Mockery::mock(ImageAnalysisService::class);
+        $analysisService->shouldReceive('analyze')
+            ->once()
+            ->andReturnUsing(function () use ($observation) {
+                // 分析中に先行ジョブが ready を確定した状況を再現する
+                Observation::whereKey($observation->id)->update([
+                    'status' => 'ready',
+                    'title' => '先行ジョブの結果',
+                    'milestones' => json_encode([['type' => 'first_discovery']]),
+                ]);
+
+                return [
+                    'ai_json' => ['title' => '後続ジョブの結果', 'category' => 'insect'],
+                    'gemini_model' => 'gemini-test',
+                ];
+            });
+
+        (new AnalyzeObservationJob($observation->id))->handle($analysisService);
+
+        $observation->refresh();
+        $this->assertSame('先行ジョブの結果', $observation->title);
+        $this->assertSame([['type' => 'first_discovery']], $observation->milestones);
+    }
+
     public function test_already_judged_observation_keeps_existing_milestones(): void
     {
         $user = User::factory()->create();
