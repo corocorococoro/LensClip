@@ -71,6 +71,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/observations/{observation}/category', [ObservationController::class, 'updateCategory'])
         ->middleware('throttle:api-general')
         ->name('observations.updateCategory');
+    Route::patch('/observations/{observation}/title', [ObservationController::class, 'updateTitle'])
+        ->middleware('throttle:api-general')
+        ->name('observations.updateTitle');
 
     // Tags
     Route::get('/tags', [TagController::class, 'index'])
@@ -102,6 +105,7 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', fn () => redirect()->route('admin.logs'));
     Route::get('/logs', [\App\Http\Controllers\Admin\LogController::class, 'index'])->name('logs');
+    Route::get('/metrics', [\App\Http\Controllers\Admin\MetricsController::class, 'index'])->name('metrics');
     Route::get('/settings/ai', [\App\Http\Controllers\Admin\AiSettingsController::class, 'index'])->name('settings.ai');
     Route::post('/settings/ai/probe', [\App\Http\Controllers\Admin\AiSettingsController::class, 'probe'])
         ->middleware('throttle:api-general')

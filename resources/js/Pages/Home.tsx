@@ -2,13 +2,14 @@ import { EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
 import AppLayout from '@/Layouts/AppLayout';
-import type { HomeStats, ObservationSummary } from '@/types/models';
+import type { HomeStats, LookbackHighlight, ObservationSummary } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
     stats: HomeStats;
     recent: ObservationSummary[];
+    lookback: LookbackHighlight | null;
 }
 
 function CameraIcon() {
@@ -20,7 +21,7 @@ function CameraIcon() {
     );
 }
 
-export default function Home({ stats, recent }: Props) {
+export default function Home({ stats, recent, lookback }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const handleFileSelect = usePendingUploadNavigation(location, 'home');
@@ -108,6 +109,46 @@ export default function Home({ stats, recent }: Props) {
                 ) : stats.total === 0 ? (
                     <EmptyState icon="⌕" message={<>まだはっけんがありません。<br />気になったものを、最初の1枚に残してみましょう。</>} />
                 ) : null}
+
+                {lookback && (
+                    <section className="mt-10">
+                        <div className="mb-4">
+                            <p className="lens-kicker mb-1">Remember this?</p>
+                            <h2 className="lens-section-title">あのときの はっけん</h2>
+                        </div>
+                        <Link
+                            href={`/observations/${lookback.observation.id}`}
+                            className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-brand-line bg-white p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99] sm:p-4"
+                        >
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brand-sand-soft sm:h-24 sm:w-24">
+                                {lookback.observation.thumb_url ? (
+                                    <img
+                                        src={lookback.observation.thumb_url}
+                                        alt={lookback.observation.title || 'あのときの発見'}
+                                        width={192}
+                                        height={192}
+                                        loading="lazy"
+                                        className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                                    />
+                                ) : null}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <span className="inline-flex rounded-full bg-brand-primary-soft px-2.5 py-1 text-[11px] font-bold text-brand-primary-dark">
+                                    {lookback.label}
+                                </span>
+                                <p className="mt-1.5 truncate text-lg font-bold text-brand-ink">
+                                    {lookback.observation.title}
+                                </p>
+                                {lookback.observation.created_at && (
+                                    <p className="mt-0.5 text-xs text-brand-muted">
+                                        {new Date(lookback.observation.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                )}
+                            </div>
+                            <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                        </Link>
+                    </section>
+                )}
             </div>
         </AppLayout>
     );

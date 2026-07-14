@@ -171,6 +171,27 @@ class ObservationCreateTest extends TestCase
         $this->assertCount(2, $response->json('observations'));
     }
 
+    public function test_statuses_include_milestones_for_completed_cards(): void
+    {
+        $user = User::factory()->create();
+        $observation = Observation::factory()->create([
+            'user_id' => $user->id,
+            'status' => 'ready',
+            'milestones' => [['type' => 'first_discovery']],
+        ]);
+
+        $response = $this->actingAs($user)->getJson(route('observations.statuses', [
+            'ids' => [$observation->id],
+        ]));
+
+        // 図鑑で解析完了を待つ場合もポーリング更新で節目バッジが出るようにする
+        $response->assertOk();
+        $this->assertSame(
+            [['type' => 'first_discovery']],
+            $response->json('observations.0.milestones')
+        );
+    }
+
     public function test_user_cannot_view_others_observation(): void
     {
         $user1 = User::factory()->create();

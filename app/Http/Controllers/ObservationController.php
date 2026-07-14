@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Actions\RetryObservationAction;
+use App\Actions\SelectObservationCandidateAction;
 use App\Actions\UpdateObservationTagsAction;
 use App\Http\Requests\DestroyAllObservationsRequest;
 use App\Http\Requests\StoreObservationRequest;
 use App\Http\Requests\UpdateObservationCategoryRequest;
 use App\Http\Requests\UpdateObservationTagsRequest;
+use App\Http\Requests\UpdateObservationTitleRequest;
 use App\Models\Observation;
 use App\Models\Tag;
 use Illuminate\Http\Request;
@@ -22,6 +24,7 @@ class ObservationController extends Controller
         \App\Services\ObservationService $observationService,
         private RetryObservationAction $retryAction,
         private UpdateObservationTagsAction $updateTagsAction,
+        private SelectObservationCandidateAction $selectCandidateAction,
     ) {
         $this->observationService = $observationService;
     }
@@ -139,6 +142,7 @@ class ObservationController extends Controller
             'categories' => $categories,
             'categoryCounts' => $categoryCounts,
             'categoryPreviews' => $categoryPreviews,
+            'milestoneThresholds' => config('milestones.count_thresholds'),
         ]);
     }
 
@@ -336,6 +340,7 @@ class ObservationController extends Controller
                 'thumb_url' => $observation->thumb_url,
                 'status' => $observation->status,
                 'category' => $observation->category,
+                'milestones' => $observation->milestones,
                 'latitude' => $observation->latitude,
                 'longitude' => $observation->longitude,
                 'created_at' => $observation->created_at,
@@ -498,6 +503,36 @@ class ObservationController extends Controller
             $observation->load('tags');
 
             return response()->json(['tags' => $observation->tags->pluck('name')]);
+        }
+
+        return back();
+    }
+
+    /**
+     * Confirm a candidate card or manually correct the title.
+     */
+    public function updateTitle(UpdateObservationTitleRequest $request, Observation $observation)
+    {
+        $this->authorize('update', $observation);
+
+        if ($observation->status !== 'ready') {
+            abort(422, '分析が完了した記録だけ名前を変更できます。');
+        }
+
+        $validated = $request->validated();
+
+        if (array_key_exists('candidate_index', $validated)) {
+            $this->selectCandidateAction->execute($observation, (int) $validated['candidate_index']);
+        } else {
+            // 手動修正は名前だけを直す。確定済みの候補(説明・豆知識の出どころ)は維持する
+            $observation->update(['title' => $validated['title']]);
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'title' => $observation->title,
+                'selected_candidate_index' => $observation->selected_candidate_index,
+            ]);
         }
 
         return back();

@@ -15,6 +15,12 @@ export type ObservationStatus = 'processing' | 'ready' | 'failed';
 // カテゴリID
 export type CategoryId = 'animal' | 'insect' | 'plant' | 'food' | 'vehicle' | 'place' | 'tool' | 'other';
 
+// 節目（初めて ready になった時に一度だけ付与される履歴）
+export type Milestone =
+    | { type: 'first_discovery' }
+    | { type: 'first_category'; category: CategoryId }
+    | { type: 'count'; value: number };
+
 // 観察記録（リスト用・軽量版）
 export interface ObservationSummary {
     id: string;
@@ -26,6 +32,7 @@ export interface ObservationSummary {
     category?: CategoryId | null;
     latitude?: number | null;
     longitude?: number | null;
+    milestones?: Milestone[] | null;
 }
 
 // 表示モード
@@ -66,6 +73,7 @@ export interface Observation extends ObservationSummary {
     summary: string;
     kid_friendly: string;
     confidence: number;
+    selected_candidate_index?: number | null;
     original_url: string | null;
     cropped_url: string | null;
     ai_json: ObservationAIJson | null;
@@ -103,4 +111,10 @@ export interface HomeStats {
     today: number;
     total: number;
     processing: number;
+}
+
+// 振り返り「あのときの発見」
+export interface LookbackHighlight {
+    label: string;
+    observation: ObservationSummary;
 }
