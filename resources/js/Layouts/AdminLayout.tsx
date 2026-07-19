@@ -60,6 +60,15 @@ export default function AdminLayout({ children, title }: Props) {
                         >
                             🤖 AI設定
                         </Link>
+                        <Link
+                            href={route('admin.metrics')}
+                            className={`block px-4 py-2 rounded-lg text-sm font-medium transition-colors ${route().current('admin.metrics')
+                                    ? 'bg-gray-900 text-white'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                        >
+                            📈 メトリクス
+                        </Link>
                     </nav>
                 </aside>
 

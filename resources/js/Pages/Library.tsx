@@ -33,6 +33,7 @@ interface Props {
     categories?: CategoryDefinition[];
     categoryCounts?: Record<string, number>;
     categoryPreviews?: CategoryPreviews;
+    milestoneThresholds?: number[];
     pagination?: CursorPagination;
 }
 
@@ -151,6 +152,7 @@ function LibraryContent({
     categories = [],
     categoryCounts = {},
     categoryPreviews = {},
+    milestoneThresholds = [],
     pagination: initialPagination,
 }: Props) {
     const [search, setSearch] = useState(filters.q || '');
@@ -435,6 +437,7 @@ function LibraryContent({
                                         category={category}
                                         count={categoryCounts[category.id] || 0}
                                         observations={categoryPreviews[category.id] || []}
+                                        milestoneThresholds={milestoneThresholds}
                                         onClick={() => handleCategorySelect(category.id)}
                                     />
                                 ))}

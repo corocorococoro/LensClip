@@ -12,6 +12,11 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
     const category = categories.find((item) => item.id === observation.category);
     const compact = size === 'sm';
 
+    const milestone = observation.milestones?.[0];
+    const milestoneBadge = milestone
+        ? milestone.type === 'count' ? `✦ ${milestone.value}こめ` : '✦ はじめて'
+        : null;
+
     return (
         <Link
             href={`/observations/${observation.id}`}
@@ -44,6 +49,12 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
                     <span className="absolute left-2 top-2 inline-flex max-w-[calc(100%-1rem)] items-center gap-1.5 truncate rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-brand-ink shadow-sm backdrop-blur-md">
                         <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
                         {category.name}
+                    </span>
+                )}
+
+                {observation.status === 'ready' && milestoneBadge && (
+                    <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2 py-1 text-[10px] font-bold text-brand-primary-dark shadow-sm backdrop-blur-md">
+                        {milestoneBadge}
                     </span>
                 )}
             </div>

@@ -29,11 +29,13 @@ class Observation extends Model
         'summary',
         'kid_friendly',
         'confidence',
+        'selected_candidate_index',
         'error_message',
         'gemini_model',
         'latitude',
         'longitude',
         'category',
+        'milestones',
     ];
 
     protected $casts = [
@@ -41,8 +43,10 @@ class Observation extends Model
         'vision_objects' => 'array',
         'ai_json' => 'array',
         'confidence' => 'float',
+        'selected_candidate_index' => 'integer',
         'latitude' => 'float',
         'longitude' => 'float',
+        'milestones' => 'array',
     ];
 
     protected $appends = [
@@ -129,8 +133,14 @@ class Observation extends Model
     }
 
     // AI JSON helpers
+    // 利用者が候補カードを確定している場合、fun_facts / questions は確定カードの内容を正とする
     public function getFunFactsAttribute()
     {
+        $card = $this->selectedCandidateCard();
+        if ($card !== null && array_key_exists('fun_facts', $card)) {
+            return $card['fun_facts'] ?? [];
+        }
+
         return $this->ai_json['fun_facts'] ?? [];
     }
 
@@ -141,7 +151,23 @@ class Observation extends Model
 
     public function getQuestionsAttribute()
     {
+        $card = $this->selectedCandidateCard();
+        if ($card !== null && array_key_exists('questions', $card)) {
+            return $card['questions'] ?? [];
+        }
+
         return $this->ai_json['questions'] ?? [];
+    }
+
+    public function selectedCandidateCard(): ?array
+    {
+        if ($this->selected_candidate_index === null) {
+            return null;
+        }
+
+        $card = $this->ai_json['candidate_cards'][$this->selected_candidate_index] ?? null;
+
+        return is_array($card) ? $card : null;
     }
 
     // Scopes (category)

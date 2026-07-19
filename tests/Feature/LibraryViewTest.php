@@ -68,4 +68,20 @@ class LibraryViewTest extends TestCase
                 ->where('categories.0.id', 'animal')
         );
     }
+
+    public function test_category_grid_passes_milestone_thresholds_from_config()
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $response = $this->get('/library?view=category');
+
+        $response->assertStatus(200);
+
+        $response->assertInertia(
+            fn (Assert $page) => $page
+                ->component('Library')
+                ->where('milestoneThresholds', config('milestones.count_thresholds'))
+        );
+    }
 }

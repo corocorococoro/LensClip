@@ -6,10 +6,14 @@ interface CategoryCardProps {
     observations: ObservationSummary[];
     isActive?: boolean;
     onClick?: () => void;
+    milestoneThresholds?: number[];
 }
 
-export default function CategoryCard({ category, count, observations, isActive, onClick }: CategoryCardProps) {
+export default function CategoryCard({ category, count, observations, isActive, onClick, milestoneThresholds = [] }: CategoryCardProps) {
     const previews = observations.slice(0, 3);
+
+    // 次の節目までの育ち表現。上限を捏造しないため、実在の節目(config 由来)だけを使う
+    const nextThreshold = count > 0 ? milestoneThresholds.find((t) => t > count) : undefined;
 
     return (
         <button
@@ -36,6 +40,19 @@ export default function CategoryCard({ category, count, observations, isActive, 
                         <h3 className="truncate text-sm font-bold text-brand-ink">{category.name}</h3>
                     </div>
                     <p className="mt-1 pl-4 text-xs font-medium text-brand-muted">{count}はっけん</p>
+                    {nextThreshold && (
+                        <div className="mt-1.5 pl-4">
+                            <div className="h-1 w-full max-w-[120px] overflow-hidden rounded-full bg-brand-line">
+                                <div
+                                    className="h-full rounded-full bg-brand-primary"
+                                    style={{ width: `${Math.min(100, Math.round((count / nextThreshold) * 100))}%` }}
+                                />
+                            </div>
+                            <p className="mt-1 text-[10px] font-medium text-brand-muted">
+                                あと{nextThreshold - count}で {nextThreshold}はっけん
+                            </p>
+                        </div>
+                    )}
                 </div>
                 <svg className="h-4 w-4 shrink-0 text-brand-muted transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
             </div>

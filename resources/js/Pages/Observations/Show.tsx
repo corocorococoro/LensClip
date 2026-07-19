@@ -3,7 +3,7 @@ import { Button, Card } from '@/Components/ui';
 import Modal from '@/Components/Modal';
 import LocationMap from '@/Components/LocationMap';
 import ProcessingView from './Partials/ProcessingView';
-import type { Observation, Tag, CandidateCard, CategoryDefinition } from '@/types/models';
+import type { Observation, Tag, CandidateCard, CategoryDefinition, Milestone } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useState, useRef, useCallback, useEffect } from 'react';
 
@@ -39,12 +39,17 @@ interface Props {
 }
 
 export default function Show({ observation, categories }: Props) {
+    const persistedCandidateIndex = observation.selected_candidate_index ?? 0;
     const [retrying, setRetrying] = useState(false);
-    const [activeCandidateIndex, setActiveCandidateIndex] = useState(0);
+    const [activeCandidateIndex, setActiveCandidateIndex] = useState(persistedCandidateIndex);
+    const [candidateConfirming, setCandidateConfirming] = useState(false);
     const [ttsLoading, setTtsLoading] = useState(false);
     const [ttsError, setTtsError] = useState(false);
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
+    const [showTitleModal, setShowTitleModal] = useState(false);
+    const [titleInput, setTitleInput] = useState('');
+    const [titleUpdating, setTitleUpdating] = useState(false);
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const ttsCache = useRef<Map<string, string>>(new Map());
 
@@ -80,8 +85,10 @@ export default function Show({ observation, categories }: Props) {
     // アクティブな候補カード（存在しない場合はフォールバック）
     const activeCard: CandidateCard | null = candidateCards[activeCandidateIndex] || null;
 
-    // フォールバック: candidate_cardsがない場合は従来データを使用
-    const displayTitle = activeCard?.name || observation.title || '???';
+    // 確定済みの候補を見ている間は、手動修正を含む保存済みの名前(カラム)を正とする。
+    // 別の候補をプレビュー中はカードの内容を表示する
+    const isViewingPersisted = activeCandidateIndex === persistedCandidateIndex;
+    const displayTitle = (isViewingPersisted ? observation.title || activeCard?.name : activeCard?.name || observation.title) || '???';
     const displayKidFriendly = activeCard?.kid_friendly || observation.kid_friendly || observation.summary;
     const displayConfidence = activeCard?.confidence ?? observation.confidence ?? 0;
     const funFacts = activeCard?.fun_facts || aiJson.fun_facts || [];
@@ -92,6 +99,20 @@ export default function Show({ observation, categories }: Props) {
     // 検知クロップ（cropped_url）は縦長画像などで切り抜きが不自然になるため、
     // ライブラリのサムネイルと同じ全体写真を表示する
     const displayImage = observation.original_url || observation.thumb_url || undefined;
+
+    const milestones = observation.milestones || [];
+    const milestoneLabel = (milestone: Milestone): string => {
+        switch (milestone.type) {
+            case 'first_discovery':
+                return 'ずかんの はじまり！はじめての はっけん';
+            case 'first_category': {
+                const name = categories?.find((c) => c.id === milestone.category)?.name;
+                return name ? `はじめての ${name}！` : 'はじめての なかま！';
+            }
+            case 'count':
+                return `${milestone.value}こめの はっけん！`;
+        }
+    };
 
     const handleRetry = () => {
         setRetrying(true);
@@ -107,6 +128,34 @@ export default function Show({ observation, categories }: Props) {
     const handleCandidateSelect = (index: number) => {
         setActiveCandidateIndex(index);
         setTtsError(false);
+    };
+
+    const handleCandidateConfirm = () => {
+        setCandidateConfirming(true);
+        router.patch(`/observations/${observation.id}/title`, {
+            candidate_index: activeCandidateIndex,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setCandidateConfirming(false),
+        });
+    };
+
+    const openTitleModal = () => {
+        setTitleInput(displayTitle === '???' ? '' : displayTitle);
+        setShowTitleModal(true);
+    };
+
+    const handleTitleSave = () => {
+        const trimmed = titleInput.trim();
+        if (!trimmed) return;
+        setTitleUpdating(true);
+        router.patch(`/observations/${observation.id}/title`, {
+            title: trimmed,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setShowTitleModal(false),
+            onFinish: () => setTitleUpdating(false),
+        });
     };
 
     const playTts = useCallback(async (text: string) => {
@@ -217,12 +266,37 @@ export default function Show({ observation, categories }: Props) {
                     )}
                 </div>
 
+                {/* Milestones - はじめて/節目のお祝い */}
+                {observation.status === 'ready' && milestones.length > 0 && (
+                    <div className="mb-4 flex w-full flex-wrap items-center justify-center gap-2">
+                        {milestones.map((milestone, i) => (
+                            <span
+                                key={i}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-4 py-1.5 text-sm font-bold text-brand-primary-dark"
+                            >
+                                <span aria-hidden="true">✦</span>
+                                {milestoneLabel(milestone)}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
                 {/* Title with fade transition */}
                 {/* Title & Badge */}
                 <div className="mb-1 flex items-center justify-center gap-3 text-center">
                     <h1 className="text-3xl font-bold tracking-[-0.035em] text-brand-ink sm:text-4xl">
                         {displayTitle}
                     </h1>
+                    {observation.status === 'ready' && (
+                        <button
+                            onClick={openTitleModal}
+                            aria-label="なまえをなおす"
+                            title="なまえをなおす"
+                            className="min-h-10 min-w-10 rounded-full p-2 text-brand-muted transition hover:bg-brand-primary-soft hover:text-brand-primary-dark active:scale-95"
+                        >
+                            <PencilIcon className="h-4 w-4" />
+                        </button>
+                    )}
                     {observation.status === 'ready' && displayConfidence > 0 && (
                         <span
                             className={`px-2.5 py-0.5 rounded-full text-xs font-bold tabular-nums ${displayConfidence > 0.8
@@ -297,6 +371,20 @@ export default function Show({ observation, categories }: Props) {
                                 </button>
                             ))}
                         </div>
+                        {!isViewingPersisted && (
+                            <div className="mt-2 flex items-center justify-between gap-3">
+                                <p className="text-xs text-brand-muted">この候補で図鑑にのせますか？</p>
+                                <Button
+                                    onClick={handleCandidateConfirm}
+                                    loading={candidateConfirming}
+                                    disabled={candidateConfirming}
+                                    variant="primary"
+                                    size="sm"
+                                >
+                                    この なまえに する
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -457,6 +545,36 @@ export default function Show({ observation, categories }: Props) {
                     この発見を削除
                 </button>
             </div>
+
+            {/* Title Edit Modal */}
+            <Modal show={showTitleModal} onClose={() => setShowTitleModal(false)}>
+                <div className="p-6">
+                    <h2 className="mb-1 text-xl font-bold text-brand-ink">なまえをなおす</h2>
+                    <p className="mb-4 text-sm text-brand-muted">図鑑にのせる名前を自由に直せます。</p>
+                    <input
+                        type="text"
+                        value={titleInput}
+                        onChange={(e) => setTitleInput(e.target.value)}
+                        maxLength={100}
+                        placeholder="なまえ"
+                        aria-label="なまえ"
+                        className="w-full rounded-xl border-brand-line text-base focus:border-brand-primary focus:ring-brand-primary"
+                    />
+                    <div className="mt-6 flex justify-end gap-3">
+                        <Button variant="secondary" onClick={() => setShowTitleModal(false)}>
+                            キャンセル
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleTitleSave}
+                            loading={titleUpdating}
+                            disabled={titleUpdating || !titleInput.trim()}
+                        >
+                            この なまえに する
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
 
             {/* Category Selection Modal */}
             <Modal show={showCategoryModal} onClose={() => setShowCategoryModal(false)}>

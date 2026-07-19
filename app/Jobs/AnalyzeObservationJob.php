@@ -3,12 +3,14 @@
 namespace App\Jobs;
 
 use App\Models\Observation;
+use App\Models\User;
 use App\Services\ImageAnalysisService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -75,19 +77,47 @@ class AnalyzeObservationJob implements ShouldQueue
                 throw new \UnexpectedValueException('AI response category is missing or invalid.');
             }
 
-            $observation->update([
-                'status' => 'ready',
-                'cropped_path' => $result['cropped_path'] ?? null,
-                'crop_bbox' => $result['crop_bbox'] ?? null,
-                'vision_objects' => $result['vision_objects'] ?? null,
-                'ai_json' => $result['ai_json'],
-                'title' => $result['ai_json']['title'] ?? null,
-                'summary' => $result['ai_json']['summary'] ?? null,
-                'kid_friendly' => $result['ai_json']['kid_friendly'] ?? null,
-                'confidence' => $result['ai_json']['confidence'] ?? null,
-                'gemini_model' => $result['gemini_model'] ?? null,
-                'category' => $aiCategory,
-            ]);
+            // 節目の判定と ready 遷移を同一トランザクションで行い、
+            // SSE 経由の再取得が「ready だが節目未判定」の状態を見ないようにする
+            $updated = DB::transaction(function () use ($observation, $result, $aiCategory): bool {
+                // 同一ユーザーの同時解析による節目の二重付与を防ぐ
+                User::whereKey($observation->user_id)->lockForUpdate()->first();
+
+                // 同一観察の重複ジョブ対策: ロック後に最新状態を取り直し、
+                // 先行ジョブが確定済みなら上書きしない
+                $current = Observation::whereKey($observation->id)->lockForUpdate()->first();
+                if (! $current || $current->status !== 'processing') {
+                    return false;
+                }
+
+                // 節目は「初めて ready になった時」の一度だけ判定する(再判定・遡及なし)
+                $milestones = $current->milestones ?? $this->judgeMilestones($current, $aiCategory);
+
+                $current->update([
+                    'status' => 'ready',
+                    'cropped_path' => $result['cropped_path'] ?? null,
+                    'crop_bbox' => $result['crop_bbox'] ?? null,
+                    'vision_objects' => $result['vision_objects'] ?? null,
+                    'ai_json' => $result['ai_json'],
+                    'title' => $result['ai_json']['title'] ?? null,
+                    'summary' => $result['ai_json']['summary'] ?? null,
+                    'kid_friendly' => $result['ai_json']['kid_friendly'] ?? null,
+                    'confidence' => $result['ai_json']['confidence'] ?? null,
+                    'gemini_model' => $result['gemini_model'] ?? null,
+                    'category' => $aiCategory,
+                    'milestones' => $milestones,
+                ]);
+
+                return true;
+            });
+
+            if (! $updated) {
+                Log::info('AnalyzeObservationJob: Skipping, observation was finalized by another job', [
+                    'id' => $this->observationId,
+                ]);
+
+                return;
+            }
 
             // Sync tags from AI result
             $this->syncTags($observation, $result['ai_json']['tags'] ?? []);
@@ -157,6 +187,37 @@ class AnalyzeObservationJob implements ShouldQueue
 
         // Reload model so subsequent reads use the GCS paths
         $observation->refresh();
+    }
+
+    /**
+     * Judge milestones for an observation that is about to become ready.
+     * Counts are based on existing ready observations (soft-deleted excluded),
+     * so users who already have records never get a false "first" celebration.
+     */
+    protected function judgeMilestones(Observation $observation, string $category): array
+    {
+        $readyCount = Observation::forUser($observation->user_id)->ready()->count() + 1;
+
+        if ($readyCount === 1) {
+            return [['type' => 'first_discovery']];
+        }
+
+        $milestones = [];
+
+        if (in_array($readyCount, config('milestones.count_thresholds', []), true)) {
+            $milestones[] = ['type' => 'count', 'value' => $readyCount];
+        }
+
+        $categoryCount = Observation::forUser($observation->user_id)
+            ->ready()
+            ->forCategory($category)
+            ->count() + 1;
+
+        if ($categoryCount === 1) {
+            $milestones[] = ['type' => 'first_category', 'category' => $category];
+        }
+
+        return $milestones;
     }
 
     /**
