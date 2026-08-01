@@ -12,6 +12,7 @@ use App\Http\Requests\UpdateObservationTagsRequest;
 use App\Http\Requests\UpdateObservationTitleRequest;
 use App\Models\Observation;
 use App\Models\Tag;
+use App\Support\CategoryCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -91,7 +92,7 @@ class ObservationController extends Controller
             'tags' => $tags,
             'filters' => $request->only(['q', 'tag', 'view']),
             'viewMode' => 'date',
-            'categories' => $this->getCategoriesForFrontend(),
+            'categories' => CategoryCatalog::forFrontend(),
         ]);
     }
 
@@ -100,7 +101,7 @@ class ObservationController extends Controller
      */
     private function indexCategory(Request $request, $query, $tags, int $perPage)
     {
-        $categories = $this->getCategoriesForFrontend();
+        $categories = CategoryCatalog::forFrontend();
         $filters = $request->only(['q', 'tag', 'view', 'category']);
 
         // カテゴリ詳細: 特定カテゴリの観察をページネーション
@@ -160,7 +161,7 @@ class ObservationController extends Controller
             'tags' => $tags,
             'filters' => $request->only(['q', 'tag', 'view']),
             'viewMode' => 'map',
-            'categories' => $this->getCategoriesForFrontend(),
+            'categories' => CategoryCatalog::forFrontend(),
         ]);
     }
 
@@ -249,18 +250,6 @@ class ObservationController extends Controller
         }
 
         return $previews;
-    }
-
-    /**
-     * Get categories formatted for frontend (id, name, color).
-     */
-    private function getCategoriesForFrontend(): array
-    {
-        return collect(config('categories'))->map(fn ($c) => [
-            'id' => $c['id'],
-            'name' => $c['name'],
-            'color' => $c['color'],
-        ])->all();
     }
 
     /**
@@ -379,7 +368,7 @@ class ObservationController extends Controller
 
         return Inertia::render('Observations/Show', [
             'observation' => $observation,
-            'categories' => $this->getCategoriesForFrontend(),
+            'categories' => CategoryCatalog::forFrontend(),
         ]);
     }
 
