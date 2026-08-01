@@ -85,6 +85,20 @@
         text-wrap: balance;
     }
 
+    /* 印刷時も背景色・バッジ色を落とさない(月刊マイずかんの誌面用) */
+    .print-exact {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    /* ブラウザ印刷で PDF 保存できる誌面にするための用紙設定 */
+    @media print {
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         *,
         *::before,

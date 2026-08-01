@@ -14,7 +14,7 @@ import type {
     CursorPagination,
     CategoryPreviews,
 } from '@/types/models';
-import { Head, router } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 interface Props {
@@ -380,9 +380,17 @@ function LibraryContent({
                         <div className="space-y-9">
                             {allDateGroups.map((group) => (
                                 <div key={group.yearMonth}>
-                                    <h2 className="mb-4 text-lg font-bold tracking-tight text-brand-ink">
-                                        {group.label}
-                                    </h2>
+                                    <div className="mb-4 flex items-baseline justify-between gap-4">
+                                        <h2 className="text-lg font-bold tracking-tight text-brand-ink">
+                                            {group.label}
+                                        </h2>
+                                        <Link
+                                            href={`/magazine/${group.yearMonth}`}
+                                            className="shrink-0 text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
+                                        >
+                                            この月の号 →
+                                        </Link>
+                                    </div>
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
                                         {group.observations.map((obs) => (
                                             <ObservationCard

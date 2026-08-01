@@ -5,7 +5,8 @@ import LocationMap from '@/Components/LocationMap';
 import ProcessingView from './Partials/ProcessingView';
 import type { Observation, Tag, CandidateCard, CategoryDefinition, Milestone } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState } from 'react';
+import { useTts } from '@/hooks/useTts';
 
 const SpeakerIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -43,23 +44,12 @@ export default function Show({ observation, categories }: Props) {
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(persistedCandidateIndex);
     const [candidateConfirming, setCandidateConfirming] = useState(false);
-    const [ttsLoading, setTtsLoading] = useState(false);
-    const [ttsError, setTtsError] = useState(false);
+    const { playTts, ttsLoading, ttsError, resetTtsError } = useTts();
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
     const [showTitleModal, setShowTitleModal] = useState(false);
     const [titleInput, setTitleInput] = useState('');
     const [titleUpdating, setTitleUpdating] = useState(false);
-    const audioRef = useRef<HTMLAudioElement | null>(null);
-    const ttsCache = useRef<Map<string, string>>(new Map());
-
-    useEffect(() => {
-        return () => {
-            audioRef.current?.pause();
-            audioRef.current = null;
-        };
-    }, []);
-
     const currentCategory = categories?.find(c => c.id === observation.category) || categories?.[categories.length - 1];
 
     const handleCategoryChange = (newCategoryId: string) => {
@@ -127,7 +117,7 @@ export default function Show({ observation, categories }: Props) {
 
     const handleCandidateSelect = (index: number) => {
         setActiveCandidateIndex(index);
-        setTtsError(false);
+        resetTtsError();
     };
 
     const handleCandidateConfirm = () => {
@@ -157,44 +147,6 @@ export default function Show({ observation, categories }: Props) {
             onFinish: () => setTitleUpdating(false),
         });
     };
-
-    const playTts = useCallback(async (text: string) => {
-        // Stop any currently playing audio
-        if (audioRef.current) {
-            audioRef.current.pause();
-            audioRef.current = null;
-        }
-
-        setTtsError(false);
-        setTtsLoading(true);
-        try {
-            // キャッシュにURLがあれば POST をスキップ
-            let url = ttsCache.current.get(text);
-            if (!url) {
-                const res = await fetch('/tts', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '',
-                    },
-                    body: JSON.stringify({ text }),
-                });
-                if (!res.ok) throw new Error('TTS request failed');
-                const data = await res.json();
-                url = data.url as string;
-                ttsCache.current.set(text, url);
-            }
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            await audio.play();
-        } catch (error) {
-            console.error('TTS playback failed:', error);
-            ttsCache.current.delete(text); // エラー時はキャッシュを破棄してリトライ可能に
-            setTtsError(true);
-        } finally {
-            setTtsLoading(false);
-        }
-    }, []);
 
     if (observation.status === 'processing') {
         return (

@@ -83,4 +83,58 @@ class DashboardHomeTest extends TestCase
                 ->has('recent', 1)
         );
     }
+
+    public function test_quiz_availability_follows_eligible_ready_count(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // ready + title ありが 2 件ではクイズ導線を出さない
+        Observation::factory()->count(2)->create(['user_id' => $user->id]);
+        // processing / title 未確定は出題対象に数えない
+        Observation::factory()->create(['user_id' => $user->id, 'status' => 'processing']);
+        Observation::factory()->create(['user_id' => $user->id, 'title' => null]);
+
+        $this->get(route('dashboard'))->assertInertia(
+            fn (Assert $page) => $page->where('quizAvailable', false)
+        );
+
+        Observation::factory()->create(['user_id' => $user->id]);
+
+        $this->get(route('dashboard'))->assertInertia(
+            fn (Assert $page) => $page->where('quizAvailable', true)
+        );
+    }
+
+    public function test_magazine_teaser_falls_back_from_current_month_to_previous_month(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-08-15 12:00:00'));
+
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        // 当月・前月とも発見なし → 導線を出さない
+        $this->get(route('dashboard'))->assertInertia(
+            fn (Assert $page) => $page->where('magazine', null)
+        );
+
+        // 前月に ready があれば前月号(processing は数えない)
+        Observation::factory()->create(['user_id' => $user->id, 'created_at' => '2026-07-10 10:00:00']);
+        Observation::factory()->create(['user_id' => $user->id, 'status' => 'processing', 'created_at' => '2026-08-10 10:00:00']);
+
+        $this->get(route('dashboard'))->assertInertia(
+            fn (Assert $page) => $page
+                ->where('magazine.yearMonth', '2026-07')
+                ->where('magazine.count', 1)
+        );
+
+        // 当月に ready ができたら当月号を優先
+        Observation::factory()->create(['user_id' => $user->id, 'created_at' => '2026-08-12 10:00:00']);
+
+        $this->get(route('dashboard'))->assertInertia(
+            fn (Assert $page) => $page
+                ->where('magazine.yearMonth', '2026-08')
+                ->where('magazine.count', 1)
+        );
+    }
 }

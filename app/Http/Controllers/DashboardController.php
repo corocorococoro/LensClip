@@ -37,6 +37,12 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
+        // クイズは出題可能なときだけ導線を出す(押せない導線を見せない)
+        $quizEligibleCount = Observation::forUser($userId)
+            ->ready()
+            ->whereNotNull('title')
+            ->count();
+
         return Inertia::render('Home', [
             'stats' => [
                 'today' => $today,
@@ -45,6 +51,8 @@ class DashboardController extends Controller
             ],
             'recent' => $recent,
             'lookback' => $this->buildLookback($userId),
+            'quizAvailable' => $quizEligibleCount >= QuizController::MIN_ELIGIBLE,
+            'magazine' => $this->buildMagazineTeaser($userId),
         ]);
     }
 
@@ -117,6 +125,32 @@ class DashboardController extends Controller
         $observation = $past()->oldest()->first();
         if ($observation) {
             return ['label' => 'いちばん さいしょの はっけん', 'observation' => $observation];
+        }
+
+        return null;
+    }
+
+    /**
+     * 月刊マイずかんの導線。当月に ready な発見があれば当月号、
+     * なければ前月号、それも無ければ導線を出さない(null)。
+     */
+    private function buildMagazineTeaser(int|string $userId): ?array
+    {
+        $months = [now()->startOfMonth(), now()->subMonthNoOverflow()->startOfMonth()];
+
+        foreach ($months as $start) {
+            $count = Observation::forUser($userId)
+                ->ready()
+                ->whereBetween('created_at', [$start, $start->copy()->endOfMonth()])
+                ->count();
+
+            if ($count > 0) {
+                return [
+                    'yearMonth' => $start->format('Y-m'),
+                    'label' => $start->format('Y年n月'),
+                    'count' => $count,
+                ];
+            }
         }
 
         return null;

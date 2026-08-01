@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MagazineController;
 use App\Http\Controllers\ObservationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TtsController;
 use Illuminate\Support\Facades\Route;
@@ -85,6 +87,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/tags/{tag}', [TagController::class, 'destroy'])
         ->middleware('throttle:api-general')
         ->name('tags.destroy');
+
+    // Quiz
+    Route::get('/quiz', [QuizController::class, 'index'])
+        ->middleware('throttle:api-general')
+        ->name('quiz');
+
+    // Magazine (月刊マイずかん)
+    Route::get('/magazine', [MagazineController::class, 'index'])
+        ->middleware('throttle:api-general')
+        ->name('magazine.index');
+    Route::get('/magazine/{yearMonth}', [MagazineController::class, 'show'])
+        ->middleware('throttle:api-general')
+        ->where('yearMonth', '[0-9]{4}-[0-9]{2}')
+        ->name('magazine.show');
 
     // TTS
     Route::post('/tts', [TtsController::class, 'synthesize'])
