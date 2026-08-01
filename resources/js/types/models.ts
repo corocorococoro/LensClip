@@ -118,3 +118,48 @@ export interface LookbackHighlight {
     label: string;
     observation: ObservationSummary;
 }
+
+// 月刊マイずかん: 号のアーカイブ1件
+export interface MagazineIssueSummary {
+    yearMonth: string;
+    label: string;
+    count: number;
+    coverThumbUrl: string | null;
+}
+
+// 月刊マイずかん: 誌面の1エントリ(サーバー側で最小属性に map 済み)
+export interface MagazineEntry {
+    id: string;
+    image_url: string | null;
+    date: string;
+    title: string | null;
+    category: CategoryId | null;
+    description: string | null;
+    milestones: Milestone[];
+}
+
+// 月刊マイずかん: 裏表紙のカテゴリ内訳
+export interface MagazineCategoryBreakdown {
+    id: CategoryId;
+    name: string;
+    color: string;
+    count: number;
+}
+
+// Home の月刊マイずかん導線
+export interface MagazineTeaser {
+    yearMonth: string;
+    label: string;
+    count: number;
+}
+
+// はかせクイズの1問(サーバー側で最小属性に map 済み)
+export interface QuizQuestion {
+    id: string;
+    image_url: string | null;
+    title: string;
+    kid_friendly: string | null;
+    fun_fact: string | null;
+    english_name: string | null;
+    category: CategoryId | null;
+}

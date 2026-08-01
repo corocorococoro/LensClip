@@ -65,9 +65,9 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
     const isLibrary = url.startsWith('/library');
 
     return (
-        <div className={`min-h-screen bg-brand-canvas text-brand-ink ${fullScreen ? 'h-screen overflow-hidden' : 'pb-28'}`}>
-            <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4">本文へ移動</a>
-            <header className="safe-area-top sticky top-0 z-40 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl">
+        <div className={`min-h-screen bg-brand-canvas text-brand-ink print:bg-white ${fullScreen ? 'h-screen overflow-hidden' : 'pb-28 print:pb-0'}`}>
+            <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4 print:hidden">本文へ移動</a>
+            <header className="safe-area-top sticky top-0 z-40 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl print:hidden">
                 <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
                     <Link href="/dashboard" className="flex items-center gap-2.5 rounded-lg" aria-label="LensClip ホーム">
                         <BrandMark className="h-9 w-9 shadow-sm" compact />
@@ -93,7 +93,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
             </main>
 
             <nav
-                className={`safe-area-bottom fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out ${isFooterVisible || fullScreen ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`safe-area-bottom fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out print:hidden ${isFooterVisible || fullScreen ? 'translate-y-0' : 'translate-y-full'}`}
                 aria-label="メインナビゲーション"
             >
                 <div className="mx-auto max-w-md border-x border-t border-brand-line bg-white/95 px-5 pb-1 pt-2 shadow-[0_-10px_35px_rgba(61,52,44,0.08)] backdrop-blur-xl sm:mb-3 sm:rounded-2xl sm:border sm:pb-2">

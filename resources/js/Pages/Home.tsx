@@ -2,7 +2,7 @@ import { EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
 import AppLayout from '@/Layouts/AppLayout';
-import type { HomeStats, LookbackHighlight, ObservationSummary } from '@/types/models';
+import type { HomeStats, LookbackHighlight, MagazineTeaser, ObservationSummary } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -10,6 +10,8 @@ interface Props {
     stats: HomeStats;
     recent: ObservationSummary[];
     lookback: LookbackHighlight | null;
+    quizAvailable: boolean;
+    magazine: MagazineTeaser | null;
 }
 
 function CameraIcon() {
@@ -21,7 +23,7 @@ function CameraIcon() {
     );
 }
 
-export default function Home({ stats, recent, lookback }: Props) {
+export default function Home({ stats, recent, lookback, quizAvailable, magazine }: Props) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const handleFileSelect = usePendingUploadNavigation(location, 'home');
@@ -144,6 +146,50 @@ export default function Home({ stats, recent, lookback }: Props) {
                                         {new Date(lookback.observation.created_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
                                     </p>
                                 )}
+                            </div>
+                            <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                        </Link>
+                    </section>
+                )}
+
+                {quizAvailable && (
+                    <section className="mt-10">
+                        <div className="mb-4">
+                            <p className="lens-kicker mb-1">Quiz time</p>
+                            <h2 className="lens-section-title">はかせクイズ</h2>
+                        </div>
+                        <Link
+                            href="/quiz"
+                            className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-brand-line bg-white p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99] sm:p-4"
+                        >
+                            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-brand-primary-soft text-4xl sm:h-24 sm:w-24" aria-hidden="true">
+                                🧠
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-lg font-bold text-brand-ink">これ なんだっけ?</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">じぶんの ずかんから クイズを だすよ。おやこで こたえあわせ してみよう。</p>
+                            </div>
+                            <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+                        </Link>
+                    </section>
+                )}
+
+                {magazine && (
+                    <section className="mt-10">
+                        <div className="mb-4">
+                            <p className="lens-kicker mb-1">Monthly issue</p>
+                            <h2 className="lens-section-title">月刊マイずかん</h2>
+                        </div>
+                        <Link
+                            href={`/magazine/${magazine.yearMonth}`}
+                            className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-brand-line bg-white p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99] sm:p-4"
+                        >
+                            <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-brand-cream-soft text-4xl sm:h-24 sm:w-24" aria-hidden="true">
+                                📖
+                            </span>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-lg font-bold text-brand-ink">{magazine.label}号が よめるよ</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">はっけん {magazine.count} けんが ずかんの 1さつに。いんさつも できるよ。</p>
                             </div>
                             <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                         </Link>
