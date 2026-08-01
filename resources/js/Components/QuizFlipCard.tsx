@@ -99,6 +99,7 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
                                     type="button"
                                     onClick={() => playTts(question.english_name!)}
                                     disabled={ttsLoading}
+                                    tabIndex={flipped ? undefined : -1}
                                     aria-label={`${question.english_name}を読み上げる`}
                                     title="発音を聞く"
                                     className={`min-h-9 min-w-9 rounded-full p-1.5 transition-colors duration-200 ${ttsLoading
@@ -125,6 +126,7 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
                                 <button
                                     type="button"
                                     onClick={() => setRemembered(true)}
+                                    tabIndex={flipped ? undefined : -1}
                                     className="rounded-full border-2 border-brand-primary/40 bg-white px-5 py-2 text-sm font-bold text-brand-primary-dark transition hover:bg-brand-primary-soft active:scale-95"
                                 >
                                     おぼえてた!
