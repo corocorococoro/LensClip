@@ -11,6 +11,7 @@ export interface Tag {
 
 // 観察記録のステータス
 export type ObservationStatus = 'processing' | 'ready' | 'failed';
+export type ObservationProcessingType = 'identify' | 'correction';
 
 // カテゴリID
 export type CategoryId = 'animal' | 'insect' | 'plant' | 'food' | 'vehicle' | 'place' | 'tool' | 'other';
@@ -27,6 +28,7 @@ export interface ObservationSummary {
     title: string;
     thumb_url: string | null;
     status: ObservationStatus;
+    processing_type?: ObservationProcessingType;
     tags?: Tag[];
     created_at?: string;
     category?: CategoryId | null;
@@ -72,7 +74,7 @@ export type CategoryPreviews = Record<string, ObservationSummary[]>;
 export interface Observation extends ObservationSummary {
     summary: string;
     kid_friendly: string;
-    confidence: number;
+    confidence: number | null;
     selected_candidate_index?: number | null;
     original_url: string | null;
     cropped_url: string | null;
@@ -97,7 +99,7 @@ export interface ObservationAIJson {
 export interface CandidateCard {
     name: string;
     english_name?: string;
-    confidence: number;
+    confidence: number | null;
     summary: string;
     kid_friendly: string;
     look_for?: string[];

@@ -84,6 +84,21 @@ class ImageAnalysisService
     }
 
     /**
+     * Regenerate encyclopedia content for a user-confirmed identification.
+     */
+    public function correct(Observation $observation, string $correctionName): array
+    {
+        $this->geminiModel = $this->modelRegistry->currentModel();
+        $imageContent = Storage::disk()->get($observation->original_path);
+        $geminiResult = $this->callGemini($imageContent, $this->buildCorrectionPrompt($correctionName));
+
+        return [
+            'ai_json' => $geminiResult,
+            'gemini_model' => $this->geminiModel,
+        ];
+    }
+
+    /**
      * Call Vision API for Object Localization using SDK (Service Account)
      */
     protected function callVisionObjectLocalization(string $imageContent): ?array
@@ -293,7 +308,7 @@ class ImageAnalysisService
     /**
      * Call Gemini API for identification
      */
-    protected function callGemini(string $imageContent): array
+    protected function callGemini(string $imageContent, ?string $prompt = null): array
     {
         if (empty($this->geminiApiKey)) {
             Log::error('Gemini API key is not configured.');
@@ -304,7 +319,7 @@ class ImageAnalysisService
 
         $imageBase64 = base64_encode($imageContent);
 
-        $prompt = $this->buildPrompt();
+        $prompt ??= $this->buildPrompt();
 
         try {
             // Retry with exponential backoff (100ms, 200ms, 400ms)
@@ -455,6 +470,44 @@ class ImageAnalysisService
 
 候補が1つしか考えられない場合は、candidate_cardsに1つだけ入れてください。
 english_nameは必ず各候補に含めてください。色や形の場合も英語で表現してください（例: red, square）。
+EOT;
+    }
+
+    protected function buildCorrectionPrompt(string $correctionName): string
+    {
+        $categories = config('categories');
+        $categoryIds = implode('|', array_column($categories, 'id'));
+        $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
+        $confirmedName = json_encode($correctionName, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+
+        return <<<EOT
+あなたは子供向け図鑑アプリの編集AIです。利用者が写真の対象を {$confirmedName} と確認しました。
+この名前を変更・再判定せず、写真も参考にして、3-6歳の子供と親が読む図鑑情報を生成してください。
+分からない情報を推測で断定せず、危険や注意事項がある場合は必ず safety_notes に含めてください。
+
+以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
+{
+  "title": {$confirmedName},
+  "summary": "簡潔な説明（大人向け、100文字以内）",
+  "kid_friendly": "子供向けのやさしい説明（50文字以内、ひらがな多め）",
+  "category": "{$categoryIds} のいずれか。分類の参考: {$categoryHint}",
+  "confidence": null,
+  "tags": ["関連タグ"],
+  "safety_notes": ["危険や注意事項があれば"],
+  "fun_facts": ["豆知識"],
+  "questions": ["子供に聞いてみたい質問"],
+  "candidate_cards": [{
+    "name": {$confirmedName},
+    "english_name": "英語名（小文字）",
+    "confidence": null,
+    "summary": "簡潔な説明（80文字以内）",
+    "kid_friendly": "子供向け説明（40文字以内）",
+    "look_for": ["見分けポイント"],
+    "fun_facts": ["豆知識"],
+    "questions": ["質問"],
+    "tags": ["タグ"]
+  }]
+}
 EOT;
     }
 

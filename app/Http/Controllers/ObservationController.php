@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Actions\RetryObservationAction;
 use App\Actions\SelectObservationCandidateAction;
+use App\Actions\StartObservationCorrectionAction;
 use App\Actions\UpdateObservationTagsAction;
+use App\Http\Requests\CorrectObservationRequest;
 use App\Http\Requests\DestroyAllObservationsRequest;
 use App\Http\Requests\StoreObservationRequest;
 use App\Http\Requests\UpdateObservationCategoryRequest;
@@ -26,6 +28,7 @@ class ObservationController extends Controller
         private RetryObservationAction $retryAction,
         private UpdateObservationTagsAction $updateTagsAction,
         private SelectObservationCandidateAction $selectCandidateAction,
+        private StartObservationCorrectionAction $startCorrectionAction,
     ) {
         $this->observationService = $observationService;
     }
@@ -328,6 +331,7 @@ class ObservationController extends Controller
                 'title' => $observation->title,
                 'thumb_url' => $observation->thumb_url,
                 'status' => $observation->status,
+                'processing_type' => $observation->processing_type,
                 'category' => $observation->category,
                 'milestones' => $observation->milestones,
                 'latitude' => $observation->latitude,
@@ -525,6 +529,56 @@ class ObservationController extends Controller
         }
 
         return back();
+    }
+
+    /**
+     * Correct an AI identification and regenerate all related encyclopedia content.
+     */
+    public function correct(CorrectObservationRequest $request, Observation $observation)
+    {
+        $this->authorize('update', $observation);
+
+        if ($observation->status !== 'ready') {
+            abort(422, '分析が完了した記録だけ判定を訂正できます。');
+        }
+
+        $this->startCorrectionAction->execute($observation, $request->validated('title'));
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'id' => $observation->id,
+                'status' => 'processing',
+                'processing_type' => 'correction',
+                'title' => $observation->title,
+            ], 202);
+        }
+
+        return redirect()->route('observations.show', $observation);
+    }
+
+    /**
+     * Keep a failed correction as a name-only encyclopedia entry.
+     */
+    public function keepCorrectionName(Observation $observation)
+    {
+        $this->authorize('update', $observation);
+
+        if ($observation->status !== 'failed' || $observation->processing_type !== 'correction' || ! $observation->correction_name) {
+            abort(422, '失敗した判定訂正だけ名前のみで保存できます。');
+        }
+
+        $observation->update([
+            'status' => 'ready',
+            'correction_name' => null,
+            'processing_token' => null,
+            'error_message' => null,
+        ]);
+
+        if (request()->wantsJson()) {
+            return response()->json(new \App\Http\Resources\ObservationResource($observation->fresh()->load('tags')));
+        }
+
+        return redirect()->route('observations.show', $observation);
     }
 
     /**

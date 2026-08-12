@@ -76,6 +76,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/observations/{observation}/title', [ObservationController::class, 'updateTitle'])
         ->middleware('throttle:api-general')
         ->name('observations.updateTitle');
+    Route::post('/observations/{observation}/correction', [ObservationController::class, 'correct'])
+        ->middleware('throttle:observation-retry')
+        ->name('observations.correct');
+    Route::post('/observations/{observation}/correction/keep-name', [ObservationController::class, 'keepCorrectionName'])
+        ->middleware('throttle:api-general')
+        ->name('observations.keepCorrectionName');
 
     // Tags
     Route::get('/tags', [TagController::class, 'index'])

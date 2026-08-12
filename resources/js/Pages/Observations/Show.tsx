@@ -5,7 +5,7 @@ import LocationMap from '@/Components/LocationMap';
 import ProcessingView from './Partials/ProcessingView';
 import type { Observation, Tag, CandidateCard, CategoryDefinition, Milestone } from '@/types/models';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTts } from '@/hooks/useTts';
 
 const SpeakerIcon = ({ className }: { className?: string }) => (
@@ -47,10 +47,19 @@ export default function Show({ observation, categories }: Props) {
     const { playTts, ttsLoading, ttsError, resetTtsError } = useTts();
     const [showCategoryModal, setShowCategoryModal] = useState(false);
     const [categoryUpdating, setCategoryUpdating] = useState(false);
+    const [showEditChoiceModal, setShowEditChoiceModal] = useState(false);
     const [showTitleModal, setShowTitleModal] = useState(false);
     const [titleInput, setTitleInput] = useState('');
     const [titleUpdating, setTitleUpdating] = useState(false);
-    const currentCategory = categories?.find(c => c.id === observation.category) || categories?.[categories.length - 1];
+    const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+    const [correctionInput, setCorrectionInput] = useState('');
+    const [correctionUpdating, setCorrectionUpdating] = useState(false);
+    const [keepingCorrectionName, setKeepingCorrectionName] = useState(false);
+    const currentCategory = categories?.find(c => c.id === observation.category);
+
+    useEffect(() => {
+        setActiveCandidateIndex(persistedCandidateIndex);
+    }, [persistedCandidateIndex]);
 
     const handleCategoryChange = (newCategoryId: string) => {
         setCategoryUpdating(true);
@@ -132,7 +141,14 @@ export default function Show({ observation, categories }: Props) {
 
     const openTitleModal = () => {
         setTitleInput(displayTitle === '???' ? '' : displayTitle);
+        setShowEditChoiceModal(false);
         setShowTitleModal(true);
+    };
+
+    const openCorrectionModal = () => {
+        setCorrectionInput('');
+        setShowEditChoiceModal(false);
+        setShowCorrectionModal(true);
     };
 
     const handleTitleSave = () => {
@@ -145,6 +161,27 @@ export default function Show({ observation, categories }: Props) {
             preserveScroll: true,
             onSuccess: () => setShowTitleModal(false),
             onFinish: () => setTitleUpdating(false),
+        });
+    };
+
+    const handleCorrectionSave = () => {
+        const trimmed = correctionInput.trim();
+        if (!trimmed) return;
+        setCorrectionUpdating(true);
+        router.post(`/observations/${observation.id}/correction`, {
+            title: trimmed,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => setShowCorrectionModal(false),
+            onFinish: () => setCorrectionUpdating(false),
+        });
+    };
+
+    const handleKeepCorrectionName = () => {
+        setKeepingCorrectionName(true);
+        router.post(`/observations/${observation.id}/correction/keep-name`, {}, {
+            preserveScroll: true,
+            onFinish: () => setKeepingCorrectionName(false),
         });
     };
 
@@ -184,20 +221,20 @@ export default function Show({ observation, categories }: Props) {
                     )}
 
                     {/* Category Badge overlay (Top Left) - Interactive */}
-                    {currentCategory && (
+                    {observation.status === 'ready' && (
                         <div className="absolute top-3 left-3 z-10">
                             <button
                                 onClick={() => setShowCategoryModal(true)}
                                 className="group/badge inline-flex min-h-10 items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-bold text-brand-ink shadow-sm backdrop-blur-md transition active:scale-95"
                                 style={{
-                                    color: currentCategory.color,
+                                    color: currentCategory?.color,
                                 }}
                             >
                                 <div
                                     className="w-2.5 h-2.5 rounded-full"
-                                    style={{ backgroundColor: currentCategory.color }}
+                                    style={{ backgroundColor: currentCategory?.color || '#94a3b8' }}
                                 />
-                                {currentCategory.name}
+                                {currentCategory?.name || 'カテゴリ未設定'}
                                 <PencilIcon className="w-3 h-3 opacity-40 ml-0.5 group-hover/badge:opacity-100 transition-opacity" />
                             </button>
                         </div>
@@ -241,7 +278,7 @@ export default function Show({ observation, categories }: Props) {
                     </h1>
                     {observation.status === 'ready' && (
                         <button
-                            onClick={openTitleModal}
+                            onClick={() => setShowEditChoiceModal(true)}
                             aria-label="なまえをなおす"
                             title="なまえをなおす"
                             className="min-h-10 min-w-10 rounded-full p-2 text-brand-muted transition hover:bg-brand-primary-soft hover:text-brand-primary-dark active:scale-95"
@@ -318,7 +355,7 @@ export default function Show({ observation, categories }: Props) {
                                 >
                                     {card.name}
                                     <span className="ml-1 text-xs opacity-70">
-                                        {Math.round(card.confidence * 100)}%
+                                        {Math.round((card.confidence ?? 0) * 100)}%
                                     </span>
                                 </button>
                             ))}
@@ -344,23 +381,37 @@ export default function Show({ observation, categories }: Props) {
                 {observation.status === 'failed' && (
                     <div className="mb-6 w-full rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
                         <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-xl font-black text-red-600">!</div>
-                        <h2 className="text-lg font-bold text-red-700 mb-2">しらべられなかった…</h2>
+                        <h2 className="text-lg font-bold text-red-700 mb-2">
+                            {observation.processing_type === 'correction' ? '図鑑情報を更新できなかった…' : 'しらべられなかった…'}
+                        </h2>
                         <p className="text-sm text-red-600 mb-4">
                             {observation.error_message || 'もういちどためしてね'}
                         </p>
-                        <Button
-                            onClick={handleRetry}
-                            loading={retrying}
-                            variant="primary"
-                            disabled={retrying}
-                        >
-                            {retrying ? 'リトライちゅう…' : 'もういちどしらべる'}
-                        </Button>
+                        <div className="flex flex-col justify-center gap-3 sm:flex-row">
+                            <Button
+                                onClick={handleRetry}
+                                loading={retrying}
+                                variant="primary"
+                                disabled={retrying || keepingCorrectionName}
+                            >
+                                {retrying ? 'リトライちゅう…' : observation.processing_type === 'correction' ? 'もう一度更新' : 'もういちどしらべる'}
+                            </Button>
+                            {observation.processing_type === 'correction' && (
+                                <Button
+                                    onClick={handleKeepCorrectionName}
+                                    loading={keepingCorrectionName}
+                                    variant="secondary"
+                                    disabled={retrying || keepingCorrectionName}
+                                >
+                                    名前だけで図鑑に残す
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
 
                 {/* Kid-friendly Description */}
-                {observation.status === 'ready' && (
+                {observation.status === 'ready' && displayKidFriendly && (
                     <Card
                         key={`card-${activeCandidateIndex}`}
                         className="mb-4 w-full border-brand-primary/15 bg-brand-primary-soft"
@@ -498,11 +549,37 @@ export default function Show({ observation, categories }: Props) {
                 </button>
             </div>
 
+            {/* Edit choice */}
+            <Modal show={showEditChoiceModal} onClose={() => setShowEditChoiceModal(false)} maxWidth="md">
+                <div className="p-6">
+                    <h2 className="mb-1 text-xl font-bold text-brand-ink">なまえをなおす</h2>
+                    <p className="mb-5 text-sm text-brand-muted">直したい内容を選んでください。</p>
+                    <div className="space-y-3">
+                        <button
+                            type="button"
+                            onClick={openTitleModal}
+                            className="w-full rounded-xl border border-brand-line bg-white p-4 text-left transition hover:border-brand-primary"
+                        >
+                            <span className="block font-bold text-brand-ink">名前の表記だけ直す</span>
+                            <span className="mt-1 block text-sm text-brand-muted">説明や豆知識はそのまま残します。</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={openCorrectionModal}
+                            className="w-full rounded-xl border border-brand-primary/30 bg-brand-primary-soft p-4 text-left transition hover:border-brand-primary"
+                        >
+                            <span className="block font-bold text-brand-primary-dark">AIの判定が違う</span>
+                            <span className="mt-1 block text-sm text-brand-muted">正しい名前に合わせて説明なども作り直します。</span>
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Title Edit Modal */}
             <Modal show={showTitleModal} onClose={() => setShowTitleModal(false)}>
                 <div className="p-6">
                     <h2 className="mb-1 text-xl font-bold text-brand-ink">なまえをなおす</h2>
-                    <p className="mb-4 text-sm text-brand-muted">図鑑にのせる名前を自由に直せます。</p>
+                    <p className="mb-4 text-sm text-brand-muted">説明や豆知識は変えず、図鑑にのせる表記だけ直します。</p>
                     <input
                         type="text"
                         value={titleInput}
@@ -523,6 +600,41 @@ export default function Show({ observation, categories }: Props) {
                             disabled={titleUpdating || !titleInput.trim()}
                         >
                             この なまえに する
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* AI correction modal */}
+            <Modal show={showCorrectionModal} onClose={() => setShowCorrectionModal(false)}>
+                <div className="p-6">
+                    <h2 className="mb-1 text-xl font-bold text-brand-ink">AIの判定をなおす</h2>
+                    <p className="mb-4 text-sm text-brand-muted">
+                        写真に写っているものの正しい名前を入力してください。説明・豆知識・英語名・タグ・カテゴリを作り直します。
+                    </p>
+                    <input
+                        type="text"
+                        value={correctionInput}
+                        onChange={(e) => setCorrectionInput(e.target.value)}
+                        maxLength={100}
+                        placeholder="正しいなまえ"
+                        aria-label="正しいなまえ"
+                        className="w-full rounded-xl border-brand-line text-base focus:border-brand-primary focus:ring-brand-primary"
+                    />
+                    <p className="mt-3 text-xs leading-relaxed text-brand-muted">
+                        更新中は、間違っている可能性のある古い説明を表示しません。
+                    </p>
+                    <div className="mt-6 flex justify-end gap-3">
+                        <Button variant="secondary" onClick={() => setShowCorrectionModal(false)}>
+                            キャンセル
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleCorrectionSave}
+                            loading={correctionUpdating}
+                            disabled={correctionUpdating || !correctionInput.trim()}
+                        >
+                            図鑑情報を更新
                         </Button>
                     </div>
                 </div>

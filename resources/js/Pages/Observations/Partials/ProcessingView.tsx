@@ -1,5 +1,5 @@
 import { Button } from '@/Components/ui';
-import type { ObservationStatus } from '@/types/models';
+import type { ObservationProcessingType, ObservationStatus } from '@/types/models';
 import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -7,6 +7,8 @@ interface Props {
     observation: {
         id: string;
         status: ObservationStatus;
+        processing_type?: ObservationProcessingType;
+        title?: string | null;
         thumb_url: string | null;
     };
 }
@@ -18,6 +20,7 @@ const STEPS = [
 ] as const;
 
 export default function ProcessingView({ observation }: Props) {
+    const isCorrection = observation.processing_type === 'correction';
     const [timedOut, setTimedOut] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -102,7 +105,13 @@ export default function ProcessingView({ observation }: Props) {
 
     return (
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
-            <p className="lens-kicker mb-4">Analyzing your find</p>
+            <p className="lens-kicker mb-4">{isCorrection ? 'Updating your encyclopedia' : 'Analyzing your find'}</p>
+            {isCorrection && observation.title && (
+                <div className="mb-5 text-center">
+                    <h1 className="text-2xl font-bold text-brand-ink">{observation.title}</h1>
+                    <p className="mt-1 text-sm text-brand-muted">図鑑の説明を更新しています</p>
+                </div>
+            )}
             <div className="relative mb-6 h-64 w-64 overflow-hidden rounded-2xl border border-brand-line bg-brand-sand-soft shadow-surface">
                 {observation.thumb_url ? (
                     <img
@@ -141,7 +150,9 @@ export default function ProcessingView({ observation }: Props) {
 
             {!timedOut && (
                 <div className="flex flex-col items-center gap-3 mb-6" aria-live="polite">
-                    <p className="text-brand-dark font-bold text-base">{currentStep.label}</p>
+                    <p className="text-brand-dark font-bold text-base">
+                        {isCorrection ? '正しい名前に合わせて更新ちゅう' : currentStep.label}
+                    </p>
 
                     <div className="flex gap-2">
                         {STEPS.map((step, index) => (

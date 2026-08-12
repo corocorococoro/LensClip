@@ -16,9 +16,14 @@ class Observation extends Model
 
     public $incrementing = false;
 
+    protected $attributes = [
+        'processing_type' => 'identify',
+    ];
+
     protected $fillable = [
         'user_id',
         'status',
+        'processing_type',
         'original_path',
         'cropped_path',
         'thumb_path',
@@ -26,6 +31,8 @@ class Observation extends Model
         'vision_objects',
         'ai_json',
         'title',
+        'correction_name',
+        'processing_token',
         'summary',
         'kid_friendly',
         'confidence',
