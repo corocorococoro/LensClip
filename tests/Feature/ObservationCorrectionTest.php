@@ -64,7 +64,7 @@ class ObservationCorrectionTest extends TestCase
         );
     }
 
-    public function test_correction_job_replaces_related_content_but_keeps_user_name_and_milestones(): void
+    public function test_correction_job_replaces_related_content_and_updates_category_milestone(): void
     {
         $user = User::factory()->create();
         $observation = Observation::factory()->create([
@@ -74,7 +74,10 @@ class ObservationCorrectionTest extends TestCase
             'processing_token' => '2f71bff9-65b5-4a82-b395-ff8162d85ce9',
             'correction_name' => 'ナナホシテントウ',
             'title' => 'ナナホシテントウ',
-            'milestones' => [['type' => 'first_discovery']],
+            'milestones' => [
+                ['type' => 'count', 'value' => 10],
+                ['type' => 'first_category', 'category' => 'vehicle'],
+            ],
         ]);
 
         $service = Mockery::mock(ImageAnalysisService::class);
@@ -125,7 +128,10 @@ class ObservationCorrectionTest extends TestCase
         $this->assertSame('gemini-test', $observation->gemini_model);
         $this->assertNull($observation->correction_name);
         $this->assertNull($observation->processing_token);
-        $this->assertSame([['type' => 'first_discovery']], $observation->milestones);
+        $this->assertSame([
+            ['type' => 'count', 'value' => 10],
+            ['type' => 'first_category', 'category' => 'insect'],
+        ], $observation->milestones);
         $this->assertEqualsCanonicalizing(
             ['てんとうむし', 'こんちゅう'],
             $observation->tags()->pluck('name')->all(),

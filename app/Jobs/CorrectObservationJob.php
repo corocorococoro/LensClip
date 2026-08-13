@@ -73,6 +73,7 @@ class CorrectObservationJob implements ShouldQueue
                     'selected_candidate_index' => 0,
                     'ai_json' => $aiJson,
                     'category' => $category,
+                    'milestones' => $this->correctCategoryMilestone($current->milestones, $category),
                     'gemini_model' => $result['gemini_model'] ?? null,
                     'correction_name' => null,
                     'processing_token' => null,
@@ -108,6 +109,27 @@ class CorrectObservationJob implements ShouldQueue
             && hash_equals((string) $observation->processing_token, $this->processingToken)
             && is_string($observation->correction_name)
             && $observation->correction_name !== '';
+    }
+
+    /**
+     * Keep the achievement itself, but make its category label follow the corrected result.
+     *
+     * @param  array<int, array<string, mixed>>|null  $milestones
+     * @return array<int, array<string, mixed>>|null
+     */
+    private function correctCategoryMilestone(?array $milestones, string $category): ?array
+    {
+        if ($milestones === null) {
+            return null;
+        }
+
+        return array_map(function (array $milestone) use ($category): array {
+            if (($milestone['type'] ?? null) === 'first_category') {
+                $milestone['category'] = $category;
+            }
+
+            return $milestone;
+        }, $milestones);
     }
 
     private function markFailed(\Throwable $exception): void
