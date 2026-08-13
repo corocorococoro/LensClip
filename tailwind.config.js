@@ -47,6 +47,12 @@ export default {
                 'bounce-short': 'bounce 0.5s ease-in-out',
                 'soft-pulse': 'pulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
             },
+            keyframes: {
+                'quiz-answer-in': {
+                    '0%': { opacity: '0', transform: 'rotateY(-8deg) scale(0.99)' },
+                    '100%': { opacity: '1', transform: 'rotateY(0deg) scale(1)' },
+                },
+            },
         },
     },
 

@@ -26,7 +26,7 @@ interface Props {
 }
 
 /**
- * めくり式クイズカード。出題面(写真)をタップすると 3D flip で答え面へ。
+ * めくり式クイズカード。答えを表示しても、出題時と同じ大きさで写真を見せる。
  * 正誤判定はせず、「おぼえてた!」は演出のみ(保存しない)。
  */
 export default function QuizFlipCard({ question, flipped, onFlip, category, playTts, ttsLoading, ttsError }: Props) {
@@ -37,105 +37,96 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
         .join(' ');
     const funText = question.kid_friendly || question.fun_fact;
 
-    return (
-        <div className="w-full [perspective:1200px]">
-            <div
-                className={`relative w-full transition-transform duration-500 [transform-style:preserve-3d] ${flipped ? '[transform:rotateY(180deg)]' : ''}`}
+    if (!flipped) {
+        return (
+            <button
+                type="button"
+                onClick={onFlip}
+                className="relative w-full overflow-hidden rounded-3xl border border-brand-line bg-white text-left shadow-surface transition active:scale-[0.99]"
             >
-                {/* 出題面 */}
-                <button
-                    type="button"
-                    onClick={onFlip}
-                    disabled={flipped}
-                    aria-hidden={flipped}
-                    tabIndex={flipped ? -1 : 0}
-                    className={`relative w-full overflow-hidden rounded-3xl border border-brand-line bg-white text-left shadow-surface [backface-visibility:hidden] ${flipped ? 'pointer-events-none' : 'active:scale-[0.99]'}`}
-                >
-                    {question.image_url ? (
-                        <img
-                            src={question.image_url}
-                            alt="これなんだっけ?"
-                            className="aspect-square w-full object-cover"
-                            loading="eager"
-                        />
-                    ) : (
-                        <div className="flex aspect-square w-full items-center justify-center bg-brand-sand-soft text-6xl" role="img" aria-label="しゃしん">
-                            📷
-                        </div>
-                    )}
-                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-5 pb-5 pt-14 text-center">
-                        <span className="text-2xl font-bold text-white drop-shadow-sm">これ なんだっけ?</span>
-                        <span className="mt-1 block text-sm font-semibold text-white/85">タップして こたえを みる</span>
+                {question.image_url ? (
+                    <img
+                        src={question.image_url}
+                        alt="これなんだっけ?"
+                        className="aspect-square w-full object-cover"
+                        loading="eager"
+                    />
+                ) : (
+                    <div className="flex aspect-square w-full items-center justify-center bg-brand-sand-soft text-6xl" role="img" aria-label="しゃしん">
+                        📷
                     </div>
-                </button>
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-5 pb-5 pt-14 text-center">
+                    <span className="text-2xl font-bold text-white drop-shadow-sm">これ なんだっけ?</span>
+                    <span className="mt-1 block text-sm font-semibold text-white/85">タップして こたえを みる</span>
+                </div>
+            </button>
+        );
+    }
 
-                {/* 答え面 */}
-                <div
-                    aria-hidden={!flipped}
-                    className={`absolute inset-0 flex flex-col overflow-hidden rounded-3xl border border-brand-line bg-white shadow-surface [backface-visibility:hidden] [transform:rotateY(180deg)] ${flipped ? '' : 'pointer-events-none'}`}
-                >
-                    {question.image_url ? (
-                        <img src={question.image_url} alt={question.title} className="h-2/5 w-full object-cover" loading="eager" />
+    return (
+        <article
+            aria-live="polite"
+            className="w-full overflow-hidden rounded-3xl border border-brand-line bg-white shadow-surface motion-safe:animate-[quiz-answer-in_300ms_ease-out]"
+        >
+            {question.image_url ? (
+                <img src={question.image_url} alt={question.title} className="aspect-square w-full object-cover" loading="eager" />
+            ) : (
+                <div className="flex aspect-square w-full items-center justify-center bg-brand-sand-soft text-6xl" role="img" aria-label={question.title}>
+                    📷
+                </div>
+            )}
+            <div className="flex flex-col items-center px-5 py-5 text-center sm:px-6 sm:py-6">
+                {category && (
+                    <span
+                        className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-bold shadow-sm ring-1 ring-brand-line"
+                        style={{ color: category.color }}
+                    >
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
+                        {category.name}
+                    </span>
+                )}
+                <p className="text-2xl font-bold tracking-tight text-brand-ink sm:text-3xl">{question.title}</p>
+                {englishDisplay && (
+                    <span className="mt-1 inline-flex items-center gap-1.5">
+                        <span className="text-sm font-medium text-slate-500">{englishDisplay}</span>
+                        <button
+                            type="button"
+                            onClick={() => playTts(question.english_name!)}
+                            disabled={ttsLoading}
+                            aria-label={`${question.english_name}を読み上げる`}
+                            title="発音を聞く"
+                            className={`min-h-9 min-w-9 rounded-full p-1.5 transition-colors duration-200 ${ttsLoading
+                                ? 'cursor-wait text-gray-400'
+                                : ttsError
+                                    ? 'text-red-400 hover:bg-red-50 hover:text-red-500 active:scale-95'
+                                    : 'text-brand-muted hover:bg-brand-primary-soft hover:text-brand-primary-dark active:scale-95'
+                                }`}
+                        >
+                            {ttsLoading ? <SpinnerIcon className="h-4 w-4" /> : <SpeakerIcon className="h-4 w-4" />}
+                        </button>
+                    </span>
+                )}
+                {funText && (
+                    <p className="mt-2 text-sm leading-relaxed text-brand-muted">{funText}</p>
+                )}
+                <div className="pt-4">
+                    {remembered ? (
+                        <span className="inline-flex animate-bounce items-center gap-1.5 rounded-full bg-brand-primary-soft px-5 py-2 text-sm font-bold text-brand-primary-dark">
+                            <span aria-hidden="true">🌟</span>
+                            やったね!おぼえてたね!
+                        </span>
                     ) : (
-                        <div className="flex h-2/5 w-full items-center justify-center bg-brand-sand-soft text-4xl" role="img" aria-label={question.title}>
-                            📷
-                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setRemembered(true)}
+                            className="rounded-full border-2 border-brand-primary/40 bg-white px-5 py-2 text-sm font-bold text-brand-primary-dark transition hover:bg-brand-primary-soft active:scale-95"
+                        >
+                            おぼえてた!
+                        </button>
                     )}
-                    <div className="flex min-h-0 flex-1 flex-col items-center overflow-y-auto px-5 py-4 text-center">
-                        {category && (
-                            <span
-                                className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-0.5 text-xs font-bold shadow-sm ring-1 ring-brand-line"
-                                style={{ color: category.color }}
-                            >
-                                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
-                                {category.name}
-                            </span>
-                        )}
-                        <p className="text-2xl font-bold tracking-tight text-brand-ink sm:text-3xl">{question.title}</p>
-                        {englishDisplay && (
-                            <span className="mt-1 inline-flex items-center gap-1.5">
-                                <span className="text-sm font-medium text-slate-500">{englishDisplay}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => playTts(question.english_name!)}
-                                    disabled={ttsLoading}
-                                    tabIndex={flipped ? undefined : -1}
-                                    aria-label={`${question.english_name}を読み上げる`}
-                                    title="発音を聞く"
-                                    className={`min-h-9 min-w-9 rounded-full p-1.5 transition-colors duration-200 ${ttsLoading
-                                        ? 'cursor-wait text-gray-400'
-                                        : ttsError
-                                            ? 'text-red-400 hover:bg-red-50 hover:text-red-500 active:scale-95'
-                                            : 'text-brand-muted hover:bg-brand-primary-soft hover:text-brand-primary-dark active:scale-95'
-                                        }`}
-                                >
-                                    {ttsLoading ? <SpinnerIcon className="h-4 w-4" /> : <SpeakerIcon className="h-4 w-4" />}
-                                </button>
-                            </span>
-                        )}
-                        {funText && (
-                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">{funText}</p>
-                        )}
-                        <div className="mt-auto pt-3">
-                            {remembered ? (
-                                <span className="inline-flex animate-bounce items-center gap-1.5 rounded-full bg-brand-primary-soft px-5 py-2 text-sm font-bold text-brand-primary-dark">
-                                    <span aria-hidden="true">🌟</span>
-                                    やったね!おぼえてたね!
-                                </span>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setRemembered(true)}
-                                    tabIndex={flipped ? undefined : -1}
-                                    className="rounded-full border-2 border-brand-primary/40 bg-white px-5 py-2 text-sm font-bold text-brand-primary-dark transition hover:bg-brand-primary-soft active:scale-95"
-                                >
-                                    おぼえてた!
-                                </button>
-                            )}
-                        </div>
-                    </div>
                 </div>
             </div>
-        </div>
+        </article>
     );
 }
