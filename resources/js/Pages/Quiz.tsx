@@ -147,7 +147,7 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                         </div>
                     </section>
                 ) : (
-                    <section aria-label={`もんだい ${currentIndex + 1}`}>
+                    <section aria-label={`もんだい ${currentIndex + 1}`} className={flipped ? 'pb-24' : undefined}>
                         <QuizFlipCard
                             key={question.id}
                             question={question}
@@ -161,19 +161,21 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                         {ttsError && (
                             <p className="mt-2 text-center text-xs text-red-400">音声を再生できませんでした</p>
                         )}
-                        <div className="mt-6 flex justify-center">
-                            {flipped ? (
+                        {flipped ? (
+                            <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] z-40 flex justify-center px-4 sm:bottom-24">
                                 <button
                                     type="button"
                                     onClick={handleNext}
-                                    className="rounded-full bg-brand-primary px-8 py-3 text-base font-bold text-white shadow-sm transition hover:bg-brand-primary-dark active:scale-95"
+                                    className="pointer-events-auto w-full max-w-xs rounded-full bg-brand-primary px-8 py-3 text-base font-bold text-white shadow-lift ring-4 ring-brand-canvas/90 transition hover:bg-brand-primary-dark active:scale-95"
                                 >
                                     {isLast ? 'おしまい!' : 'つぎの もんだい'}
                                 </button>
-                            ) : (
+                            </div>
+                        ) : (
+                            <div className="mt-6 flex justify-center">
                                 <p className="text-sm font-semibold text-brand-muted">しゃしんを タップして こたえを みてね</p>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </section>
                 )}
             </div>
