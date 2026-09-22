@@ -18,8 +18,13 @@ export function setPendingUpload(
     state = { file, previewUrl: URL.createObjectURL(file), latitude, longitude, source };
 }
 
-export function takePendingUpload(): PendingUpload | null {
-    const s = state;
-    state = null;
-    return s;
+// Reading during render must be repeatable (including React StrictMode).
+export function getPendingUpload(): PendingUpload | null {
+    return state;
+}
+
+export function clearPendingUpload(pending: PendingUpload): void {
+    URL.revokeObjectURL(pending.previewUrl);
+    // Leaving an older upload must not discard a newer photo selection.
+    if (state === pending) state = null;
 }
