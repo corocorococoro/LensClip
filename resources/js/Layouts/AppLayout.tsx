@@ -107,7 +107,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                aria-label="カメラでしらべる"
+                                aria-label="写真を撮る・選ぶ"
                                 className="flex h-16 w-16 items-center justify-center rounded-full border-[5px] border-brand-canvas bg-brand-primary text-white shadow-lg shadow-brand-primary/20 transition hover:bg-brand-primary-dark active:scale-95 sm:border-white"
                             >
                                 <CameraIcon className="h-7 w-7" />
@@ -123,7 +123,7 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                 </div>
             </nav>
 
-            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
+            <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
         </div>
     );
 }

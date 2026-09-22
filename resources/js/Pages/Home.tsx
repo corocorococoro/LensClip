@@ -82,7 +82,7 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                 <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    aria-label="カメラでしらべる"
+                    aria-label="写真を撮る・選ぶ"
                     className="group mb-10 flex w-full items-center gap-4 overflow-hidden rounded-2xl bg-brand-primary p-4 text-left text-white shadow-lg shadow-brand-primary/15 transition hover:bg-brand-primary-dark active:scale-[0.99] sm:p-5"
                 >
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 transition group-hover:bg-white/20 sm:h-16 sm:w-16"><CameraIcon /></span>
@@ -93,7 +93,7 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                     <svg className="h-5 w-5 shrink-0 opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
 
-                <input type="file" accept="image/*" capture="environment" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
+                <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
 
                 {recent.length > 0 ? (
                     <section>
