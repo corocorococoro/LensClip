@@ -48,6 +48,14 @@ npm run build
 ./vendor/bin/sail test
 ```
 
+ブラウザテストを初めて実行する環境では、Playwright 用の Chromium と WebKit を準備する。
+
+```bash
+npx playwright install chromium webkit
+```
+
+フロントエンドのテスト入口は `package.json` の `test:frontend` と `test:browser` を参照する。ブラウザテストでは送信画面と画像処理を動かし、サーバ通信は置き換えるため、実際の保存・分析や iPhone 実機での確認とは分けて扱う。
+
 ## 切り分けの入口
 
 | 症状 | 最初に確認するもの |

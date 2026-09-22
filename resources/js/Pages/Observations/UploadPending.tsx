@@ -1,35 +1,49 @@
 import AppLayout from '@/Layouts/AppLayout';
-import { takePendingUpload } from '@/uploadPendingStore';
-import { Head, Link, router } from '@inertiajs/react';
+import { prepareImageUpload } from '@/lib/prepareImageUpload';
+import { clearPendingUpload, getPendingUpload } from '@/uploadPendingStore';
+import { Head, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 export default function UploadPending() {
-    const [pending] = useState(() => takePendingUpload());
-    const [isPreparingUpload, setIsPreparingUpload] = useState(() => pending?.source === 'home');
+    const [pending] = useState(getPendingUpload);
+    const [isPreparingUpload, setIsPreparingUpload] = useState(true);
     const [uploadPercent, setUploadPercent] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const didStart = useRef(false);
+    const isActive = useRef(false);
 
     useEffect(() => {
+        isActive.current = true;
         if (!pending) {
             router.visit('/dashboard');
             return;
         }
 
-        if (didStart.current) return;
+        const cleanup = () => {
+            isActive.current = false;
+            // StrictMode immediately re-runs effects. Release the preview only
+            // when the page really leaves, and never clear a newer selection.
+            queueMicrotask(() => {
+                if (!isActive.current) clearPendingUpload(pending);
+            });
+        };
+
+        if (didStart.current) return cleanup;
         didStart.current = true;
 
         const run = async () => {
-            if (pending.source === 'home') {
-                await new Promise((resolve) => window.setTimeout(resolve, 650));
-            }
+            const prepared = await prepareImageUpload(pending.file);
+            if (!isActive.current || getPendingUpload() !== pending) return;
 
             setIsPreparingUpload(false);
 
             const formData = new FormData();
-            formData.append('image', pending.file);
-            if (pending.latitude !== null) formData.append('latitude', String(pending.latitude));
-            if (pending.longitude !== null) formData.append('longitude', String(pending.longitude));
+            formData.append('image', prepared.file);
+            // Photo GPS takes precedence over the current device location, as on the server.
+            const latitude = prepared.gps?.latitude ?? pending.latitude;
+            const longitude = prepared.gps?.longitude ?? pending.longitude;
+            if (latitude !== null) formData.append('latitude', String(latitude));
+            if (longitude !== null) formData.append('longitude', String(longitude));
 
             router.post('/observations', formData, {
                 forceFormData: true,
@@ -42,7 +56,12 @@ export default function UploadPending() {
             });
         };
 
-        run();
+        run().catch(() => {
+            if (!isActive.current) return;
+            setIsPreparingUpload(false);
+            setError('写真の準備に失敗しました。別の写真を選んでもう一度お試しください。');
+        });
+        return cleanup;
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -114,14 +133,6 @@ export default function UploadPending() {
                     </div>
                 )}
 
-                {!error && (
-                    <Link
-                        href="/library"
-                        className="mt-4 min-h-10 px-3 py-2 text-xs font-bold text-brand-muted hover:text-brand-primary-dark"
-                    >
-                        ライブラリでまつ →
-                    </Link>
-                )}
             </div>
         </AppLayout>
     );
