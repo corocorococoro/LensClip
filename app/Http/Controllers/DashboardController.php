@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Observation;
+use App\Support\ObservationSummary;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -20,39 +21,22 @@ class DashboardController extends Controller
     {
         $userId = auth()->id();
 
-        $today = Observation::forUser($userId)
-            ->whereDate('created_at', today())
-            ->count();
-
-        $total = Observation::forUser($userId)->count();
-
-        $processing = Observation::forUser($userId)
-            ->processing()
-            ->count();
-
-        $recent = Observation::forUser($userId)
-            ->whereIn('status', ['processing', 'ready'])
-            ->orderByRaw("case when status = 'processing' then 0 else 1 end")
-            ->latest()
-            ->take(3)
-            ->get();
-
-        // クイズは出題可能なときだけ導線を出す(押せない導線を見せない)
-        $quizEligibleCount = Observation::forUser($userId)
-            ->ready()
-            ->whereNotNull('title')
-            ->count();
-
         return Inertia::render('Home', [
-            'stats' => [
-                'today' => $today,
-                'total' => $total,
-                'processing' => $processing,
+            'stats' => fn () => [
+                'today' => Observation::forUser($userId)->whereDate('created_at', today())->count(),
+                'total' => Observation::forUser($userId)->count(),
+                'processing' => Observation::forUser($userId)->processing()->count(),
             ],
-            'recent' => $recent,
-            'lookback' => $this->buildLookback($userId),
-            'quizAvailable' => $quizEligibleCount >= QuizController::MIN_ELIGIBLE,
-            'magazine' => $this->buildMagazineTeaser($userId),
+            'recent' => fn () => Observation::forUser($userId)
+                ->select(ObservationSummary::COLUMNS)
+                ->whereIn('status', ['processing', 'ready'])
+                ->orderByRaw("case when status = 'processing' then 0 else 1 end")
+                ->latest()->orderByDesc('id')->take(3)->get()
+                ->map(fn (Observation $observation) => ObservationSummary::from($observation)),
+            'lookback' => fn () => $this->buildLookback($userId),
+            'quizAvailable' => fn () => Observation::forUser($userId)->ready()
+                ->whereNotNull('title')->count() >= QuizController::MIN_ELIGIBLE,
+            'magazine' => fn () => $this->buildMagazineTeaser($userId),
         ]);
     }
 
@@ -64,6 +48,7 @@ class DashboardController extends Controller
     private function buildLookback(int|string $userId): ?array
     {
         $past = fn () => Observation::forUser($userId)
+            ->select(ObservationSummary::COLUMNS)
             ->ready()
             ->where('created_at', '<=', now()->subDays(self::LOOKBACK_MIN_AGE_DAYS));
 
@@ -73,7 +58,7 @@ class DashboardController extends Controller
             ->latest()
             ->first();
         if ($observation) {
-            return ['label' => '1年前のきょう', 'observation' => $observation];
+            return ['label' => '1年前のきょう', 'observation' => ObservationSummary::from($observation)];
         }
 
         // ② 1か月前(±数日)
@@ -82,7 +67,7 @@ class DashboardController extends Controller
             ->latest()
             ->first();
         if ($observation) {
-            return ['label' => '1か月前の はっけん', 'observation' => $observation];
+            return ['label' => '1か月前の はっけん', 'observation' => ObservationSummary::from($observation)];
         }
 
         // ③ 同じ季節の過去の発見
@@ -98,7 +83,7 @@ class DashboardController extends Controller
             ->latest()
             ->first();
         if ($observation) {
-            return ['label' => 'おなじ きせつの はっけん', 'observation' => $observation];
+            return ['label' => 'おなじ きせつの はっけん', 'observation' => ObservationSummary::from($observation)];
         }
 
         // ④ 直近の記録の保存済み座標の近く(クライアントの現在地はページ生成時に使えない)
@@ -117,14 +102,14 @@ class DashboardController extends Controller
                 ->latest()
                 ->first();
             if ($observation) {
-                return ['label' => 'この ばしょの ちかくの はっけん', 'observation' => $observation];
+                return ['label' => 'この ばしょの ちかくの はっけん', 'observation' => ObservationSummary::from($observation)];
             }
         }
 
         // ⑤ いちばん最初の発見
         $observation = $past()->oldest()->first();
         if ($observation) {
-            return ['label' => 'いちばん さいしょの はっけん', 'observation' => $observation];
+            return ['label' => 'いちばん さいしょの はっけん', 'observation' => ObservationSummary::from($observation)];
         }
 
         return null;

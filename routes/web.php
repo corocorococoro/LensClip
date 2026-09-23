@@ -52,6 +52,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/observations/{observation}/thumb', [ObservationController::class, 'thumb'])
         ->middleware('throttle:api-general')
         ->name('observations.thumb');
+    Route::get('/observations/{observation}/image/{variant}', [ObservationController::class, 'image'])
+        ->whereIn('variant', ['original', 'cropped'])
+        ->middleware('throttle:api-general')
+        ->name('observations.image');
     Route::get('/observations/{observation}/stream', [ObservationController::class, 'stream'])
         ->middleware('throttle:api-general')
         ->name('observations.stream');

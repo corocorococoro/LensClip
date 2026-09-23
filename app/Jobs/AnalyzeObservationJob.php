@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\Observation;
 use App\Models\User;
 use App\Services\ImageAnalysisService;
+use App\Support\RetriesTransientObservationFailures;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -19,18 +20,24 @@ use Intervention\Image\ImageManager;
 
 class AnalyzeObservationJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesTransientObservationFailures, SerializesModels;
 
     public int $tries = 3;
 
     public int $backoff = 10;
 
+    // Explicit default also applies when a pre-deployment queued payload is unserialized.
+    public ?string $processingToken = null;
+
     /**
      * Create a new job instance.
      */
     public function __construct(
-        public string $observationId
-    ) {}
+        public string $observationId,
+        ?string $processingToken = null,
+    ) {
+        $this->processingToken = $processingToken;
+    }
 
     /**
      * Execute the job.
@@ -51,7 +58,7 @@ class AnalyzeObservationJob implements ShouldQueue
         }
 
         // Skip if not in processing status
-        if ($observation->status !== 'processing') {
+        if (! $this->isCurrentAnalysis($observation)) {
             Log::info('AnalyzeObservationJob: Skipping, status is not processing', [
                 'status' => $observation->status,
             ]);
@@ -86,7 +93,7 @@ class AnalyzeObservationJob implements ShouldQueue
                 // 同一観察の重複ジョブ対策: ロック後に最新状態を取り直し、
                 // 先行ジョブが確定済みなら上書きしない
                 $current = Observation::whereKey($observation->id)->lockForUpdate()->first();
-                if (! $current || $current->status !== 'processing') {
+                if (! $this->isCurrentAnalysis($current)) {
                     return false;
                 }
 
@@ -108,6 +115,8 @@ class AnalyzeObservationJob implements ShouldQueue
                     'milestones' => $milestones,
                 ]);
 
+                $this->syncTags($current, $result['ai_json']['tags'] ?? []);
+
                 return true;
             });
 
@@ -119,12 +128,20 @@ class AnalyzeObservationJob implements ShouldQueue
                 return;
             }
 
-            // Sync tags from AI result
-            $this->syncTags($observation, $result['ai_json']['tags'] ?? []);
-
             Log::info('AnalyzeObservationJob: Success', ['id' => $this->observationId]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            if (! $this->isCurrentAnalysis($observation->fresh())) {
+                return;
+            }
+            if ($this->isTransientFailure($e)) {
+                Log::warning('Observation job: transient provider failure', [
+                    'observation_id' => $this->observationId,
+                    'exception' => $e::class,
+                ]);
+                // Workers persist/report thrown exceptions; never pass provider response bodies through.
+                throw new \RuntimeException('Temporary external service failure.');
+            }
             $errorId = (string) Str::uuid();
             Log::error('AnalyzeObservationJob: Failed', [
                 'id' => $this->observationId,
@@ -132,7 +149,7 @@ class AnalyzeObservationJob implements ShouldQueue
                 'exception' => $e::class,
             ]);
 
-            $observation->update([
+            $this->currentAnalysisQuery()->update([
                 'status' => 'failed',
                 'error_message' => $this->userVisibleMessageForException($e, $errorId),
             ]);
@@ -171,19 +188,32 @@ class AnalyzeObservationJob implements ShouldQueue
         $encodedOriginal = (string) $image->toWebp(quality: 80);
         unset($image);
 
-        Storage::disk()->put($localOriginalPath, $encodedOriginal);
+        $originalPath = str_starts_with($localOriginalPath, 'pending/')
+            ? substr($localOriginalPath, 8) : $localOriginalPath;
+        $thumbPath = str_starts_with($localThumbPath, 'pending/')
+            ? substr($localThumbPath, 8) : $localThumbPath;
 
-        if (Storage::disk('local')->exists($localThumbPath)) {
-            Storage::disk()->put($localThumbPath, Storage::disk('local')->get($localThumbPath));
+        if (! Storage::disk()->put($originalPath, $encodedOriginal)) {
+            throw new \RuntimeException('Could not persist the normalized image.');
+        }
+
+        if (! Storage::disk('local')->exists($localThumbPath)) {
+            throw new \RuntimeException('Staged thumbnail is missing.');
+        }
+        if (! Storage::disk()->put($thumbPath, Storage::disk('local')->get($localThumbPath))) {
+            throw new \RuntimeException('Could not persist the thumbnail.');
         }
 
         $observation->update([
-            'original_path' => $localOriginalPath,
-            'thumb_path' => $localThumbPath,
+            'original_path' => $originalPath,
+            'thumb_path' => $thumbPath,
         ]);
 
         // Clean up local copies
-        Storage::disk('local')->delete([$localOriginalPath, $localThumbPath]);
+        // Keep final files for legacy jobs whose local staging path is also the destination.
+        if (config('filesystems.default') !== 'local' || $localOriginalPath !== $originalPath) {
+            Storage::disk('local')->delete([$localOriginalPath, $localThumbPath]);
+        }
 
         // Reload model so subsequent reads use the GCS paths
         $observation->refresh();
@@ -252,7 +282,7 @@ class AnalyzeObservationJob implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         $observation = Observation::find($this->observationId);
-        if ($observation) {
+        if ($this->isCurrentAnalysis($observation)) {
             $errorId = (string) Str::uuid();
             Log::error('AnalyzeObservationJob: Terminal failure', [
                 'id' => $this->observationId,
@@ -260,11 +290,27 @@ class AnalyzeObservationJob implements ShouldQueue
                 'exception' => $exception::class,
             ]);
 
-            $observation->update([
+            $this->currentAnalysisQuery()->update([
                 'status' => 'failed',
                 'error_message' => $this->userVisibleMessageForException($exception, $errorId),
             ]);
         }
+    }
+
+    private function isCurrentAnalysis(?Observation $observation): bool
+    {
+        return $observation !== null
+            && $observation->status === 'processing'
+            && $observation->processing_type === 'identify'
+            && $observation->processing_token === $this->processingToken;
+    }
+
+    private function currentAnalysisQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Observation::whereKey($this->observationId)
+            ->where('status', 'processing')
+            ->where('processing_type', 'identify')
+            ->where('processing_token', $this->processingToken);
     }
 
     /**

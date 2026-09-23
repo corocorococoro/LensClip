@@ -167,6 +167,9 @@ function LibraryContent({
         initialPagination ?? { hasMore: false, nextCursor: null },
     );
     const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [loadMoreError, setLoadMoreError] = useState(false);
+    const [statusError, setStatusError] = useState(false);
+    const [statusRetryKey, setStatusRetryKey] = useState(0);
     const loadMoreAbortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
@@ -175,7 +178,8 @@ function LibraryContent({
 
     // --- Load more ---
     const loadMore = useCallback(async () => {
-        if (!pagination.nextCursor || isLoadingMore) return;
+        if (!pagination.nextCursor || loadMoreAbortRef.current) return;
+        setLoadMoreError(false);
         setIsLoadingMore(true);
         const controller = new AbortController();
         loadMoreAbortRef.current = controller;
@@ -192,7 +196,7 @@ function LibraryContent({
                 headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 signal: controller.signal,
             });
-            if (!res.ok) return;
+            if (!res.ok) throw new Error('Library request failed');
             const data = await res.json();
 
             if (viewMode === 'date' && data.dateGroups) {
@@ -204,7 +208,7 @@ function LibraryContent({
             setPagination(data.pagination ?? { hasMore: false, nextCursor: null });
         } catch (error) {
             if (!(error instanceof DOMException && error.name === 'AbortError')) {
-                throw error;
+                setLoadMoreError(true);
             }
         } finally {
             if (loadMoreAbortRef.current === controller) {
@@ -214,7 +218,7 @@ function LibraryContent({
         }
     }, [pagination.nextCursor, isLoadingMore, viewMode, filters]);
 
-    const sentinelRef = useInfiniteScroll(loadMore, pagination.hasMore && !isLoadingMore);
+    const sentinelRef = useInfiniteScroll(loadMore, pagination.hasMore && !isLoadingMore && !loadMoreError);
 
     const visibleObservations = useMemo(() => {
         if (viewMode === 'date') {
@@ -230,13 +234,21 @@ function LibraryContent({
     );
 
     useEffect(() => {
-        if (processingIds.length === 0) return;
+        if (processingIds.length === 0) {
+            setStatusError(false);
+            return;
+        }
 
         let cancelled = false;
         let inFlight = false;
+        let failures = 0;
+        let timer: ReturnType<typeof setTimeout> | undefined;
+        const controller = new AbortController();
 
         const refreshProcessingCards = async () => {
-            if (inFlight) return;
+            if (cancelled || inFlight) return;
+            clearTimeout(timer);
+            if (document.hidden || !navigator.onLine) return;
             inFlight = true;
 
             const params = new URLSearchParams();
@@ -245,32 +257,39 @@ function LibraryContent({
             try {
                 const res = await fetch(`/observations/statuses?${params.toString()}`, {
                     headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: controller.signal,
                 });
-                if (!res.ok || cancelled) return;
-
+                if (!res.ok) throw new Error('Status request failed');
                 const data = (await res.json()) as { observations?: ObservationSummary[] };
-                const updates = data.observations ?? [];
-                if (updates.length === 0) return;
-
-                const updatesById = new Map(updates.map((observation) => [observation.id, observation]));
-
+                if (cancelled) return;
+                failures = 0;
+                setStatusError(false);
+                const updatesById = new Map((data.observations ?? []).map((observation) => [observation.id, observation]));
                 setAllDateGroups((groups) => updateDateGroups(groups, updatesById));
-                setCategoryObservations((current) =>
-                    updateObservationList(current, updatesById),
-                );
+                setCategoryObservations((current) => updateObservationList(current, updatesById));
+            } catch {
+                if (!cancelled) {
+                    failures += 1;
+                    setStatusError(true);
+                }
             } finally {
                 inFlight = false;
+                if (!cancelled) timer = setTimeout(refreshProcessingCards, Math.min(4000 * 2 ** failures, 30000));
             }
         };
 
-        refreshProcessingCards();
-        const intervalId = window.setInterval(refreshProcessingCards, 4000);
-
+        void refreshProcessingCards();
+        const resume = () => { void refreshProcessingCards(); };
+        window.addEventListener('online', resume);
+        document.addEventListener('visibilitychange', resume);
         return () => {
             cancelled = true;
-            window.clearInterval(intervalId);
+            clearTimeout(timer);
+            controller.abort();
+            window.removeEventListener('online', resume);
+            document.removeEventListener('visibilitychange', resume);
         };
-    }, [processingIds]);
+    }, [processingIds, statusRetryKey]);
 
     // --- Navigation handlers ---
     const handleSearch = (e: React.FormEvent) => {
@@ -314,6 +333,15 @@ function LibraryContent({
     const loadingIndicator = isLoadingMore && (
         <div className="flex justify-center py-8" role="status" aria-label="読み込み中">
             <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-primary/25 border-r-brand-primary" />
+        </div>
+    );
+
+    const loadMoreFeedback = loadMoreError && (
+        <div role="alert" className="py-4 text-center text-sm text-brand-muted">
+            <p>続きの記録を読み込めませんでした。</p>
+            <button type="button" onClick={() => void loadMore()} className="mt-2 min-h-11 px-4 font-bold text-brand-primary-dark">
+                再試行
+            </button>
         </div>
     );
 
@@ -373,6 +401,15 @@ function LibraryContent({
                 </div>
             )}
 
+            {statusError && (
+                <div role="alert" className="mb-4 rounded-xl bg-brand-sand-soft p-4 text-sm text-brand-muted">
+                    <p>分析状況を確認できませんでした。接続を確認して再試行してください。</p>
+                    <button type="button" onClick={() => setStatusRetryKey((key) => key + 1)} className="mt-2 min-h-11 font-bold text-brand-primary-dark">
+                        状態を再確認
+                    </button>
+                </div>
+            )}
+
             {/* Date View */}
             {viewMode === 'date' && (
                 <>
@@ -402,6 +439,7 @@ function LibraryContent({
                                     </div>
                                 </div>
                             ))}
+                            {loadMoreFeedback}
                             {loadingIndicator}
                             {sentinel}
                         </div>
@@ -496,6 +534,7 @@ function LibraryContent({
                                     message="このカテゴリにはまだなにもないよ"
                                 />
                             )}
+                            {loadMoreFeedback}
                             {loadingIndicator}
                             {sentinel}
                         </div>

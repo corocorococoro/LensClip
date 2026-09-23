@@ -6,6 +6,7 @@ use App\Actions\UpdateObservationTagsAction;
 use App\Models\Observation;
 use App\Services\ImageAnalysisService;
 use App\Support\CategoryCatalog;
+use App\Support\RetriesTransientObservationFailures;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -17,7 +18,7 @@ use Illuminate\Support\Str;
 
 class CorrectObservationJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, InteractsWithQueue, Queueable, RetriesTransientObservationFailures, SerializesModels;
 
     public int $tries = 3;
 
@@ -92,6 +93,17 @@ class CorrectObservationJob implements ShouldQueue
                 Log::info('CorrectObservationJob: Success', ['observation_id' => $this->observationId]);
             }
         } catch (\Throwable $exception) {
+            if (! $this->isCurrentCorrection($observation->fresh())) {
+                return;
+            }
+            if ($this->isTransientFailure($exception)) {
+                Log::warning('Observation job: transient provider failure', [
+                    'observation_id' => $this->observationId,
+                    'exception' => $exception::class,
+                ]);
+                // Workers persist/report thrown exceptions; never pass provider response bodies through.
+                throw new \RuntimeException('Temporary external service failure.');
+            }
             $this->markFailed($exception);
         }
     }

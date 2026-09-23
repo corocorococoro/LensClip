@@ -33,15 +33,17 @@ class ObservationService
         $finalLatitude = $gps['latitude'] ?? $latitude;
         $finalLongitude = $gps['longitude'] ?? $longitude;
 
-        // Generate unique filenames (GCS final paths, used as local paths too)
+        // Keep staging separate from normalized final files, even when both disks are local.
         $hashName = Str::random(40);
-        $originalPath = "observations/{$hashName}.webp";
-        $thumbPath = "observations/{$hashName}_thumb.webp";
+        $originalPath = "pending/observations/{$hashName}.webp";
+        $thumbPath = "pending/observations/{$hashName}_thumb.webp";
 
         // Save raw uploaded bytes directly — skip re-encoding here.
         // The job will orient/resize/encode before uploading to GCS.
         // This removes the heaviest CPU work (~200–500 ms) from the request path.
-        Storage::disk('local')->put($originalPath, file_get_contents($tempPath));
+        if (! Storage::disk('local')->put($originalPath, file_get_contents($tempPath))) {
+            throw new \RuntimeException('Could not stage the uploaded image.');
+        }
 
         // Generate thumbnail synchronously (fast ~50–100 ms) so the Processing page
         // can display the photo immediately via the /observations/{id}/thumb route.
@@ -49,14 +51,19 @@ class ObservationService
         $image = $manager->read($tempPath);
         $image->orient();
         $image->scaleDown(width: 300);
-        Storage::disk('local')->put($thumbPath, (string) $image->toWebp(quality: 70));
+        if (! Storage::disk('local')->put($thumbPath, (string) $image->toWebp(quality: 70))) {
+            Storage::disk('local')->delete($originalPath);
+            throw new \RuntimeException('Could not stage the thumbnail.');
+        }
         unset($image);
 
         // Create Observation with processing status.
         // Paths are prefixed with "local:" so the model knows they haven't been uploaded to GCS yet.
+        $token = (string) Str::uuid();
         $observation = Observation::create([
             'user_id' => $user->id,
             'status' => 'processing',
+            'processing_token' => $token,
             'original_path' => 'local:'.$originalPath,
             'thumb_path' => 'local:'.$thumbPath,
             'latitude' => $finalLatitude,
@@ -74,7 +81,7 @@ class ObservationService
         ]);
 
         // Dispatch analysis job
-        AnalyzeObservationJob::dispatch($observation->id);
+        AnalyzeObservationJob::dispatch($observation->id, $token);
 
         return $observation;
     }

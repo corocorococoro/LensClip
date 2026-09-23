@@ -25,9 +25,9 @@ class ImageProcessingTest extends TestCase
 
         $observation = $service->createObservation($user, $file);
 
-        $this->assertStringStartsWith('local:observations/', (string) $observation->original_path);
+        $this->assertStringStartsWith('local:pending/observations/', (string) $observation->original_path);
         $this->assertStringEndsWith('.webp', (string) $observation->original_path);
-        $this->assertStringStartsWith('local:observations/', (string) $observation->thumb_path);
+        $this->assertStringStartsWith('local:pending/observations/', (string) $observation->thumb_path);
         $this->assertStringEndsWith('_thumb.webp', (string) $observation->thumb_path);
 
         $originalLocalPath = substr((string) $observation->original_path, 6);

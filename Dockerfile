@@ -23,6 +23,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     bcmath \
     exif \
     pdo_mysql \
+    pcntl \
     opcache
 
 # Configure PHP for larger uploads and memory usage

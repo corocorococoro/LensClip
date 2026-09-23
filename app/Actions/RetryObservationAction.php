@@ -24,13 +24,14 @@ class RetryObservationAction
             return;
         }
 
+        $token = (string) Str::uuid();
         $observation->update([
             'status' => 'processing',
             'processing_type' => 'identify',
-            'processing_token' => null,
+            'processing_token' => $token,
             'error_message' => null,
         ]);
 
-        AnalyzeObservationJob::dispatch($observation->id);
+        AnalyzeObservationJob::dispatch($observation->id, $token);
     }
 }

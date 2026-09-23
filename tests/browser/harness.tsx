@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
+import Library from '../../resources/js/Pages/Library';
 import UploadPending from '../../resources/js/Pages/Observations/UploadPending';
 import { readImageGps } from '../../resources/js/lib/imageGps';
 import { prepareImageUpload } from '../../resources/js/lib/prepareImageUpload';
@@ -19,6 +20,10 @@ Object.assign(window, {
         if (file) setPendingUpload(file, latitude, longitude);
         root = createRoot(document.getElementById('root')!);
         root.render(<StrictMode><UploadPending /></StrictMode>);
+    },
+    mountLibrary(props: any) {
+        root = createRoot(document.getElementById('root')!);
+        root.render(<StrictMode><Library {...props} /></StrictMode>);
     },
     unmountUpload() { root?.unmount(); root = null; },
 });
