@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Jobs\CorrectObservationJob;
 use App\Models\Observation;
+use App\Support\DispatchObservationJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -36,6 +37,7 @@ class StartObservationCorrectionAction
             $this->updateTagsAction->execute($observation, []);
         });
 
-        CorrectObservationJob::dispatch($observation->id, $token);
+        app(DispatchObservationJob::class)->execute(new CorrectObservationJob($observation->id, $token));
+        $observation->refresh();
     }
 }
