@@ -1,3 +1,4 @@
+import UploadQueuePanel from '@/Components/UploadQueuePanel';
 import BrandMark from '@/Components/BrandMark';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
 import { useScrollDirection } from '@/hooks/useScrollDirection';
@@ -87,6 +88,8 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                     </div>
                 </div>
             </header>
+
+            <div className={fullScreen ? 'absolute inset-x-0 top-16 z-40' : ''}><UploadQueuePanel /></div>
 
             <main id="main-content" className={fullScreen ? 'h-[calc(100dvh-4rem-4.75rem)] overflow-hidden' : 'mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-9'}>
                 {children}

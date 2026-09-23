@@ -46,6 +46,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('observations.store');
     Route::get('/observations/upload-pending', [ObservationController::class, 'uploadPending'])
         ->name('observations.uploadPending');
+    Route::get('/observations/uploads/{uploadId}', [ObservationController::class, 'uploadStatus'])
+        ->whereUuid('uploadId')->middleware('throttle:api-general')->name('observations.uploadStatus');
     Route::get('/observations/statuses', [ObservationController::class, 'statuses'])
         ->middleware('throttle:api-general')
         ->name('observations.statuses');

@@ -12,7 +12,9 @@ class StoreObservationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        $owner = $this->input('upload_owner_id');
+
+        return $owner === null || ((is_int($owner) || is_string($owner)) && (string) $owner === (string) $this->user()?->id);
     }
 
     /**
@@ -21,6 +23,8 @@ class StoreObservationRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'upload_id' => ['nullable', 'uuid'],
+            'upload_owner_id' => ['required_with:upload_id', 'integer'],
             'image' => [
                 'required',
                 'image',

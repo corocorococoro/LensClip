@@ -24,6 +24,15 @@ class ObservationService
         ?float $latitude = null,
         ?float $longitude = null
     ): Observation {
+        $observation = $this->stageObservation($user, $file, $latitude, $longitude);
+        app(DispatchObservationJob::class)->execute(new AnalyzeObservationJob($observation->id, $observation->processing_token));
+
+        return $observation->refresh();
+    }
+
+    /** Stage files and create a record; the caller dispatches after committing. */
+    public function stageObservation(User $user, UploadedFile $file, ?float $latitude = null, ?float $longitude = null): Observation
+    {
         $tempPath = $file->getPathname();
 
         // Extract GPS from EXIF before processing (WebP will strip EXIF)
@@ -84,10 +93,6 @@ class ObservationService
             'original_path' => $originalPath,
             'has_gps' => ! empty($gps),
         ]);
-
-        // Dispatch analysis job
-        app(DispatchObservationJob::class)->execute(new AnalyzeObservationJob($observation->id, $token));
-        $observation->refresh();
 
         return $observation;
     }

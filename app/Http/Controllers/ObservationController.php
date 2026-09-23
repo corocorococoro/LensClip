@@ -263,11 +263,15 @@ class ObservationController extends Controller
      */
     public function store(StoreObservationRequest $request)
     {
-        $observation = $this->observationService->createObservation(
+        $service = $request->filled('upload_id')
+            ? app(\App\Services\ObservationUploadService::class)
+            : $this->observationService;
+        $observation = $service->createObservation(
             $request->user(),
             $request->file('image'),
             $request->validated('latitude'),
-            $request->validated('longitude')
+            $request->validated('longitude'),
+            ...($request->filled('upload_id') ? [$request->validated('upload_id')] : [])
         );
 
         // Return JSON for API calls, redirect for Inertia
@@ -276,6 +280,21 @@ class ObservationController extends Controller
         }
 
         return redirect()->route('observations.show', $observation);
+    }
+
+    public function uploadStatus(Request $request, string $uploadId)
+    {
+        $request->validate(['upload_owner_id' => ['required', 'integer']]);
+        abort_unless((string) $request->input('upload_owner_id') === (string) $request->user()->id, 403);
+        $receipt = \Illuminate\Support\Facades\DB::table('observation_uploads')
+            ->where('user_id', $request->user()->id)->where('upload_id', strtolower($uploadId))->first();
+        abort_unless($receipt, 404);
+        abort_unless($receipt->observation_id, 410);
+        $observation = Observation::forUser($request->user()->id)->find($receipt->observation_id);
+        abort_unless($observation, 410);
+
+        return response()->json($observation->only(['id', 'status', 'title']))
+            ->header('Cache-Control', 'private, no-store');
     }
 
     /**
@@ -370,7 +389,7 @@ class ObservationController extends Controller
     }
 
     /**
-     * Show the upload-pending page (client holds the file, uploads from there).
+     * Show progress for the document-owned upload queue.
      */
     public function uploadPending(): \Inertia\Response
     {

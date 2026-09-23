@@ -1,5 +1,6 @@
 import '../css/app.css';
 import './bootstrap';
+import { initializeUploadSession } from '@/uploadSession';
 
 import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
@@ -20,6 +21,8 @@ createInertiaApp({
             return;
         }
 
+        const auth = props.initialPage.props.auth as { user?: { id: number } } | undefined;
+        initializeUploadSession(auth?.user?.id ?? null);
         createRoot(el).render(<App {...props} />);
     },
     progress: {

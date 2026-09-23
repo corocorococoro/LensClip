@@ -99,89 +99,78 @@ test('keeps an already smaller original and GIFs without re-encoding', async ({ 
     expect(result).toEqual({same:true,gifSame:true});
 });
 
-test('StrictMode sends one compressed image with photo GPS ahead of device GPS', async ({ page }) => {
-    const exif=[...wrap(tiff()).subarray(2,-2)];
-    await page.evaluate(async (exif) => {
-        const api=window as any;const source=await api.photo();const bytes=new Uint8Array(await source.arrayBuffer());
-        const file=new File([bytes.slice(0,2),new Uint8Array(exif),bytes.slice(2)],'camera.jpg',{type:'image/jpeg'});
-        api.originalSize=file.size;api.mountUpload(file,1,2);
-    },exif);
-    await page.waitForFunction(()=>(window as any).calls.posts.length===1);
-    const result=await page.evaluate(()=>{
-        const api=window as any;const post=api.calls.posts[0];const file=post.data.get('image');
-        return {posts:api.calls.posts.length,visits:api.calls.visits,latitude:post.data.get('latitude'),longitude:post.data.get('longitude'),size:file.size,original:api.originalSize};
+test('StrictMode sends once with photo GPS, and leaving the page keeps sending', async ({ page }) => {
+    let finish!: () => void;
+    const pending = new Promise<void>(resolve => { finish = resolve; });
+    await page.route('**/observations', async route => { await pending; await route.fulfill({ json: { id: 'saved-photo', status: 'processing', title: null } }); });
+    const exif = [...wrap(tiff()).subarray(2, -2)];
+    await page.evaluate(async exif => {
+        const api = window as any; const source = await api.photo(); const bytes = new Uint8Array(await source.arrayBuffer());
+        const file = new File([bytes.slice(0, 2), new Uint8Array(exif), bytes.slice(2)], 'camera.jpg', { type: 'image/jpeg' });
+        api.originalSize = file.size; api.mountUpload(file, 1, 2);
+    }, exif);
+    await page.waitForFunction(() => (window as any).calls.posts.length === 1);
+    const result = await page.evaluate(() => {
+        const api = window as any; const post = api.calls.posts[0];
+        return { latitude: post.data.get('latitude'), longitude: post.data.get('longitude'), size: post.data.get('image').size, original: api.originalSize, id: post.data.get('upload_id'), owner: post.data.get('upload_owner_id') };
     });
-    expect(result.posts).toBe(1);expect(result.visits).toEqual([]);
-    expect(result.latitude).toBe('35.5');expect(result.longitude).toBe('139.75');expect(result.size).toBeLessThan(result.original);
-    await expect(page.getByText('ライブラリでまつ')).toHaveCount(0);
-    await page.evaluate(() => (window as any).calls.posts[0].options.onProgress({percentage:50}));
-    await expect(page.getByRole('progressbar')).toHaveAttribute('aria-valuenow','50');
-    await page.evaluate(() => (window as any).calls.posts[0].options.onError({image:'画像サイズを確認してください。'}));
-    await expect(page.getByRole('alert')).toContainText('画像サイズを確認してください。');
+    expect(result.latitude).toBe('35.5'); expect(result.longitude).toBe('139.75');
+    expect(result.size).toBeLessThan(result.original); expect(result.id).toMatch(/^[\da-f-]{36}$/); expect(result.owner).toBe('1');
+    await page.getByRole('link', { name: 'ライブラリで待つ' }).click();
+    await expect(page.getByRole('region', { name: '写真の送信状況' })).toBeVisible();
+    finish();
+    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(1);
+    expect(await page.evaluate(() => (window as any).calls.visits)).toEqual(['/library']);
+    await page.waitForFunction(() => (window as any).activeUrls.size === 0);
 });
 
-test('keeps zero device coordinates when photo GPS is missing', async ({ page }) => {
-    await page.evaluate(async ()=>{const api=window as any;api.mountUpload(await api.photo(),0,0)});
-    await page.waitForFunction(()=>(window as any).calls.posts.length===1);
-    expect(await page.evaluate(()=>{
-        const data=(window as any).calls.posts[0].data;return [data.get('latitude'),data.get('longitude')];
-    })).toEqual(['0','0']);
-});
-
-test('omits unavailable coordinates instead of inventing a location', async ({ page }) => {
-    await page.evaluate(async ()=>{const api=window as any;api.mountUpload(await api.photo())});
-    await page.waitForFunction(()=>(window as any).calls.posts.length===1);
-    expect(await page.evaluate(()=>{
-        const data=(window as any).calls.posts[0].data;return [data.has('latitude'),data.has('longitude')];
-    })).toEqual([false,false]);
-});
-
-for(const failure of ['decode','encode']) {
-    test(`${failure} failure shows recovery and never sends the original`, async ({ page }) => {
-        await page.evaluate(async failure=>{
-            const api=window as any;
-            const file=failure==='decode'?new File([new Uint8Array([255,216,255,0])],'broken.jpg',{type:'image/jpeg'}):await api.photo();
-            if(failure==='encode') HTMLCanvasElement.prototype.toBlob=function(callback){callback(null)};
-            api.mountUpload(file);
-        },failure);
-        await expect(page.getByRole('alert')).toContainText('写真の準備に失敗しました');
-        expect(await page.evaluate(()=>(window as any).calls.posts.length)).toBe(0);
-        await page.getByRole('button',{name:'もどる'}).click();
-        expect(await page.evaluate(()=>(window as any).calls.visits)).toContain('/dashboard');
+for (const coordinates of [[0, 0], [null, null]]) {
+    test(`preserves device coordinates ${coordinates}`, async ({ page }) => {
+        await page.route('**/observations', route => route.fulfill({ json: { id: 'saved', status: 'processing', title: null } }));
+        await page.evaluate(async coordinates => { const api = window as any; api.mountUpload(await api.photo(), ...coordinates); }, coordinates);
+        await page.waitForFunction(() => (window as any).calls.posts.length === 1);
+        expect(await page.evaluate(() => { const data = (window as any).calls.posts[0].data; return [data.get('latitude'), data.get('longitude')]; })).toEqual(coordinates.map(value => value === null ? null : String(value)));
     });
 }
 
-test('leaving during encoding cancels sending, releases URLs, and retains a newer selection', async ({ page }) => {
-    await page.evaluate(async ()=>{
-        const api=window as any;const file=await api.photo();const toBlob=HTMLCanvasElement.prototype.toBlob;
-        HTMLCanvasElement.prototype.toBlob=function(callback,type,quality){api.finishEncoding=()=>toBlob.call(this,callback,type,quality)};
-        api.mountUpload(file);
+for (const failure of ['decode', 'encode']) {
+    test(`${failure} failure shows recovery without uploading`, async ({ page }) => {
+        await page.evaluate(async failure => {
+            const api = window as any;
+            const file = failure === 'decode' ? new File([new Uint8Array([255, 216, 255, 0])], 'broken.jpg', { type: 'image/jpeg' }) : await api.photo();
+            if (failure === 'encode') HTMLCanvasElement.prototype.toBlob = function (callback) { callback(null); };
+            api.mountUpload(file);
+        }, failure);
+        await expect(page.getByRole('alert')).toContainText('写真の準備に失敗しました');
+        expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(0);
+        await page.getByRole('button', { name: '送信待ちから取り除く' }).click();
+        expect(await page.evaluate(() => (window as any).activeUrls.size)).toBe(0);
     });
-    await page.waitForFunction(()=>typeof (window as any).finishEncoding==='function');
-    const result=await page.evaluate(async()=>{
-        const api=window as any;const old=api.getPendingUpload();
-        const newFile=new File(['GIF89a'],'new.gif',{type:'image/gif'});
-        api.setPendingUpload(newFile,null,null);api.unmountUpload();
-        await Promise.resolve();api.finishEncoding();
-        return {oldPreview:old.previewUrl,newName:api.getPendingUpload()?.file.name};
-    });
-    await page.waitForFunction(()=>(window as any).activeUrls.size===1);
-    expect(result.newName).toBe('new.gif');
-    expect(await page.evaluate(()=>(window as any).calls.posts.length)).toBe(0);
-    expect(await page.evaluate(()=>(window as any).revoked)).toContain(result.oldPreview);
-});
+}
 
-test('a newer photo selection suppresses an older in-flight preparation', async ({ page }) => {
-    await page.evaluate(async()=>{
-        const api=window as any;const file=await api.photo();const toBlob=HTMLCanvasElement.prototype.toBlob;
-        HTMLCanvasElement.prototype.toBlob=function(callback,type,quality){api.finishEncoding=()=>toBlob.call(this,callback,type,quality)};
+test('leaving during encoding continues the first upload and queues the next photo', async ({ page }) => {
+    let finish!: () => void;
+    const pending = new Promise<void>(resolve => { finish = resolve; });
+    let count = 0;
+    await page.route('**/observations', async route => { count++; if (count === 1) await pending; await route.fulfill({ json: { id: `saved-${count}`, status: 'processing', title: null } }); });
+    await page.evaluate(async () => {
+        const api = window as any; const file = await api.photo(); const toBlob = HTMLCanvasElement.prototype.toBlob;
+        HTMLCanvasElement.prototype.toBlob = function (callback, type, quality) { api.finishEncoding = () => { HTMLCanvasElement.prototype.toBlob = toBlob; toBlob.call(this, callback, type, quality); }; };
         api.mountUpload(file);
     });
-    await page.waitForFunction(()=>typeof (window as any).finishEncoding==='function');
-    await page.evaluate(()=>{
-        const api=window as any;api.setPendingUpload(new File(['GIF89a'],'new.gif',{type:'image/gif'}),null,null);api.finishEncoding();
+    await page.waitForFunction(() => typeof (window as any).finishEncoding === 'function');
+    await page.getByRole('link', { name: 'ライブラリで待つ' }).click();
+    await page.evaluate(() => {
+        const api = window as any;
+        api.enqueueUpload(new File(['GIF89a'], 'next.gif', { type: 'image/gif' }), null, null);
+        api.finishEncoding();
     });
-    await page.waitForFunction(()=>(window as any).activeUrls.size===1);
-    expect(await page.evaluate(()=>(window as any).calls.posts.length)).toBe(0);
-    expect(await page.evaluate(()=>(window as any).getPendingUpload().file.name)).toBe('new.gif');
+    await page.waitForFunction(() => (window as any).calls.posts.length === 1);
+    await expect(page.getByText('送信待ち', { exact: true })).toBeVisible();
+    finish();
+    await page.waitForFunction(() => (window as any).getUploads().every((item: any) => item.phase === 'saved'));
+    expect(count).toBe(2);
+    expect(await page.evaluate(() => (window as any).calls.posts.map((post: any) => post.data.get('upload_id')))).toHaveLength(2);
+    await page.waitForFunction(() => (window as any).activeUrls.size === 0);
 });
