@@ -1,3 +1,4 @@
+import { useUploadRefresh } from '@/hooks/useUploadRefresh';
 import { EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
@@ -24,6 +25,7 @@ function CameraIcon() {
 }
 
 export default function Home({ stats, recent, lookback, quizAvailable, magazine }: Props) {
+    useUploadRefresh();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const handleFileSelect = usePendingUploadNavigation(location, 'home');

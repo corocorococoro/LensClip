@@ -1,31 +1,15 @@
 import { router } from '@inertiajs/react';
 import { useCallback, type ChangeEvent } from 'react';
-import { setPendingUpload } from '@/uploadPendingStore';
+import { enqueueUpload } from '@/uploadQueue';
 
-interface LocationValue {
-    latitude: number;
-    longitude: number;
-}
-
-type CaptureSource = 'home' | 'live';
-
-export function usePendingUploadNavigation(
-    location: LocationValue | null,
-    source: CaptureSource = 'live'
-) {
-    return useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        const input = e.currentTarget;
+interface LocationValue { latitude: number; longitude: number }
+export function usePendingUploadNavigation(location: LocationValue | null, _source: 'home' | 'live' = 'live') {
+    return useCallback((event: ChangeEvent<HTMLInputElement>) => {
+        const input = event.currentTarget;
         const file = input.files?.[0];
-
-        if (!file) {
-            return;
-        }
-
-        const latitude = location?.latitude ?? null;
-        const longitude = location?.longitude ?? null;
-
-        setPendingUpload(file, latitude, longitude, source);
+        if (!file) return;
+        const id = enqueueUpload(file, location?.latitude ?? null, location?.longitude ?? null);
         input.value = '';
-        router.visit('/observations/upload-pending');
-    }, [location, source]);
+        if (id) router.visit('/observations/upload-pending');
+    }, [location]);
 }

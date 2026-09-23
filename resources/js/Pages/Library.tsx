@@ -1,3 +1,4 @@
+import { useUploadRefresh } from '@/hooks/useUploadRefresh';
 import AppLayout from '@/Layouts/AppLayout';
 import { EmptyState } from '@/Components/ui';
 import { ObservationCard } from '@/Components/ObservationCard';
@@ -37,21 +38,22 @@ interface Props {
     pagination?: CursorPagination;
 }
 
+function compareObservations(a: ObservationSummary, b: ObservationSummary): number {
+    if (!a.created_at || !b.created_at) return 0;
+    return b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id);
+}
+
 /** dateGroups をマージ（同月は observation を結合） */
 function mergeDateGroups(existing: DateGroup[], incoming: DateGroup[]): DateGroup[] {
-    const merged = existing.map((group) => ({
-        ...group,
-        observations: [...group.observations],
-    }));
-    for (const group of incoming) {
-        const found = merged.find((g) => g.yearMonth === group.yearMonth);
-        if (found) {
-            found.observations.push(...group.observations);
-        } else {
-            merged.push(group);
-        }
+    const byMonth = new Map<string, DateGroup>();
+    for (const group of [...existing, ...incoming]) {
+        const previous = byMonth.get(group.yearMonth);
+        const observations = new Map((previous?.observations ?? []).map(item => [item.id, item]));
+        group.observations.forEach(item => observations.set(item.id, item));
+        byMonth.set(group.yearMonth, { ...group, observations: [...observations.values()].sort((a, b) =>
+            compareObservations(a, b)) });
     }
-    return merged;
+    return [...byMonth.values()].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
 }
 
 function uniqueProcessingIds(observations: ObservationSummary[]): string[] {
@@ -129,6 +131,7 @@ function libraryContentKey(filters: Props['filters'], viewMode: LibraryViewMode)
 }
 
 export default function Library(props: Props) {
+    const uploadRevision = useUploadRefresh();
     const viewMode = props.viewMode ?? 'date';
 
     return (
@@ -136,6 +139,7 @@ export default function Library(props: Props) {
             <Head title="ライブラリ" />
             <LibraryContent
                 key={libraryContentKey(props.filters, viewMode)}
+                uploadRevision={uploadRevision}
                 {...props}
                 viewMode={viewMode}
             />
@@ -154,7 +158,8 @@ function LibraryContent({
     categoryPreviews = {},
     milestoneThresholds = [],
     pagination: initialPagination,
-}: Props) {
+    uploadRevision,
+}: Props & { uploadRevision: number }) {
     const [search, setSearch] = useState(filters.q || '');
     const [activeTag, setActiveTag] = useState(filters.tag || '');
 
@@ -171,6 +176,19 @@ function LibraryContent({
     const [statusError, setStatusError] = useState(false);
     const [statusRetryKey, setStatusRetryKey] = useState(0);
     const loadMoreAbortRef = useRef<AbortController | null>(null);
+
+    const mergedUploadRevision = useRef(uploadRevision);
+    useEffect(() => {
+        if (mergedUploadRevision.current === uploadRevision) return;
+        mergedUploadRevision.current = uploadRevision;
+        // Retain already loaded pages and their cursor when new uploads arrive.
+        setAllDateGroups(previous => mergeDateGroups(previous, initialDateGroups));
+        setCategoryObservations(previous => {
+            const byId = new Map(previous.map(item => [item.id, item]));
+            observations.data.forEach(item => byId.set(item.id, item));
+            return [...byId.values()].sort((a, b) => compareObservations(a, b));
+        });
+    }, [uploadRevision, initialDateGroups, observations.data]);
 
     useEffect(() => {
         return () => loadMoreAbortRef.current?.abort();

@@ -1,138 +1,21 @@
 import AppLayout from '@/Layouts/AppLayout';
-import { prepareImageUpload } from '@/lib/prepareImageUpload';
-import { clearPendingUpload, getPendingUpload } from '@/uploadPendingStore';
-import { Head, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { useSyncExternalStore } from 'react';
+import { getServerUploads, getUploads, subscribeUploads } from '@/uploadQueue';
 
 export default function UploadPending() {
-    const [pending] = useState(getPendingUpload);
-    const [isPreparingUpload, setIsPreparingUpload] = useState(true);
-    const [uploadPercent, setUploadPercent] = useState(0);
-    const [error, setError] = useState<string | null>(null);
-    const didStart = useRef(false);
-    const isActive = useRef(false);
-
-    useEffect(() => {
-        isActive.current = true;
-        if (!pending) {
-            router.visit('/dashboard');
-            return;
-        }
-
-        const cleanup = () => {
-            isActive.current = false;
-            // StrictMode immediately re-runs effects. Release the preview only
-            // when the page really leaves, and never clear a newer selection.
-            queueMicrotask(() => {
-                if (!isActive.current) clearPendingUpload(pending);
-            });
-        };
-
-        if (didStart.current) return cleanup;
-        didStart.current = true;
-
-        const run = async () => {
-            const prepared = await prepareImageUpload(pending.file);
-            if (!isActive.current || getPendingUpload() !== pending) return;
-
-            setIsPreparingUpload(false);
-
-            const formData = new FormData();
-            formData.append('image', prepared.file);
-            // Photo GPS takes precedence over the current device location, as on the server.
-            const latitude = prepared.gps?.latitude ?? pending.latitude;
-            const longitude = prepared.gps?.longitude ?? pending.longitude;
-            if (latitude !== null) formData.append('latitude', String(latitude));
-            if (longitude !== null) formData.append('longitude', String(longitude));
-
-            router.post('/observations', formData, {
-                forceFormData: true,
-                onProgress: (p) => {
-                    setUploadPercent(p?.percentage ?? 0);
-                },
-                onError: (errors) => {
-                    setError(errors.image ?? 'おくりものに しっぱいしちゃった。もういちど やってみてね！');
-                },
-            });
-        };
-
-        run().catch(() => {
-            if (!isActive.current) return;
-            setIsPreparingUpload(false);
-            setError('写真の準備に失敗しました。別の写真を選んでもう一度お試しください。');
-        });
-        return cleanup;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const isUploading = !isPreparingUpload && uploadPercent < 100 && !error;
-    if (!pending) {
-        return null;
-    }
-
+    const items = useSyncExternalStore(subscribeUploads, getUploads, getServerUploads);
+    const pending = items.some(item => item.phase !== 'saved');
     return (
-        <AppLayout title="しらべてます">
-            <Head title="しらべてます" />
-
-            <div className="flex min-h-[60vh] flex-col items-center justify-center">
-                <p className="lens-kicker mb-4">Saving your find</p>
-                <div className="relative mb-6 h-64 w-64 overflow-hidden rounded-2xl border border-brand-line shadow-surface">
-                    <img
-                        src={pending.previewUrl}
-                        alt="撮影した写真"
-                        width={256}
-                        height={256}
-                        className="w-full h-full object-cover"
-                    />
-
-                    {!error && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/20 backdrop-blur-[1px]">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/95 shadow-sm" aria-hidden="true">
-                                <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-brand-primary/20 border-r-brand-primary" />
-                            </div>
-                        </div>
-                    )}
-
-                    {isUploading && (
-                        <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-white/20">
-                            <div
-                                className="h-full bg-brand-turquoise transition-[width] duration-300 ease-out"
-                                style={{ width: `${uploadPercent}%` }}
-                                role="progressbar"
-                                aria-valuenow={uploadPercent}
-                                aria-valuemin={0}
-                                aria-valuemax={100}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                <p className="text-brand-dark font-bold text-base mb-2" aria-live="polite">
-                    {error
-                        ? 'しっぱいしちゃった…'
-                        : isPreparingUpload
-                            ? 'じゅんびちゅう…'
-                            : isUploading
-                                ? 'おくりちゅう…'
-                                : 'もうすぐ…'}
+        <AppLayout title="写真を保存">
+            <Head title="写真を保存" />
+            <div className="mx-auto max-w-md py-10 text-center">
+                <h1 className="text-xl font-bold text-brand-dark">{pending ? '写真を図鑑に追加しています' : items.length ? '写真を保存しました' : '写真を撮る・選ぶ'}</h1>
+                <p className="mt-4 text-sm leading-relaxed text-brand-muted">
+                    {pending ? 'ライブラリに戻っても送信を続けます。次の写真を選ぶこともできます。' : items.length ? '上のリンクから記録を確認できます。次の写真を選ぶこともできます。' : '下のカメラボタンから写真を選んでください。'}
                 </p>
-
-                {error && (
-                    <div
-                        className="mt-4 flex w-full max-w-md items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700"
-                        role="alert"
-                    >
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-sm font-black text-white" aria-hidden="true">!</span>
-                        <p className="text-sm font-bold flex-1">{error}</p>
-                        <button
-                            onClick={() => router.visit('/dashboard')}
-                            className="text-sm text-red-500 underline"
-                        >
-                            もどる
-                        </button>
-                    </div>
-                )}
-
+                {pending && <p className="mt-2 text-xs text-brand-muted">保存が終わるまで、このタブを閉じたり再読み込みしたりしないでください。</p>}
+                <Link href="/library" className="mt-6 inline-block rounded-xl bg-brand-primary px-6 py-3 font-bold text-white">ライブラリで待つ</Link>
             </div>
         </AppLayout>
     );
