@@ -66,6 +66,18 @@ class ObservationDispatchRecoveryTest extends TestCase
         $this->assertSame('Ladybug', $observation->correction_name);
     }
 
+    public function test_json_responses_report_dispatch_failure_instead_of_processing(): void
+    {
+        Bus::shouldReceive('dispatch')->twice()->andThrow(new \RuntimeException('secret'));
+        $user = User::factory()->create();
+        $observation = Observation::factory()->create(['user_id' => $user->id, 'status' => 'failed']);
+        $this->actingAs($user)->postJson("/observations/{$observation->id}/retry")
+            ->assertOk()->assertJsonPath('status', 'failed');
+        $observation->update(['status' => 'ready']);
+        $this->postJson("/observations/{$observation->id}/correction", ['title' => 'Ladybug'])
+            ->assertOk()->assertJsonPath('status', 'failed');
+    }
+
     public function test_dispatch_failure_does_not_overwrite_a_newer_attempt(): void
     {
         $observation = Observation::factory()->create(['status' => 'processing', 'processing_token' => 'new']);

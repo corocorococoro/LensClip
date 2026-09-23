@@ -468,8 +468,8 @@ class ObservationController extends Controller
         if (request()->wantsJson()) {
             return response()->json([
                 'id' => $observation->id,
-                'status' => 'processing',
-            ], 202);
+                'status' => $observation->status,
+            ], $observation->status === 'processing' ? 202 : 200);
         }
 
         return redirect()->route('observations.show', $observation);
@@ -573,10 +573,10 @@ class ObservationController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'id' => $observation->id,
-                'status' => 'processing',
+                'status' => $observation->status,
                 'processing_type' => 'correction',
                 'title' => $observation->title,
-            ], 202);
+            ], $observation->status === 'processing' ? 202 : 200);
         }
 
         return redirect()->route('observations.show', $observation);
