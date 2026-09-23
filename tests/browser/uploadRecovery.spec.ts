@@ -49,6 +49,8 @@ test('100 percent means awaiting server confirmation, not saved', async ({ page 
     expect(await page.evaluate(() => (window as any).getUploads()[0].file !== null || (window as any).getUploads()[0].prepared !== null)).toBe(true);
     finish();
     await expect(page.getByText('図鑑ができました')).toBeVisible();
+    await page.evaluate(() => (window as any).calls.posts[0].options.onUploadProgress({ loaded: 50, total: 100 }));
+    await expect(page.getByText('図鑑ができました')).toBeVisible();
     expect(await page.evaluate(() => (window as any).activeUrls.size)).toBe(0);
 });
 

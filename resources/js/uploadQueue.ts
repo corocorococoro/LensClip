@@ -162,7 +162,9 @@ async function pump() {
         const response = await axios.post('/observations', form, {
             headers: { Accept: 'application/json' }, signal: abort.signal, timeout: 180000,
             onUploadProgress: event => {
-                if (!active()) return;
+                if (!active() || controller !== abort) return;
+                const phase = items.find(current => current.id === item.id)?.phase;
+                if (phase !== 'uploading' && phase !== 'confirming') return;
                 const percent = event.total ? Math.min(100, Math.round(event.loaded * 100 / event.total)) : 0;
                 patch(item.id, { percent, phase: percent === 100 ? 'confirming' : 'uploading' });
             },
