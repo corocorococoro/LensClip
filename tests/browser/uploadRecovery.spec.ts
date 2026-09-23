@@ -159,6 +159,7 @@ for (const viewMode of ['date', 'category', 'map']) {
 }
 
 test('an upload refresh keeps loaded library pages and deduplicates the new record', async ({ page }) => {
+    await page.route('**/observations', route => route.fulfill({ json: { id: 'new', status: 'ready', title: '新しい記録' } }));
     await page.route('**/library?*', route => route.fulfill({ json: {
         dateGroups: [{ yearMonth: '2026-09', label: '2026年9月', observations: [{ id: 'old', title: '読み込み済みの記録', status: 'ready', thumb_url: null, created_at: '2026-09-01' }] }],
         pagination: { hasMore: false, nextCursor: null },
@@ -171,7 +172,7 @@ test('an upload refresh keeps loaded library pages and deduplicates the new reco
     });
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     await expect(page.getByText('読み込み済みの記録', { exact: true })).toBeVisible();
-    await page.evaluate(() => window.dispatchEvent(new CustomEvent('observation-upload-saved')));
+    await page.evaluate(() => (window as any).enqueueUpload(new File(['GIF89a'], 'photo.gif', { type: 'image/gif' }), null, null));
     await expect(page.getByText('新しい記録', { exact: true })).toHaveCount(1);
     await expect(page.getByText('最初の記録', { exact: true })).toHaveCount(1);
     await expect(page.getByText('読み込み済みの記録', { exact: true })).toHaveCount(1);
