@@ -90,12 +90,20 @@ class Observation extends Model
             return null; // Not yet on GCS; not needed until analysis completes
         }
 
-        return Storage::url($this->original_path);
+        return config('filesystems.default') === 'local'
+            ? route('observations.image', ['observation' => $this->id, 'variant' => 'original'])
+            : Storage::url($this->original_path);
     }
 
     public function getCroppedUrlAttribute(): ?string
     {
-        return $this->cropped_path ? Storage::url($this->cropped_path) : null;
+        if (! $this->cropped_path) {
+            return null;
+        }
+
+        return config('filesystems.default') === 'local'
+            ? route('observations.image', ['observation' => $this->id, 'variant' => 'cropped'])
+            : Storage::url($this->cropped_path);
     }
 
     public function getThumbUrlAttribute(): ?string
@@ -104,7 +112,7 @@ class Observation extends Model
             return null;
         }
 
-        if (str_starts_with($this->thumb_path, 'local:')) {
+        if (str_starts_with($this->thumb_path, 'local:') || config('filesystems.default') === 'local') {
             return route('observations.thumb', $this->id);
         }
 

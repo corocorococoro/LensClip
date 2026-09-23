@@ -1,21 +1,32 @@
 #!/bin/bash
+set -Eeuo pipefail
 
-# Ensure storage directory exists for Volume mounting
-mkdir -p /app/storage/app/public/observations
+mkdir -p /app/storage/app/public/observations /app/storage/app/private/pending
 
-# Run database migrations
-# We use --force because it's a production-like environment
-echo "Running migrations..."
-php artisan migrate --force || true
+# A failed migration must fail deployment instead of serving against an old schema.
+php artisan migrate --force
+php artisan storage:link --force
 
-# Create storage link
-echo "Creating storage link..."
-php artisan storage:link || true
+worker_pid=''
+web_pid=''
+cleanup() {
+    trap - EXIT
+    [ -z "$worker_pid" ] || kill "$worker_pid" 2>/dev/null || true
+    [ -z "$web_pid" ] || kill "$web_pid" 2>/dev/null || true
+    wait 2>/dev/null || true
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 
-# Start Queue Worker in the background
-echo "Starting queue worker..."
-php artisan queue:work --tries=3 --timeout=90 &
+php artisan queue:work --tries=3 --timeout=120 &
+worker_pid=$!
+php artisan serve --host=0.0.0.0 --port="${PORT:?PORT is required}" &
+web_pid=$!
 
-# Start Web Server
-echo "Starting web server on port $PORT..."
-php artisan serve --host=0.0.0.0 --port=$PORT
+# Let the platform restart the service if either essential process stops.
+if wait -n "$worker_pid" "$web_pid"; then
+    exit 1
+else
+    exit $?
+fi

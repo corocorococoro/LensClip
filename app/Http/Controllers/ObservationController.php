@@ -15,6 +15,7 @@ use App\Http\Requests\UpdateObservationTitleRequest;
 use App\Models\Observation;
 use App\Models\Tag;
 use App\Support\CategoryCatalog;
+use App\Support\ObservationSummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -42,8 +43,9 @@ class ObservationController extends Controller
         $perPage = config('library.per_page', 30);
 
         $query = Observation::forUser(auth()->id())
-            ->with('tags')
-            ->latest();
+            ->select(ObservationSummary::COLUMNS)
+            ->latest()
+            ->orderByDesc('id');
 
         // Search by title
         if ($request->filled('q')) {
@@ -118,13 +120,13 @@ class ObservationController extends Controller
 
             if ($request->wantsJson()) {
                 return response()->json([
-                    'observations' => collect($paginated->items())->values(),
+                    'observations' => collect($paginated->items())->map(fn (Observation $observation) => ObservationSummary::from($observation))->values(),
                     'pagination' => $pagination,
                 ]);
             }
 
             return Inertia::render('Library', [
-                'observations' => ['data' => $paginated->items()],
+                'observations' => ['data' => collect($paginated->items())->map(fn (Observation $observation) => ObservationSummary::from($observation))->values()],
                 'pagination' => $pagination,
                 'tags' => $tags,
                 'filters' => $filters,
@@ -160,7 +162,7 @@ class ObservationController extends Controller
             ->get();
 
         return Inertia::render('Library', [
-            'observations' => ['data' => $observations],
+            'observations' => ['data' => $observations->map(fn (Observation $observation) => ObservationSummary::from($observation))->values()],
             'tags' => $tags,
             'filters' => $request->only(['q', 'tag', 'view']),
             'viewMode' => 'map',
@@ -186,7 +188,7 @@ class ObservationController extends Controller
                     'observations' => [],
                 ];
             }
-            $groups[$yearMonth]['observations'][] = $obs;
+            $groups[$yearMonth]['observations'][] = ObservationSummary::from($obs);
         }
 
         // Sort by date descending
@@ -231,6 +233,7 @@ class ObservationController extends Controller
         $previews = [];
         foreach (config('categories') as $cat) {
             $query = Observation::forUser(auth()->id())
+                ->select(ObservationSummary::COLUMNS)
                 ->forCategory($cat['id'])
                 ->latest()
                 ->limit($limit);
@@ -287,7 +290,7 @@ class ObservationController extends Controller
             abort(404);
         }
 
-        if (! str_starts_with($observation->thumb_path ?? '', 'local:')) {
+        if (! str_starts_with($observation->thumb_path ?? '', 'local:') && config('filesystems.default') !== 'local') {
             if (! $observation->thumb_url) {
                 abort(404);
             }
@@ -295,7 +298,29 @@ class ObservationController extends Controller
             return redirect($observation->thumb_url);
         }
 
-        $localPath = substr($observation->thumb_path, 6);
+        $localPath = str_starts_with($observation->thumb_path, 'local:')
+            ? substr($observation->thumb_path, 6) : $observation->thumb_path;
+
+        return $this->localImageResponse($localPath);
+    }
+
+    public function image(Observation $observation, string $variant)
+    {
+        $this->authorize('view', $observation);
+        abort_unless(config('filesystems.default') === 'local', 404);
+        $path = match ($variant) {
+            'original' => $observation->original_path,
+            'cropped' => $observation->cropped_path,
+            default => null,
+        };
+        // Raw staging images may contain EXIF and must never be served.
+        abort_if(! $path || str_starts_with($path, 'local:'), 404);
+
+        return $this->localImageResponse($path);
+    }
+
+    private function localImageResponse(string $localPath)
+    {
 
         if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($localPath)) {
             abort(404);
@@ -325,6 +350,7 @@ class ObservationController extends Controller
 
         $observations = Observation::forUser(auth()->id())
             ->whereIn('id', $ids)
+            ->select(ObservationSummary::COLUMNS)
             ->get()
             ->map(fn (Observation $observation) => [
                 'id' => $observation->id,
