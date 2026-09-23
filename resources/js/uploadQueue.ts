@@ -28,7 +28,11 @@ let running: string | null = null;
 let generation = 0;
 let controller: AbortController | null = null;
 let notice: string | null = null;
-let polling = false;
+let statusController: AbortController | null = null;
+let statusFailures = 0;
+let nextStatusCheck = 0;
+let statusRetryAfter = 0;
+let uploadRevision = 0;
 let retryAfter = 0;
 let sessionBlocked = false;
 const listeners = new Set<() => void>();
@@ -36,6 +40,8 @@ export const subscribeUploads = (listener: () => void) => { listeners.add(listen
 export const getUploads = () => items;
 export const getServerUploads = () => empty;
 export const getUploadNotice = () => notice;
+export const getUploadRevision = () => uploadRevision;
+export function showUploadNotice(message: string) { notice = message; emit(); }
 function emit() { listeners.forEach(listener => listener()); }
 function patch(id: string, values: Partial<UploadItem>) {
     items = items.map(item => item.id === id ? { ...item, ...values } : item);
@@ -46,6 +52,12 @@ export function setUploadOwner(id: number | null) {
     generation++;
     controller?.abort();
     controller = null;
+    statusController?.abort();
+    statusController = null;
+    statusFailures = 0;
+    nextStatusCheck = 0;
+    statusRetryAfter = 0;
+    uploadRevision = 0;
     items.forEach(item => { if (item.previewUrl) URL.revokeObjectURL(item.previewUrl); });
     items = [];
     notice = null;
@@ -80,18 +92,23 @@ function saved(id: string, observation: SavedObservation) {
     const item = items.find(item => item.id === id);
     if (!item) return;
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+    uploadRevision++;
     patch(id, { phase: 'saved', file: null, prepared: null, previewUrl: '', percent: 100, observation, message: null });
-    window.dispatchEvent(new CustomEvent('observation-upload-saved', { detail: observation.id }));
+}
+function blockSession() {
+    sessionBlocked = true;
+    controller?.abort();
+    items = items.map(item => ({
+        ...item, phase: item.phase === 'saved' ? 'saved' : 'error', retryable: false,
+        message: item.phase === 'saved'
+            ? 'ログイン状態が変わりました。ログインし直して解析状況を確認してください。'
+            : 'ログイン状態が変わりました。ログインし直して写真を選んでください。',
+    }));
+    emit();
 }
 function fail(id: string, error: unknown) {
     const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-    if ([401, 403, 419].includes(status ?? 0)) {
-        sessionBlocked = true;
-        patch(id, { phase: 'error', retryable: false, message: 'ログイン状態が変わりました。ログインし直して写真を選んでください。' });
-        // Do not let subsequent queue entries use a different authenticated session.
-        items = items.map(item => item.phase === 'saved' ? item : { ...item, phase: 'error', retryable: false, message: 'ログイン状態が変わりました。ログインし直して写真を選んでください。' });
-        emit(); return;
-    }
+    if ([401, 403, 419].includes(status ?? 0)) { blockSession(); return; }
     if (status === 429) {
         const seconds = Number(axios.isAxiosError(error) ? error.response?.headers['retry-after'] : 60);
         retryAfter = Date.now() + (Number.isFinite(seconds) && seconds > 0 ? seconds : 60) * 1000;
@@ -110,7 +127,7 @@ function fail(id: string, error: unknown) {
     });
 }
 async function pump() {
-    if (running || ownerId === null) return;
+    if (running || ownerId === null || sessionBlocked) return;
     const item = items.find(item => item.phase === 'queued');
     if (!item) return;
     if (!navigator.onLine) { patch(item.id, { phase: 'waiting', message: '接続が戻ると再開します。' }); void pump(); return; }
@@ -171,7 +188,7 @@ async function pump() {
         });
         if (active()) saved(item.id, observationFrom(response.data));
     } catch (error) {
-        if (active()) fail(item.id, error);
+        if (active() && !sessionBlocked) fail(item.id, error);
     } finally {
         if (epoch === generation) { running = null; controller = null; void pump(); }
     }
@@ -193,28 +210,42 @@ export function resumeUploads() {
     items.filter(item => item.phase === 'waiting').forEach(item => retryUpload(item.id));
     void refreshSavedUploads();
 }
-export async function refreshSavedUploads() {
+export async function refreshSavedUploads(force = false) {
     const pending = items.filter(item => item.phase === 'saved' && item.observation?.status === 'processing');
-    if (sessionBlocked || polling || !pending.length || !navigator.onLine || document.hidden) return;
+    if (sessionBlocked || statusController || !pending.length || !navigator.onLine || document.hidden || Date.now() < statusRetryAfter || (!force && Date.now() < nextStatusCheck)) return;
     const epoch = generation;
-    polling = true;
+    const abort = new AbortController();
+    statusController = abort;
     try {
         const response = await axios.get('/observations/statuses', {
-            params: { ids: pending.map(item => item.observation!.id) }, headers: { Accept: 'application/json' }, timeout: 15000,
+            params: { ids: pending.map(item => item.observation!.id) }, headers: { Accept: 'application/json' }, timeout: 15000, signal: abort.signal,
         });
-        if (epoch !== generation) return;
-        const values = response.data.observations;
-        if (!Array.isArray(values)) throw new Error('Invalid status response');
+        if (epoch !== generation || sessionBlocked) return;
+        if (!Array.isArray(response.data.observations)) throw new Error('Invalid status response');
+        const values = response.data.observations.map(observationFrom) as SavedObservation[];
+        statusFailures = 0;
+        nextStatusCheck = Date.now() + 6000;
         for (const item of pending) {
             const observation = values.find(value => value.id === item.observation?.id);
-            if (observation && ['processing', 'ready', 'failed'].includes(observation.status)) {
-                patch(item.id, { observation: observationFrom(observation) });
-                if (observation.status !== item.observation?.status) window.dispatchEvent(new CustomEvent('observation-upload-saved'));
-            }
-            else if (!observation) dismissUpload(item.id);
+            if (observation) {
+                if (observation.status !== item.observation?.status) uploadRevision++;
+                patch(item.id, { observation, message: null });
+            } else dismissUpload(item.id);
         }
-    } catch { /* Existing observation links remain usable; check again on the next tick. */ }
-    finally { polling = false; }
+    } catch (error) {
+        if (epoch !== generation || sessionBlocked) return;
+        const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+        if ([401, 403, 419].includes(status ?? 0)) { blockSession(); return; }
+        statusFailures++;
+        const retry = Number(axios.isAxiosError(error) ? error.response?.headers['retry-after'] : 0);
+        if (status === 429 && Number.isFinite(retry) && retry > 0) statusRetryAfter = Date.now() + retry * 1000;
+        nextStatusCheck = Date.now() + Math.max(Math.min(60000, 6000 * 2 ** Math.min(statusFailures, 4)), Number.isFinite(retry) ? retry * 1000 : 0);
+        for (const item of pending) {
+            if (items.some(current => current.id === item.id)) patch(item.id, { message: '写真は保存済みですが、解析状況を確認できません。接続を確認して再確認してください。' });
+        }
+    } finally {
+        if (statusController === abort) statusController = null;
+    }
 }
 export function warnPendingUploads(event: BeforeUnloadEvent) {
     if (items.some(item => item.phase !== 'saved')) { event.preventDefault(); event.returnValue = ''; }
