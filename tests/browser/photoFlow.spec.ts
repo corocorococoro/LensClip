@@ -105,7 +105,133 @@ test('a failed transition after saving leaves the photo and a recovery link with
     await page.goto('/library');
     await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
     await expect(page.getByRole('link', { name: '写真の画面を開く' })).toBeVisible();
+    const retryResponse = page.waitForResponse(response => response.url().includes('/observations/new-photo?'));
+    await page.getByRole('link', { name: '写真の画面を開く' }).click();
+    await retryResponse;
+    await expect(page.locator('iframe')).toHaveCount(0);
     await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
     await expect(page.getByRole('button', { name: '追加を取り消す' })).toHaveCount(0);
     expect(posts).toBe(1); expect(errors).toEqual([]);
 });
+
+test('saving during a slow library navigation does not override the chosen destination', async ({ page }) => {
+    const errors = await setup(page);
+    let save!: () => void, openLibrary!: () => void;
+    const saving = new Promise<void>(resolve => { save = resolve; });
+    const navigating = new Promise<void>(resolve => { openLibrary = resolve; });
+    let posts = 0, photoVisits = 0;
+    await page.route('**/library*', async route => {
+        if (route.request().headers()['x-inertia']) await navigating;
+        await respond(route, 'Library', library);
+    });
+    await page.route('**/observations', async route => { posts++; await saving; await route.fulfill({ json: { ...photo, status: 'ready' } }); });
+    await page.route('**/observations/new-photo?*', route => { photoVisits++; return respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] }); });
+    await page.goto('/library');
+    await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
+    await expect(page.getByRole('heading', { name: /写真を送信中|保存を確認中/ })).toBeVisible();
+    const libraryRequest = page.waitForRequest(request => new URL(request.url()).pathname === '/library' && !!request.headers()['x-inertia']);
+    await page.getByRole('navigation').getByRole('link', { name: /図鑑/ }).click();
+    await libraryRequest;
+    save();
+    await expect(page.getByText('写真は図鑑に保存されています。', { exact: true })).toBeVisible();
+    expect(photoVisits).toBe(0);
+    openLibrary();
+    await expect(page).toHaveURL(/\/library$/);
+    await expect(page.getByText('ダリア', { exact: true })).toHaveCount(1);
+    expect(photoVisits).toBe(0); expect(posts).toBe(1); expect(errors).toEqual([]);
+});
+
+for (const failure of ['server', 'network'] as const) {
+    test(`a ${failure} error while opening analysis results keeps the photo and allows rechecking`, async ({ page }) => {
+        const errors = await setup(page);
+        let healthy = false, checks = 0;
+        await page.route('**/observations/new-photo?*', route => {
+            if (!route.request().headers()['x-inertia']) return respond(route, 'Observations/Show', { observation: photo, categories: [] });
+            checks++;
+            if (!healthy) return failure === 'server' ? route.fulfill({ status: 503, body: 'Internal response must not be displayed' }) : route.abort('failed');
+            return respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] });
+        });
+        await page.route('**/observations/new-photo/stream', route => route.fulfill({ contentType: 'text/event-stream', body: 'event: ready\ndata: {}\n\n' }));
+        await page.goto('/observations/new-photo?return_to=%2Flibrary');
+        const retry = page.getByRole('button', { name: '状態を再確認' });
+        await expect(retry).toBeVisible();
+        await expect(page.locator('iframe')).toHaveCount(0);
+        await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
+        expect(checks).toBe(1); expect(errors).toEqual([]);
+        healthy = true;
+        await retry.click();
+        await expect(page.getByRole('heading', { name: 'ダリア', exact: true })).toBeVisible();
+        expect(checks).toBe(2); expect(errors).toEqual([]);
+    });
+}
+
+test('browser Back cancels an in-flight saved-photo transition without cancelling the saved record', async ({ page }) => {
+    const errors = await setup(page);
+    let openPhoto!: () => void;
+    const opening = new Promise<void>(resolve => { openPhoto = resolve; });
+    await page.route('**/library*', route => respond(route, 'Library', library));
+    await page.route('**/observations', route => route.fulfill({ json: { ...photo, status: 'ready' } }));
+    await page.route('**/observations/new-photo?*', async route => { await opening; await respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] }); });
+    await page.goto('/library');
+    const transition = page.waitForRequest(request => request.url().includes('/observations/new-photo?'));
+    await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
+    await transition;
+    const cancelled = page.waitForEvent('requestfailed', request => request.url().includes('/observations/new-photo?'));
+    await page.goBack();
+    await cancelled;
+    openPhoto();
+    await expect(page).toHaveURL(/\/library$/);
+    await expect(page.getByText('ダリア', { exact: true })).toHaveCount(1);
+    expect(errors).toEqual([]);
+});
+
+test('a lookback photo returns to the same place on Home', async ({ page }) => {
+    const errors = await setup(page);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const recent = Array.from({ length: 6 }, (_, n) => ({ ...photo, id: `recent-${n}`, title: `最近 ${n}`, status: 'ready' }));
+    await page.route('**/dashboard', route => respond(route, 'Home', {
+        stats: { total: 20, today: 0, processing: 0 }, recent,
+        lookback: { label: '1年前の発見', observation: { ...photo, status: 'ready' } }, quizAvailable: true, magazine: null,
+    }));
+    await page.route('**/observations/new-photo*', route => respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] }));
+    await page.goto('/dashboard');
+    const lookback = page.getByRole('link', { name: /1年前の発見/ });
+    await lookback.scrollIntoViewIfNeeded();
+    const scroll = await page.evaluate(() => scrollY);
+    expect(scroll).toBeGreaterThan(0);
+    await lookback.click();
+    await page.getByRole('link', { name: 'ホームへ戻る' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(lookback).toBeVisible();
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(scroll);
+    expect(errors).toEqual([]);
+});
+
+for (const recover of [false, true]) {
+    test(`failed saved-photo navigation preserves the library position${recover ? ' after manually reopening' : ''}`, async ({ page }) => {
+        const errors = await setup(page);
+        let healthy = false, posts = 0;
+        const records = Array.from({ length: 18 }, (_, n) => ({ ...photo, id: `record-${n}`, title: `記録 ${n}`, status: 'ready' }));
+        await page.route('**/library*', route => respond(route, 'Library', { ...library, filters: { q: '植物' }, dateGroups: [{ yearMonth: '2026-09', label: '2026年9月', observations: records }] }));
+        await page.route('**/observations', route => { posts++; return route.fulfill({ json: { ...photo, status: 'ready' } }); });
+        await page.route('**/observations/new-photo?*', route => healthy
+            ? respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] })
+            : route.fulfill({ status: 503, body: 'Unavailable' }));
+        await page.goto('/library?q=%E6%A4%8D%E7%89%A9');
+        await page.getByText('記録 17', { exact: true }).scrollIntoViewIfNeeded();
+        const scroll = await page.evaluate(() => scrollY);
+        expect(scroll).toBeGreaterThan(0);
+        await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
+        const recovery = page.getByRole('link', { name: '写真の画面を開く' });
+        await expect(recovery).toBeVisible();
+        if (recover) {
+            healthy = true;
+            await recovery.click();
+            await expect(page.getByRole('heading', { name: 'ダリア', exact: true })).toBeVisible();
+        }
+        await page.getByRole('link', { name: '図鑑へ戻る' }).click();
+        await expect(page.getByRole('searchbox')).toHaveValue('植物');
+        await expect.poll(() => page.evaluate(() => scrollY)).toBe(scroll);
+        expect(posts).toBe(1); expect(errors).toEqual([]);
+    });
+}

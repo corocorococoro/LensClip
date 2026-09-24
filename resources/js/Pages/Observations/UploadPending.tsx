@@ -3,7 +3,7 @@ import ObservationPhoto from '@/Components/ObservationPhoto';
 import PhotoBackLink from '@/Components/PhotoBackLink';
 import { Button } from '@/Components/ui';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUploads } from '@/hooks/useUploads';
 import { dismissUpload, refreshSavedUploads, retryUpload } from '@/uploadQueue';
 import { canCancelUpload, uploadLabel } from '@/lib/uploadPresentation';
@@ -16,14 +16,25 @@ export default function UploadPending() {
     const id = new URL(url, 'https://lensclip.invalid').searchParams.get('upload');
     const item = id ? items.find(value => value.id === id) : items[items.length - 1];
     const [openError, setOpenError] = useState(false);
+    const [requestId] = useState(() => crypto.randomUUID());
+    const leaving = useRef(false);
+    const cancelTransition = useRef<(() => void) | undefined>();
     const savedId = item?.observation?.id;
     const href = savedId ? photoHref(`/observations/${savedId}`, url) : null;
 
     useEffect(() => {
+        // A slow destination can leave this page mounted after the user has left it.
+        const leave = () => { leaving.current = true; cancelTransition.current?.(); setOpenError(true); };
+        const removeStart = router.on('start', event => {
+            if (!event.detail.visit.async && event.detail.visit.headers['X-Photo-Transition'] !== requestId) leave();
+        });
+        window.addEventListener('popstate', leave);
+        return () => { removeStart(); window.removeEventListener('popstate', leave); };
+    }, [requestId]);
+
+    useEffect(() => {
         if (!href) return;
         let active = true;
-        let cancel: (() => void) | undefined;
-        const requestId = crypto.randomUUID();
         const reportFailure = () => { if (active) setOpenError(true); };
         const removeInvalid = router.on('invalid', event => {
             if (event.detail.response.config.headers?.['X-Photo-Transition'] === requestId) { event.preventDefault(); reportFailure(); }
@@ -33,17 +44,18 @@ export default function UploadPending() {
             if (axios.isAxiosError(error) && error.config?.headers?.['X-Photo-Transition'] === requestId) { event.preventDefault(); reportFailure(); }
         });
         const timer = window.setTimeout(() => {
-            rememberPhotoOrigin(href, url);
+            if (leaving.current) { reportFailure(); return; }
             router.visit(href, {
                 replace: true, preserveScroll: true,
                 headers: { 'X-Photo-Transition': requestId },
-                onCancelToken: token => { cancel = () => token.cancel(); },
+                onCancelToken: token => { cancelTransition.current = () => token.cancel(); },
+                onSuccess: () => rememberPhotoOrigin(href, url),
                 onError: () => { if (active) setOpenError(true); },
-                onFinish: () => { cancel = undefined; if (active) setOpenError(true); },
+                onFinish: () => { cancelTransition.current = undefined; if (active) setOpenError(true); },
             });
         }, 0);
-        return () => { active = false; clearTimeout(timer); cancel?.(); removeInvalid(); removeException(); };
-    }, [href, url]);
+        return () => { active = false; clearTimeout(timer); cancelTransition.current?.(); cancelTransition.current = undefined; removeInvalid(); removeException(); };
+    }, [href, url, requestId]);
 
     return <AppLayout title="写真を調べる">
         <Head title="写真を調べる" />
@@ -63,7 +75,13 @@ export default function UploadPending() {
                         {item.phase === 'saved' && item.message && item.retryable && <Button onClick={() => void refreshSavedUploads(true)}>状態を再確認</Button>}
                         {canCancelUpload(item) && <Button variant="secondary" onClick={() => dismissUpload(item.id)}>追加を取り消す</Button>}
                     </div>
-                    {openError && href && <p className="mt-4 text-sm text-brand-muted">写真は保存済みです。<Link href={href} replace className="inline-flex min-h-11 items-center font-bold text-brand-primary-dark underline">写真の画面を開く</Link></p>}
+                    {openError && href && <p className="mt-4 text-sm text-brand-muted">写真は保存済みです。<Link
+                        href={href} replace headers={{ 'X-Photo-Transition': requestId }}
+                        onCancelToken={token => { cancelTransition.current = () => token.cancel(); }}
+                        onSuccess={() => rememberPhotoOrigin(href, url)}
+                        onFinish={() => { cancelTransition.current = undefined; }}
+                        className="inline-flex min-h-11 items-center font-bold text-brand-primary-dark underline"
+                    >写真の画面を開く</Link></p>}
                 </div>
             </div> : <div className="py-10 text-center">
                 <h1 className="text-xl font-bold">この端末で保持している写真はありません</h1>
