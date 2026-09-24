@@ -1,10 +1,14 @@
+import { photoReturnUrl } from '@/lib/photoNavigation';
+import ObservationPhoto from '@/Components/ObservationPhoto';
+import PhotoBackLink from '@/Components/PhotoBackLink';
+import { dismissUpload, getUploads, reconcileSavedObservation } from '@/uploadQueue';
 import AppLayout from '@/Layouts/AppLayout';
 import { Button, Card } from '@/Components/ui';
 import Modal from '@/Components/Modal';
 import LocationMap from '@/Components/LocationMap';
 import ProcessingView from './Partials/ProcessingView';
 import type { Observation, Tag, CandidateCard, CategoryDefinition, Milestone } from '@/types/models';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useTts } from '@/hooks/useTts';
 
@@ -40,6 +44,9 @@ interface Props {
 }
 
 export default function Show({ observation, categories }: Props) {
+    const { url } = usePage();
+    const returnTo = photoReturnUrl(url);
+    useEffect(() => { reconcileSavedObservation(observation); }, [observation.id, observation.status, observation.title, observation.thumb_url]);
     const persistedCandidateIndex = observation.selected_candidate_index ?? 0;
     const [retrying, setRetrying] = useState(false);
     const [activeCandidateIndex, setActiveCandidateIndex] = useState(persistedCandidateIndex);
@@ -96,7 +103,7 @@ export default function Show({ observation, categories }: Props) {
     const lookFor = activeCard?.look_for || [];
 
     // 検知クロップ（cropped_url）は縦長画像などで切り抜きが不自然になるため、
-    // ライブラリのサムネイルと同じ全体写真を表示する
+    // 図鑑のサムネイルと同じ全体写真を表示する
     const displayImage = observation.original_url || observation.thumb_url || undefined;
 
     const milestones = observation.milestones || [];
@@ -115,12 +122,12 @@ export default function Show({ observation, categories }: Props) {
 
     const handleRetry = () => {
         setRetrying(true);
-        router.post(`/observations/${observation.id}/retry`);
+        router.post(`/observations/${observation.id}/retry`, { return_to: returnTo }, { onFinish: () => setRetrying(false) });
     };
 
     const handleDelete = () => {
         if (confirm('この発見を削除しますか？')) {
-            router.delete(`/observations/${observation.id}`);
+            router.delete(`/observations/${observation.id}`, { onSuccess: () => { getUploads().filter(item => item.observation?.id === observation.id).forEach(item => dismissUpload(item.id)); } });
         }
     };
 
@@ -169,7 +176,7 @@ export default function Show({ observation, categories }: Props) {
         if (!trimmed) return;
         setCorrectionUpdating(true);
         router.post(`/observations/${observation.id}/correction`, {
-            title: trimmed,
+            title: trimmed, return_to: returnTo,
         }, {
             preserveScroll: true,
             onSuccess: () => setShowCorrectionModal(false),
@@ -179,7 +186,7 @@ export default function Show({ observation, categories }: Props) {
 
     const handleKeepCorrectionName = () => {
         setKeepingCorrectionName(true);
-        router.post(`/observations/${observation.id}/correction/keep-name`, {}, {
+        router.post(`/observations/${observation.id}/correction/keep-name`, { return_to: returnTo }, {
             preserveScroll: true,
             onFinish: () => setKeepingCorrectionName(false),
         });
@@ -198,28 +205,10 @@ export default function Show({ observation, categories }: Props) {
         <AppLayout title={observation.title || 'けっか'}>
             <Head title={observation.title || 'けっか'} />
 
+            <div className="mx-auto max-w-2xl"><PhotoBackLink /></div>
             <div className="mx-auto flex max-w-2xl flex-col items-center">
                 {/* Main Image */}
-                <div className="group relative mb-7 w-full max-w-xl overflow-hidden rounded-2xl border border-brand-line bg-white shadow-surface">
-                    {displayImage ? (
-                        <img
-                            src={displayImage}
-                            alt={observation.title || '観察画像'}
-                            width={400}
-                            height={400}
-                            loading="eager"
-                            className="w-full aspect-square object-cover"
-                        />
-                    ) : (
-                        <div
-                            className="w-full aspect-square flex items-center justify-center bg-gray-100 text-5xl"
-                            role="img"
-                            aria-label={observation.title || '観察画像'}
-                        >
-                            📷
-                        </div>
-                    )}
-
+                <ObservationPhoto src={displayImage} alt={observation.title || '選んだ写真'}>
                     {/* Category Badge overlay (Top Left) - Interactive */}
                     {observation.status === 'ready' && (
                         <div className="absolute top-3 left-3 z-10">
@@ -253,7 +242,7 @@ export default function Show({ observation, categories }: Props) {
                             画像で確認
                         </a>
                     )}
-                </div>
+                </ObservationPhoto>
 
                 {/* Milestones - はじめて/節目のお祝い */}
                 {observation.status === 'ready' && milestones.length > 0 && (
@@ -385,7 +374,7 @@ export default function Show({ observation, categories }: Props) {
                             {observation.processing_type === 'correction' ? '図鑑情報を更新できなかった…' : 'しらべられなかった…'}
                         </h2>
                         <p className="text-sm text-red-600 mb-4">
-                            {observation.error_message || 'もういちどためしてね'}
+                            写真は保存されています。{observation.error_message || '写真を選び直さずに、もう一度調べられます。'}
                         </p>
                         <div className="flex flex-col justify-center gap-3 sm:flex-row">
                             <Button
@@ -513,13 +502,6 @@ export default function Show({ observation, categories }: Props) {
                         className="mb-6"
                     />
                 )}
-
-                {/* Actions */}
-                <div className="w-full mb-8">
-                    <Button href="/dashboard" variant="primary" fullWidth size="lg">
-                        ほかのものをしらべる
-                    </Button>
-                </div>
 
                 {/* Metadata - subtle display */}
                 {observation.status === 'ready' && (

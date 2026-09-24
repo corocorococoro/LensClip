@@ -142,7 +142,7 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                                 href="/library"
                                 className="rounded-full border border-brand-line bg-white px-6 py-2.5 text-sm font-bold text-brand-ink transition hover:border-brand-sand active:scale-95"
                             >
-                                ライブラリを みる
+                                図鑑を みる
                             </Link>
                         </div>
                     </section>

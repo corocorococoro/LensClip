@@ -16,10 +16,10 @@ test('library reconciles an upload that finished before the library mounted', as
             pagination: { hasMore: false, nextCursor: null },
         };
     });
-    await expect(page.getByText('図鑑ができました')).toBeVisible();
-    await page.getByRole('link', { name: 'ライブラリで待つ' }).click();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.observation?.status === 'ready'));
+    await page.getByRole('link', { name: '図鑑へ戻る' }).click();
     await expect(page.getByText('保存した記録', { exact: true })).toBeVisible({ timeout: 2000 });
-    expect(await page.evaluate(() => (window as any).calls.reloads)).toBe(1);
+    await expect.poll(() => page.evaluate(() => (window as any).calls.reloads)).toBe(1);
 });
 
 test('status failures are visible, back off, and can be retried without resending the photo', async ({ page }) => {
@@ -30,14 +30,14 @@ test('status failures are visible, back off, and can be retried without resendin
         return healthy ? route.fulfill({ json: { observations: [{ id: 'saved', status: 'ready', title: '完成' }] } }) : route.fulfill({ status: 503, json: {} });
     });
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'photo.gif', { type: 'image/gif' })));
-    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
     await expect(page.getByRole('alert')).toContainText('解析状況を確認できません');
     await page.evaluate(async () => { for (let n = 0; n < 4; n++) await (window as any).refreshSavedUploads(); });
     expect(checks).toBe(1);
     healthy = true;
     await page.getByRole('button', { name: '状態を再確認' }).click();
-    await expect(page.getByText('図鑑ができました')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.observation?.status === 'ready'));
     expect(posts).toBe(1);
     await expect(page.getByRole('alert')).toHaveCount(0);
 });
@@ -53,7 +53,7 @@ test('refreshes are serialized and leaving the library cancels its pending refre
     });
     await page.waitForFunction(() => (window as any).calls.reloads === 1);
     await page.evaluate(() => (window as any).enqueueUpload(new File(['GIF89a'], 'two.gif', { type: 'image/gif' }), null, null));
-    await expect(page.getByText('図鑑ができました')).toHaveCount(2);
+    await page.waitForFunction(() => (window as any).getUploads().filter((item: any) => item.phase === 'saved').length === 2);
     await page.waitForTimeout(300);
     expect(await page.evaluate(() => (window as any).calls.reloads)).toBe(1);
     await page.evaluate(() => { const options = (window as any).calls.reloadOptions[0]; options.onSuccess(); options.onFinish(); });
@@ -67,7 +67,7 @@ test('expired status polling stops pending uploads and further polling', async (
     await page.route('**/observations', route => { posts++; return route.fulfill({ json: { id: 'saved', status: 'processing', title: null } }); });
     await page.route('**/observations/statuses?*', route => { checks++; return route.fulfill({ status: 401, json: {} }); });
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'one.gif', { type: 'image/gif' })));
-    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
     await expect(page.getByRole('alert')).toContainText('ログイン状態が変わりました');
     expect(await page.evaluate(() => (window as any).enqueueUpload(new File(['GIF89a'], 'two.gif', { type: 'image/gif' }), null, null))).toBeNull();
@@ -82,12 +82,12 @@ test('logging out aborts an outstanding status check and discards late results',
     await page.route('**/observations', route => route.fulfill({ json: { id: 'saved', status: 'processing', title: null } }));
     await page.route('**/observations/statuses?*', async route => { checking = true; await pending; await route.fulfill({ json: { observations: [{ id: 'saved', status: 'ready', title: 'Old owner' }] } }); });
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'one.gif', { type: 'image/gif' })));
-    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => { void (window as any).refreshSavedUploads(); });
     await expect.poll(() => checking).toBe(true);
     await page.evaluate(() => (window as any).setUploadOwner(null));
     finish();
-    await expect(page.getByRole('region', { name: '写真の送信状況' })).toHaveCount(0);
+    expect(await page.evaluate(() => (window as any).getUploads().length)).toBe(0);
     expect(await page.evaluate(() => (window as any).getUploads())).toEqual([]);
 });
 
@@ -130,7 +130,7 @@ test('manual status checks respect Retry-After and malformed replies retain save
         return rateLimited ? route.fulfill({ status: 429, headers: { 'Retry-After': '60' }, json: {} }) : route.fulfill({ json: { observations: [{ id: 'saved', status: 'unknown' }] } });
     });
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'one.gif', { type: 'image/gif' })));
-    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
     await page.getByRole('button', { name: '状態を再確認' }).click();
     expect(checks).toBe(1);
@@ -138,7 +138,7 @@ test('manual status checks respect Retry-After and malformed replies retain save
     await page.evaluate(() => { const later = Date.now() + 61000; Date.now = () => later; });
     await page.getByRole('button', { name: '状態を再確認' }).click();
     await expect.poll(() => checks).toBe(2);
-    await expect(page.getByRole('link', { name: '保存した写真を見る' })).toBeVisible();
-    await expect(page.getByText('保存済み・状況の確認待ち')).toBeVisible();
+    await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
+    expect(await page.evaluate(() => (window as any).getUploads()[0].phase)).toBe('saved');
     await expect(page.getByRole('alert')).toContainText('解析状況を確認できません');
 });

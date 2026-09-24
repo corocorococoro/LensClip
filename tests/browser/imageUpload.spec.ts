@@ -116,10 +116,10 @@ test('StrictMode sends once with photo GPS, and leaving the page keeps sending',
     });
     expect(result.latitude).toBe('35.5'); expect(result.longitude).toBe('139.75');
     expect(result.size).toBeLessThan(result.original); expect(result.id).toMatch(/^[\da-f-]{36}$/); expect(result.owner).toBe('1');
-    await page.getByRole('link', { name: 'ライブラリで待つ' }).click();
-    await expect(page.getByRole('region', { name: '写真の送信状況' })).toBeVisible();
+    await page.getByRole('link', { name: '図鑑へ戻る' }).click();
+    await expect(page.getByRole('navigation', { name: 'メインナビゲーション' })).toContainText('1');
     finish();
-    await expect(page.getByText('保存済み・解析中')).toBeVisible();
+    await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(1);
     expect(await page.evaluate(() => (window as any).calls.visits)).toEqual(['/library']);
     await page.waitForFunction(() => (window as any).activeUrls.size === 0);
@@ -144,7 +144,7 @@ for (const failure of ['decode', 'encode']) {
         }, failure);
         await expect(page.getByRole('alert')).toContainText('写真の準備に失敗しました');
         expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(0);
-        await page.getByRole('button', { name: '送信待ちから取り除く' }).click();
+        await page.getByRole('button', { name: '追加を取り消す' }).click();
         expect(await page.evaluate(() => (window as any).activeUrls.size)).toBe(0);
     });
 }
@@ -160,14 +160,14 @@ test('leaving during encoding continues the first upload and queues the next pho
         api.mountUpload(file);
     });
     await page.waitForFunction(() => typeof (window as any).finishEncoding === 'function');
-    await page.getByRole('link', { name: 'ライブラリで待つ' }).click();
+    await page.getByRole('link', { name: '図鑑へ戻る' }).click();
     await page.evaluate(() => {
         const api = window as any;
         api.enqueueUpload(new File(['GIF89a'], 'next.gif', { type: 'image/gif' }), null, null);
         api.finishEncoding();
     });
     await page.waitForFunction(() => (window as any).calls.posts.length === 1);
-    await expect(page.getByText('送信待ち', { exact: true })).toBeVisible();
+    await expect(page.getByText('保存待ち', { exact: true })).toBeVisible();
     finish();
     await page.waitForFunction(() => (window as any).getUploads().every((item: any) => item.phase === 'saved'));
     expect(count).toBe(2);

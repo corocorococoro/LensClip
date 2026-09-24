@@ -1,14 +1,18 @@
 import type { CategoryDefinition, ObservationSummary } from '@/types/models';
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
+import { photoHref, rememberPhotoOrigin } from '@/lib/photoNavigation';
 
 interface ObservationCardProps {
     observation: ObservationSummary;
     categories?: CategoryDefinition[];
     size?: 'sm' | 'md';
     showCategory?: boolean;
+    statusLabel?: string;
 }
 
-export function ObservationCard({ observation, categories = [], size = 'md', showCategory = true }: ObservationCardProps) {
+export function ObservationCard({ observation, categories = [], size = 'md', showCategory = true, statusLabel }: ObservationCardProps) {
+    const { url } = usePage();
+    const href = photoHref(`/observations/${observation.id}`, url);
     const category = categories.find((item) => item.id === observation.category);
     const compact = size === 'sm';
 
@@ -19,7 +23,8 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
 
     return (
         <Link
-            href={`/observations/${observation.id}`}
+            href={href}
+            onClick={() => rememberPhotoOrigin(href, url)}
             className="group block min-w-0 overflow-hidden rounded-2xl border border-brand-line bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99]"
         >
             <div className="relative aspect-square overflow-hidden bg-brand-sand-soft">
@@ -28,20 +33,6 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
                 ) : (
                     <div className="flex h-full w-full items-center justify-center text-brand-sand" role="img" aria-label={observation.title || '観察中の画像'}>
                         <svg className="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" /><circle cx="12" cy="13" r="4" /></svg>
-                    </div>
-                )}
-
-                {observation.status === 'processing' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/35 backdrop-blur-[1px]">
-                        <span className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-amber-700 shadow-sm" role="status">
-                            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-500" />解析中
-                        </span>
-                    </div>
-                )}
-
-                {observation.status === 'failed' && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-brand-ink/40">
-                        <span className="rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold text-red-700 shadow-sm" role="status">確認が必要</span>
                     </div>
                 )}
 
@@ -61,8 +52,9 @@ export function ObservationCard({ observation, categories = [], size = 'md', sho
 
             <div className={compact ? 'px-2.5 py-2' : 'px-3 py-2.5'}>
                 <p className={`${compact ? 'text-xs' : 'text-sm'} truncate font-bold text-brand-ink`}>
-                    {observation.title || (observation.status === 'processing' ? 'しらべています' : '名前を確認中')}
+                    {observation.title || '選んだ写真'}
                 </p>
+                {(statusLabel || observation.status !== 'ready') && <p role="status" className="mt-1 text-xs font-semibold text-brand-primary-dark">{statusLabel || (observation.status === 'failed' ? '調査を再試行できます' : '調べています')}</p>}
             </div>
         </Link>
     );

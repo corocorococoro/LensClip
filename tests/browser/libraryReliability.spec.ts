@@ -48,7 +48,7 @@ test('status failure has a recovery action and never changes the card to analysi
         : route.fulfill({ status: 503, body: 'Unavailable' }));
     await openLibrary(page, true);
     await expect(page.getByRole('alert')).toContainText('分析状況を確認できませんでした');
-    await expect(page.getByText('解析中', { exact: true })).toBeVisible();
+    await expect(page.getByText('調べています', { exact: true })).toBeVisible();
     healthy = true;
     await page.getByRole('button', { name: '状態を再確認' }).click();
     await expect(page.getByText('完成した記録', { exact: true })).toBeVisible();
