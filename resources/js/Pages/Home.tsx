@@ -1,6 +1,9 @@
+import { useRestorePhotoScroll } from '@/hooks/useRestorePhotoScroll';
+import { useUploads } from '@/hooks/useUploads';
+import { mergeDiscoveries } from '@/lib/discoveries';
+import DiscoveryCard from '@/Components/DiscoveryCard';
 import { useUploadRefresh } from '@/hooks/useUploadRefresh';
 import { EmptyState } from '@/Components/ui';
-import { ObservationCard } from '@/Components/ObservationCard';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
 import AppLayout from '@/Layouts/AppLayout';
 import type { HomeStats, LookbackHighlight, MagazineTeaser, ObservationSummary } from '@/types/models';
@@ -25,7 +28,10 @@ function CameraIcon() {
 }
 
 export default function Home({ stats, recent, lookback, quizAvailable, magazine }: Props) {
+    useRestorePhotoScroll();
     useUploadRefresh();
+    const uploads = useUploads();
+    const discoveries = mergeDiscoveries(recent, uploads).slice(0, 6);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const handleFileSelect = usePendingUploadNavigation(location, 'home');
@@ -90,14 +96,14 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 transition group-hover:bg-white/20 sm:h-16 sm:w-16"><CameraIcon /></span>
                     <span className="min-w-0 flex-1">
                         <span className="block text-lg font-bold">新しいものをしらべる</span>
-                        <span className="mt-0.5 block text-sm text-white/80">写真を撮るか、ライブラリから選べます</span>
+                        <span className="mt-0.5 block text-sm text-white/80">撮影するか、端末の写真から選べます</span>
                     </span>
                     <svg className="h-5 w-5 shrink-0 opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                 </button>
 
                 <input type="file" accept="image/*" ref={fileInputRef} className="hidden" onChange={handleFileSelect} aria-hidden="true" />
 
-                {recent.length > 0 ? (
+                {discoveries.length > 0 ? (
                     <section>
                         <div className="mb-4 flex items-end justify-between gap-4">
                             <div>
@@ -107,7 +113,7 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                             <Link href="/library" className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary">もっとみる</Link>
                         </div>
                         <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
-                            {recent.map((obs) => <ObservationCard key={obs.id} observation={obs} size="sm" />)}
+                            {discoveries.map(entry => <DiscoveryCard key={entry.key} entry={entry} size="sm" />)}
                         </div>
                     </section>
                 ) : stats.total === 0 ? (

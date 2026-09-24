@@ -1,7 +1,7 @@
-import UploadQueuePanel from '@/Components/UploadQueuePanel';
+import UploadNotice from '@/Components/UploadNotice';
+import { useUploads } from '@/hooks/useUploads';
 import BrandMark from '@/Components/BrandMark';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
-import { useScrollDirection } from '@/hooks/useScrollDirection';
 import { PageProps } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { ReactNode, useEffect, useRef, useState } from 'react';
@@ -40,10 +40,10 @@ function CameraIcon({ className = '' }: { className?: string }) {
 }
 
 export default function AppLayout({ children, title, fullScreen = false }: AppLayoutProps) {
-    const { auth, ziggy } = usePage<PageProps>().props;
-    const url = ziggy.location;
+    const { props: { auth }, url } = usePage<PageProps>();
     const isAdmin = auth?.user?.role === 'admin';
-    const isFooterVisible = useScrollDirection() !== 'down';
+    const uploads = useUploads();
+    const activeCount = uploads.filter(item => item.phase !== 'saved' || item.message || item.observation?.status !== 'ready').length;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -66,9 +66,9 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
     const isLibrary = url.startsWith('/library');
 
     return (
-        <div className={`min-h-screen bg-brand-canvas text-brand-ink print:bg-white ${fullScreen ? 'h-screen overflow-hidden' : 'pb-28 print:pb-0'}`}>
+        <div className={`bg-brand-canvas text-brand-ink print:bg-white ${fullScreen ? 'flex h-dvh flex-col overflow-hidden' : 'min-h-screen pb-32 print:pb-0'}`} style={fullScreen ? { paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' } : undefined}>
             <a href="#main-content" className="sr-only z-[100] rounded-lg bg-white px-4 py-2 font-bold text-brand-primary-dark focus:not-sr-only focus:fixed focus:left-4 focus:top-4 print:hidden">本文へ移動</a>
-            <header className="safe-area-top sticky top-0 z-40 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl print:hidden">
+            <header className="safe-area-top sticky top-0 z-40 shrink-0 border-b border-brand-line/80 bg-white/90 backdrop-blur-xl print:hidden">
                 <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
                     <Link href="/dashboard" className="flex items-center gap-2.5 rounded-lg" aria-label="LensClip ホーム">
                         <BrandMark className="h-9 w-9 shadow-sm" compact />
@@ -89,14 +89,14 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                 </div>
             </header>
 
-            <div className={fullScreen ? 'absolute inset-x-0 top-16 z-40' : ''}><UploadQueuePanel /></div>
+            <UploadNotice />
 
-            <main id="main-content" className={fullScreen ? 'h-[calc(100dvh-4rem-4.75rem)] overflow-hidden' : 'mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-9'}>
+            <main id="main-content" className={fullScreen ? 'flex min-h-0 flex-1 flex-col overflow-hidden' : 'mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-9'}>
                 {children}
             </main>
 
             <nav
-                className={`safe-area-bottom fixed inset-x-0 bottom-0 z-50 transition-transform duration-300 ease-out print:hidden ${isFooterVisible || fullScreen ? 'translate-y-0' : 'translate-y-full'}`}
+                className="safe-area-bottom fixed inset-x-0 bottom-0 z-50 print:hidden"
                 aria-label="メインナビゲーション"
             >
                 <div className="mx-auto max-w-md border-x border-t border-brand-line bg-white/95 px-5 pb-1 pt-2 shadow-[0_-10px_35px_rgba(61,52,44,0.08)] backdrop-blur-xl sm:mb-3 sm:rounded-2xl sm:border sm:pb-2">
@@ -119,8 +119,8 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                         </div>
 
                         <Link href="/library" aria-current={isLibrary ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition active:scale-95 ${isLibrary ? 'text-brand-primary-dark' : 'text-brand-muted hover:text-brand-ink'}`}>
-                            <CollectionIcon className="h-5 w-5" />
-                            ライブラリ
+                            <span className="relative"><CollectionIcon className="h-5 w-5" />{activeCount > 0 && <span className="absolute -right-4 -top-1 rounded-full bg-brand-primary px-1.5 text-[10px] text-white" aria-label={`追加中・要確認 ${activeCount}件`}>{activeCount}</span>}</span>
+                            図鑑
                         </Link>
                     </div>
                 </div>

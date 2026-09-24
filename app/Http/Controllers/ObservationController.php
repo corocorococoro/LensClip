@@ -39,7 +39,8 @@ class ObservationController extends Controller
      */
     public function index(Request $request)
     {
-        $viewMode = $request->get('view', 'date');
+        $activity = $request->boolean('activity');
+        $viewMode = $activity ? 'date' : $request->get('view', 'date');
         $perPage = config('library.per_page', 30);
 
         $query = Observation::forUser(auth()->id())
@@ -47,13 +48,17 @@ class ObservationController extends Controller
             ->latest()
             ->orderByDesc('id');
 
+        if ($activity) {
+            $query->whereIn('status', ['processing', 'failed']);
+        }
+
         // Search by title
-        if ($request->filled('q')) {
+        if (! $activity && $request->filled('q')) {
             $query->search($request->q);
         }
 
         // Filter by tag
-        if ($request->filled('tag')) {
+        if (! $activity && $request->filled('tag')) {
             $query->withTag($request->tag);
         }
 
@@ -91,11 +96,12 @@ class ObservationController extends Controller
         }
 
         return Inertia::render('Library', [
+            'activityCount' => fn () => Observation::forUser(auth()->id())->whereIn('status', ['processing', 'failed'])->count(),
             'dateGroups' => $dateGroups,
             'pagination' => $pagination,
             'observations' => ['data' => []],
             'tags' => $tags,
-            'filters' => $request->only(['q', 'tag', 'view']),
+            'filters' => $request->only(['q', 'tag', 'view', 'activity']),
             'viewMode' => 'date',
             'categories' => CategoryCatalog::forFrontend(),
         ]);
@@ -126,6 +132,7 @@ class ObservationController extends Controller
             }
 
             return Inertia::render('Library', [
+                'activityCount' => fn () => Observation::forUser(auth()->id())->whereIn('status', ['processing', 'failed'])->count(),
                 'observations' => ['data' => collect($paginated->items())->map(fn (Observation $observation) => ObservationSummary::from($observation))->values()],
                 'pagination' => $pagination,
                 'tags' => $tags,
@@ -141,6 +148,7 @@ class ObservationController extends Controller
         $categoryPreviews = $this->buildCategoryPreviews($request, 3);
 
         return Inertia::render('Library', [
+            'activityCount' => fn () => Observation::forUser(auth()->id())->whereIn('status', ['processing', 'failed'])->count(),
             'observations' => ['data' => []],
             'tags' => $tags,
             'filters' => $filters,
@@ -162,9 +170,10 @@ class ObservationController extends Controller
             ->get();
 
         return Inertia::render('Library', [
+            'activityCount' => fn () => Observation::forUser(auth()->id())->whereIn('status', ['processing', 'failed'])->count(),
             'observations' => ['data' => $observations->map(fn (Observation $observation) => ObservationSummary::from($observation))->values()],
             'tags' => $tags,
-            'filters' => $request->only(['q', 'tag', 'view']),
+            'filters' => $request->only(['q', 'tag', 'view', 'activity']),
             'viewMode' => 'map',
             'categories' => CategoryCatalog::forFrontend(),
         ]);
@@ -279,7 +288,7 @@ class ObservationController extends Controller
             return response()->json(new \App\Http\Resources\ObservationResource($observation), 201);
         }
 
-        return redirect()->route('observations.show', $observation);
+        return $this->redirectToObservation($observation);
     }
 
     public function uploadStatus(Request $request, string $uploadId)
@@ -491,7 +500,18 @@ class ObservationController extends Controller
             ], $observation->status === 'processing' ? 202 : 200);
         }
 
-        return redirect()->route('observations.show', $observation);
+        return $this->redirectToObservation($observation);
+    }
+
+    private function redirectToObservation(Observation $observation): \Illuminate\Http\RedirectResponse
+    {
+        $returnTo = request()->input('return_to');
+        $parameters = ['observation' => $observation];
+        if (is_string($returnTo) && preg_match('~^/(library|dashboard)(\\?[^#]*)?$~D', $returnTo)) {
+            $parameters['return_to'] = $returnTo;
+        }
+
+        return redirect()->route('observations.show', $parameters);
     }
 
     /**
@@ -598,7 +618,7 @@ class ObservationController extends Controller
             ], $observation->status === 'processing' ? 202 : 200);
         }
 
-        return redirect()->route('observations.show', $observation);
+        return $this->redirectToObservation($observation);
     }
 
     /**
@@ -623,7 +643,7 @@ class ObservationController extends Controller
             return response()->json(new \App\Http\Resources\ObservationResource($observation->fresh()->load('tags')));
         }
 
-        return redirect()->route('observations.show', $observation);
+        return $this->redirectToObservation($observation);
     }
 
     /**

@@ -1,11 +1,14 @@
 import axios from 'axios';
 import { prepareImageUpload } from '@/lib/prepareImageUpload';
+import type { ObservationSummary } from '@/types/models';
+import { canCancelUpload } from '@/lib/uploadPresentation';
 
 type Phase = 'queued' | 'preparing' | 'uploading' | 'confirming' | 'waiting' | 'error' | 'saved';
-interface SavedObservation { id: string; status: 'processing' | 'ready' | 'failed'; title: string | null }
+type SavedObservation = Omit<ObservationSummary, 'title'> & { title: string | null };
 export interface UploadItem {
     id: string;
     ownerId: number;
+    createdAt: string;
     phase: Phase;
     percent: number;
     previewUrl: string;
@@ -74,11 +77,13 @@ export function enqueueUpload(file: File, latitude: number | null, longitude: nu
         notice = '送信待ちの写真がいっぱいです。送信が終わってから追加してください。'; emit(); return null;
     }
     notice = null;
-    // Completed notices are bounded; pending images are never silently dropped.
-    const saved = items.filter(item => item.phase === 'saved').slice(-4);
+    // Keep unfinished discoveries reachable; only successful history may age out.
+    const unfinished = items.filter(item => item.phase === 'saved' && (item.message || item.observation?.status !== 'ready'));
+    if (unfinished.length >= 20) { notice = '調査中・要確認の写真が多くなっています。図鑑で確認してから追加してください。'; emit(); return null; }
+    const completed = items.filter(item => item.phase === 'saved' && !item.message && item.observation?.status === 'ready').slice(-4);
     const id = crypto.randomUUID();
-    items = [...pending, ...saved, {
-        id, ownerId, phase: 'queued', percent: 0, previewUrl: URL.createObjectURL(file),
+    items = [...pending, ...unfinished, ...completed, {
+        id, ownerId, createdAt: new Date().toISOString(), phase: 'queued', percent: 0, previewUrl: URL.createObjectURL(file),
         file, prepared: null, latitude, longitude, attempted: false, retryable: true, message: null, observation: null,
     }];
     emit(); void pump(); return id;
@@ -86,7 +91,10 @@ export function enqueueUpload(file: File, latitude: number | null, longitude: nu
 function observationFrom(data: any): SavedObservation {
     const observation = data?.data ?? data;
     if (typeof observation?.id !== 'string' || !['processing', 'ready', 'failed'].includes(observation.status)) throw new Error('Invalid upload response');
-    return { id: observation.id, status: observation.status, title: observation.title ?? null };
+    return { id: observation.id, status: observation.status, title: observation.title ?? null,
+        thumb_url: observation.thumb_url ?? `/observations/${encodeURIComponent(observation.id)}/thumb`,
+        created_at: observation.created_at, category: observation.category, processing_type: observation.processing_type,
+        milestones: observation.milestones, latitude: observation.latitude, longitude: observation.longitude };
 }
 function saved(id: string, observation: SavedObservation) {
     const item = items.find(item => item.id === id);
@@ -94,6 +102,16 @@ function saved(id: string, observation: SavedObservation) {
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
     uploadRevision++;
     patch(id, { phase: 'saved', file: null, prepared: null, previewUrl: '', percent: 100, observation, message: null });
+}
+/** Detail responses are authoritative, including retries and corrections. */
+export function reconcileSavedObservation(value: ObservationSummary) {
+    if (sessionBlocked) return;
+    const item = items.find(item => item.phase === 'saved' && item.observation?.id === value.id);
+    if (!item) return;
+    const observation = observationFrom(value);
+    if (item.observation?.status === observation.status && item.observation.title === observation.title && item.observation.thumb_url === observation.thumb_url && !item.message) return;
+    uploadRevision++;
+    patch(item.id, { observation, message: null });
 }
 function blockSession() {
     sessionBlocked = true;
@@ -115,7 +133,7 @@ function fail(id: string, error: unknown) {
     }
     const terminal = [409, 410, 413, 422].includes(status ?? 0);
     const messages: Record<number, string> = {
-        409: '同じ送信IDの写真が既に保存されています。ライブラリを確認してください。',
+        409: '同じ送信IDの写真が既に保存されています。図鑑を確認してください。',
         410: 'この写真の記録は削除されています。再送信しません。',
         413: '画像が大きすぎます。別の写真を選んでください。',
         422: '画像を送信できませんでした。JPEG・PNG・WebP・GIF形式で、圧縮後10MB以下の写真を選んでください。',
@@ -123,6 +141,7 @@ function fail(id: string, error: unknown) {
     };
     patch(id, {
         phase: !navigator.onLine && !terminal ? 'waiting' : 'error', retryable: !terminal,
+        ...([410, 413, 422].includes(status ?? 0) ? { attempted: false } : {}),
         message: messages[status ?? 0] ?? '送信結果を確認できませんでした。接続を確認して再試行してください。',
     });
 }
@@ -200,7 +219,7 @@ export function retryUpload(id: string) {
 }
 export function dismissUpload(id: string) {
     const item = items.find(item => item.id === id);
-    if (!item || running === id) return;
+    if (!item || running === id || (item.phase !== 'saved' && !canCancelUpload(item))) return;
     if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
     items = items.filter(current => current.id !== id); emit();
 }

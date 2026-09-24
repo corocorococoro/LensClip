@@ -1,3 +1,7 @@
+import { useRestorePhotoScroll } from '@/hooks/useRestorePhotoScroll';
+import { useUploads } from '@/hooks/useUploads';
+import { mergeDiscoveries, type Discovery } from '@/lib/discoveries';
+import DiscoveryCard from '@/Components/DiscoveryCard';
 import { useUploadRefresh } from '@/hooks/useUploadRefresh';
 import AppLayout from '@/Layouts/AppLayout';
 import { EmptyState } from '@/Components/ui';
@@ -15,15 +19,17 @@ import type {
     CursorPagination,
     CategoryPreviews,
 } from '@/types/models';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage, useRemember } from '@inertiajs/react';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 interface Props {
+    activityCount?: number;
     observations: {
         data: ObservationSummary[];
     };
     tags: Tag[];
     filters: {
+        activity?: string;
         q?: string;
         tag?: string;
         view?: LibraryViewMode;
@@ -123,6 +129,7 @@ function updateObservationList(
 
 function libraryContentKey(filters: Props['filters'], viewMode: LibraryViewMode): string {
     return JSON.stringify([
+        filters.activity ?? '',
         filters.q ?? '',
         filters.tag ?? '',
         filters.category ?? '',
@@ -131,12 +138,13 @@ function libraryContentKey(filters: Props['filters'], viewMode: LibraryViewMode)
 }
 
 export default function Library(props: Props) {
+    useRestorePhotoScroll();
     const uploadRevision = useUploadRefresh();
     const viewMode = props.viewMode ?? 'date';
 
     return (
-        <AppLayout title="ライブラリ" fullScreen={viewMode === 'map'}>
-            <Head title="ライブラリ" />
+        <AppLayout title="図鑑" fullScreen={viewMode === 'map'}>
+            <Head title="図鑑" />
             <LibraryContent
                 key={libraryContentKey(props.filters, viewMode)}
                 uploadRevision={uploadRevision}
@@ -149,6 +157,7 @@ export default function Library(props: Props) {
 
 function LibraryContent({
     observations,
+    activityCount = 0,
     tags,
     filters,
     viewMode = 'date',
@@ -160,16 +169,31 @@ function LibraryContent({
     pagination: initialPagination,
     uploadRevision,
 }: Props & { uploadRevision: number }) {
+    const uploads = useUploads();
+    const { url } = usePage();
+    const isActivity = filters.activity === '1';
+    const [activityIds, setActivityIds] = useState<string[]>([]);
+    useEffect(() => {
+        if (!isActivity) return;
+        setActivityIds(previous => {
+            const additions = uploads.filter(item => (item.phase !== 'saved' || item.message || item.observation?.status !== 'ready') && !previous.includes(item.id)).map(item => item.id);
+            return additions.length ? [...previous, ...additions] : previous;
+        });
+    }, [isActivity, uploads]);
+    const returnTo = new URL(url, 'https://lensclip.invalid').searchParams.get('return_to');
+    const libraryReturn = returnTo && /^\/library(\?[^#]*)?$/.test(returnTo) ? returnTo : '/library';
+    const activityHref = `/library?activity=1&return_to=${encodeURIComponent(url)}`;
+    const rememberKey = libraryContentKey(filters, viewMode);
     const [search, setSearch] = useState(filters.q || '');
     const [activeTag, setActiveTag] = useState(filters.tag || '');
 
     // --- 無限スクロール用ステート ---
-    const [allDateGroups, setAllDateGroups] = useState(initialDateGroups);
-    const [categoryObservations, setCategoryObservations] = useState<ObservationSummary[]>(
-        observations.data,
+    const [allDateGroups, setAllDateGroups] = useRemember(initialDateGroups, `dates:${rememberKey}`);
+    const [categoryObservations, setCategoryObservations] = useRemember<ObservationSummary[]>(
+        observations.data, `categories:${rememberKey}`,
     );
-    const [pagination, setPagination] = useState<CursorPagination>(
-        initialPagination ?? { hasMore: false, nextCursor: null },
+    const [pagination, setPagination] = useRemember<CursorPagination>(
+        initialPagination ?? { hasMore: false, nextCursor: null }, `pagination:${rememberKey}`,
     );
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [loadMoreError, setLoadMoreError] = useState(false);
@@ -204,6 +228,7 @@ function LibraryContent({
 
         const params = new URLSearchParams();
         params.set('view', viewMode);
+        if (isActivity) params.set('activity', '1');
         params.set('cursor', pagination.nextCursor);
         if (filters.q) params.set('q', filters.q);
         if (filters.tag) params.set('tag', filters.tag);
@@ -234,7 +259,7 @@ function LibraryContent({
             }
             if (!controller.signal.aborted) setIsLoadingMore(false);
         }
-    }, [pagination.nextCursor, isLoadingMore, viewMode, filters]);
+    }, [pagination.nextCursor, isLoadingMore, viewMode, filters, isActivity]);
 
     const sentinelRef = useInfiniteScroll(loadMore, pagination.hasMore && !isLoadingMore && !loadMoreError);
 
@@ -309,6 +334,20 @@ function LibraryContent({
         };
     }, [processingIds, statusRetryKey]);
 
+    const displayGroups = useMemo(() => {
+        const includeUploads = viewMode === 'date' && (isActivity || (!filters.q && !filters.tag));
+        const currentUploads = isActivity ? uploads.filter(item => activityIds.includes(item.id) || item.phase !== 'saved' || item.message || item.observation?.status !== 'ready') : uploads;
+        const entries = mergeDiscoveries(allDateGroups.flatMap(group => group.observations), includeUploads ? currentUploads : []);
+        const months = new Map<string, { yearMonth: string; label: string; entries: Discovery[] }>();
+        const originalMonths = new Map(allDateGroups.flatMap(group => group.observations.map(item => [item.id, group.yearMonth] as const)));
+        entries.forEach(entry => {
+            const month = entry.upload ? entry.createdAt.slice(0, 7) : originalMonths.get(entry.observation!.id) || entry.createdAt.slice(0, 7);
+            const existing = months.get(month) ?? { yearMonth: month, label: allDateGroups.find(group => group.yearMonth === month)?.label || `${month.slice(0, 4)}年${Number(month.slice(5))}月`, entries: [] };
+            existing.entries.push(entry); months.set(month, existing);
+        });
+        return [...months.values()].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth));
+    }, [allDateGroups, uploads, viewMode, filters.q, filters.tag, isActivity, activityIds]);
+
     // --- Navigation handlers ---
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -371,15 +410,22 @@ function LibraryContent({
             {viewMode !== 'map' && (
                 <div className="mb-6">
                     <p className="lens-kicker mb-1">Your collection</p>
-                    <h1 className="mb-5 text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">ライブラリ</h1>
-                    <div className="max-w-sm">
+                    <h1 className="mb-5 text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">{isActivity ? '追加中・要確認' : '図鑑'}</h1>
+                    {!isActivity && <div className="max-w-sm">
                         <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
-                    </div>
+                    </div>}
                 </div>
             )}
 
+            <div className={`shrink-0 ${viewMode === 'map' ? 'border-b border-brand-line bg-white px-4 py-2' : 'mb-5'}`}>
+                <Link href={isActivity ? libraryReturn : activityHref} className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-brand-primary-dark">
+                    {isActivity ? '← 図鑑の表示に戻る' : `追加中・要確認${activityCount + uploads.filter(item => item.phase !== 'saved').length > 0 ? ` ${activityCount + uploads.filter(item => item.phase !== 'saved').length}件` : ''} →`}
+                </Link>
+                {isActivity && <p className="text-xs text-brand-muted">保存前の写真と、調査中・確認が必要な写真を表示しています。</p>}
+            </div>
+
             {/* Search - hide in map view */}
-            {viewMode !== 'map' && (
+            {viewMode !== 'map' && !isActivity && (
                 <form onSubmit={handleSearch} className="mb-5 max-w-xl">
                     <div className="relative">
                         <input
@@ -396,7 +442,7 @@ function LibraryContent({
             )}
 
             {/* Tag Filters - hide in map and category view */}
-            {viewMode === 'date' && tags.length > 0 && (
+            {viewMode === 'date' && !isActivity && tags.length > 0 && (
                 <div
                     className="scrollbar-hide -mx-4 mb-7 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
                     role="group"
@@ -431,29 +477,23 @@ function LibraryContent({
             {/* Date View */}
             {viewMode === 'date' && (
                 <>
-                    {allDateGroups.length > 0 ? (
+                    {displayGroups.length > 0 ? (
                         <div className="space-y-9">
-                            {allDateGroups.map((group) => (
+                            {displayGroups.map((group) => (
                                 <div key={group.yearMonth}>
                                     <div className="mb-4 flex items-baseline justify-between gap-4">
                                         <h2 className="text-lg font-bold tracking-tight text-brand-ink">
                                             {group.label}
                                         </h2>
-                                        <Link
+                                        {group.entries.some(entry => entry.observation) && <Link
                                             href={`/magazine/${group.yearMonth}`}
                                             className="shrink-0 text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
                                         >
                                             この月の号 →
-                                        </Link>
+                                        </Link>}
                                     </div>
                                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-                                        {group.observations.map((obs) => (
-                                            <ObservationCard
-                                                key={obs.id}
-                                                observation={obs}
-                                                categories={categories}
-                                            />
-                                        ))}
+                                        {group.entries.map(entry => <DiscoveryCard key={entry.key} entry={entry} categories={categories} />)}
                                     </div>
                                 </div>
                             ))}
@@ -465,7 +505,7 @@ function LibraryContent({
                         <EmptyState
                             icon="📭"
                             message={
-                                filters.q || filters.tag
+                                isActivity ? '追加中・確認が必要な写真はありません' : filters.q || filters.tag
                                     ? 'みつからなかったよ'
                                     : 'まだなにもないよ'
                             }
@@ -562,7 +602,7 @@ function LibraryContent({
 
             {/* Map View */}
             {viewMode === 'map' && (
-                <LibraryMap observations={categoryObservations} onModeChange={handleViewModeChange} />
+                <div className="min-h-0 flex-1"><LibraryMap observations={categoryObservations} onModeChange={handleViewModeChange} /></div>
             )}
         </>
     );

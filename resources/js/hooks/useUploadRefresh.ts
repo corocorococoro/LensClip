@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { clearUploadNotice, getUploadNotice, getUploadRevision, showUploadNotice, subscribeUploads } from '@/uploadQueue';
 
-const REFRESH_ERROR = '写真は保存済みですが、一覧を更新できませんでした。ライブラリを開き直してください。';
+const REFRESH_ERROR = '写真は保存済みですが、一覧を更新できませんでした。図鑑を開き直してください。';
 
 /** Reconcile even when an upload completed before this page mounted. */
 export function useUploadRefresh() {

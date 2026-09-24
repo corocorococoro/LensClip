@@ -1,3 +1,5 @@
+import { router, usePage } from '@inertiajs/react';
+import { photoHref, rememberPhotoOrigin } from '@/lib/photoNavigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Map as LeafletMap } from 'leaflet';
 import type { ObservationSummary, LibraryViewMode } from '@/types/models';
@@ -8,7 +10,10 @@ interface LibraryMapProps {
     onModeChange: (mode: LibraryViewMode) => void;
 }
 
+function escapeHtml(value: string) { return value.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]!); }
+
 export default function LibraryMap({ observations, onModeChange }: LibraryMapProps) {
+    const { url } = usePage();
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<LeafletMap | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,7 +99,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                                     background: #f4f0e4;
                                 ">
                                     ${obs.thumb_url
-                                ? `<img src="${obs.thumb_url}" style="width: 100%; height: 100%; object-fit: cover;" />`
+                                ? `<img src="${escapeHtml(obs.thumb_url)}" style="width: 100%; height: 100%; object-fit: cover;" />`
                                 : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #766B62; background: #F4F0E4;">Photo</div>`
                             }
                                 </div>
@@ -121,11 +126,11 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                     const popupContent = `
                         <div style="text-align: center; min-width: 140px; padding: 4px;">
                             ${obs.thumb_url
-                            ? `<img src="${obs.thumb_url}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`
+                            ? `<img src="${escapeHtml(obs.thumb_url)}" style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />`
                             : ''
                         }
-                            <p style="font-weight: 600; font-size: 15px; margin: 0 0 8px 0; color: #3D342C;">${obs.title || '処理中…'}</p>
-                            <a href="/observations/${obs.id}" style="
+                            <p style="font-weight: 600; font-size: 15px; margin: 0 0 8px 0; color: #3D342C;">${escapeHtml(obs.title || '調べています')}</p>
+                            <a href="${escapeHtml(photoHref(`/observations/${encodeURIComponent(obs.id)}`, url))}" style="
                                 display: inline-block;
                                 padding: 6px 12px;
                                 background: #159E96;
@@ -138,7 +143,15 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                         </div>
                     `;
 
-                    marker.bindPopup(popupContent, {
+                    const popup = document.createElement('div');
+                    popup.innerHTML = popupContent;
+                    popup.querySelector('a')?.addEventListener('click', event => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                        event.preventDefault();
+                        const href = photoHref(`/observations/${encodeURIComponent(obs.id)}`, url);
+                        rememberPhotoOrigin(href, url); router.visit(href);
+                    });
+                    marker.bindPopup(popup, {
                         maxWidth: 200,
                         className: 'observation-popup',
                     });
@@ -176,7 +189,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                 mapInstanceRef.current = null;
             }
         };
-    }, [withLocation]);
+    }, [withLocation, url]);
 
     // Empty state
     if (withLocation.length === 0) {
