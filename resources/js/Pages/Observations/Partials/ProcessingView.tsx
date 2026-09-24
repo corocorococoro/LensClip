@@ -6,6 +6,7 @@ import { router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import { useUploads } from '@/hooks/useUploads';
 import { refreshSavedUploads } from '@/uploadQueue';
+import axios from 'axios';
 
 export default function ProcessingView({ observation }: { observation: Observation }) {
     const isCorrection = observation.processing_type === 'correction';
@@ -22,12 +23,23 @@ export default function ProcessingView({ observation }: { observation: Observati
         let checking = false;
         let cancelReload: (() => void) | undefined;
         const abort = new AbortController();
+        const requestId = crypto.randomUUID();
+        const reportFailure = () => { if (active) setNeedsCheck(true); };
+        const removeInvalid = router.on('invalid', event => {
+            if (event.detail.response.config.headers?.['X-Photo-Result'] === requestId) { event.preventDefault(); reportFailure(); }
+        });
+        const removeException = router.on('exception', event => {
+            const error = event.detail.exception;
+            if (axios.isAxiosError(error) && error.config?.headers?.['X-Photo-Result'] === requestId) { event.preventDefault(); reportFailure(); }
+        });
         const close = () => { source?.close(); source = null; };
         const reload = () => {
             if (!active || checking) return;
             checking = true; close();
             router.reload({ only: ['observation', 'categories'],
+                headers: { 'X-Photo-Result': requestId },
                 onCancelToken: token => { cancelReload = () => token.cancel(); },
+                onError: reportFailure,
                 onFinish: () => { checking = false; cancelReload = undefined; if (active) setNeedsCheck(true); },
             });
         };
@@ -58,6 +70,7 @@ export default function ProcessingView({ observation }: { observation: Observati
         window.addEventListener('offline', connect);
         document.addEventListener('visibilitychange', connect);
         return () => { active = false; close(); abort.abort(); cancelReload?.();
+            removeInvalid(); removeException();
             window.removeEventListener('online', connect); window.removeEventListener('offline', connect); document.removeEventListener('visibilitychange', connect);
         };
     }, [observation.id, observation.status, attempt, queuedStatus]);

@@ -5,9 +5,10 @@ import DiscoveryCard from '@/Components/DiscoveryCard';
 import { useUploadRefresh } from '@/hooks/useUploadRefresh';
 import { EmptyState } from '@/Components/ui';
 import { usePendingUploadNavigation } from '@/hooks/usePendingUploadNavigation';
+import { photoHref, rememberPhotoOrigin } from '@/lib/photoNavigation';
 import AppLayout from '@/Layouts/AppLayout';
 import type { HomeStats, LookbackHighlight, MagazineTeaser, ObservationSummary } from '@/types/models';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 
 interface Props {
@@ -28,6 +29,8 @@ function CameraIcon() {
 }
 
 export default function Home({ stats, recent, lookback, quizAvailable, magazine }: Props) {
+    const { url } = usePage();
+    const lookbackHref = lookback ? photoHref(`/observations/${lookback.observation.id}`, url) : '';
     useRestorePhotoScroll();
     useUploadRefresh();
     const uploads = useUploads();
@@ -127,7 +130,8 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                             <h2 className="lens-section-title">あのときの はっけん</h2>
                         </div>
                         <Link
-                            href={`/observations/${lookback.observation.id}`}
+                            href={lookbackHref}
+                            onClick={() => rememberPhotoOrigin(lookbackHref, url)}
                             className="group flex items-center gap-4 overflow-hidden rounded-2xl border border-brand-line bg-white p-3 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-brand-sand/80 hover:shadow-surface active:scale-[0.99] sm:p-4"
                         >
                             <div className="h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brand-sand-soft sm:h-24 sm:w-24">
