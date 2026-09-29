@@ -20,7 +20,6 @@ export default function Edit({
 
             <div className="mx-auto max-w-2xl space-y-5">
                 <div className="mb-8">
-                    <p className="lens-kicker mb-1">Account</p>
                     <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">プロフィール</h1>
                 </div>
                 <div className="lens-surface p-5 sm:p-8">

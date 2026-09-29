@@ -115,11 +115,11 @@ export default function AppLayout({ children, title, fullScreen = false }: AppLa
                             >
                                 <CameraIcon className="h-7 w-7" />
                             </button>
-                            <span className="mt-0.5 text-[11px] font-bold text-brand-primary-dark">しらべる</span>
+                            <span className="mt-0.5 text-[11px] font-bold text-brand-primary-dark">調べる</span>
                         </div>
 
                         <Link href="/library" aria-current={isLibrary ? 'page' : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-xl text-[11px] font-semibold transition active:scale-95 ${isLibrary ? 'text-brand-primary-dark' : 'text-brand-muted hover:text-brand-ink'}`}>
-                            <span className="relative"><CollectionIcon className="h-5 w-5" />{activeCount > 0 && <span className="absolute -right-4 -top-1 rounded-full bg-brand-primary px-1.5 text-[10px] text-white" aria-label={`追加中・要確認 ${activeCount}件`}>{activeCount}</span>}</span>
+                            <span className="relative"><CollectionIcon className="h-5 w-5" />{activeCount > 0 && <span className="absolute -right-4 -top-1 rounded-full bg-brand-primary px-1.5 text-[10px] text-white" aria-label={`追加中・確認が必要な写真 ${activeCount}件`}>{activeCount}</span>}</span>
                             図鑑
                         </Link>
                     </div>

@@ -79,7 +79,7 @@ export function enqueueUpload(file: File, latitude: number | null, longitude: nu
     notice = null;
     // Keep unfinished discoveries reachable; only successful history may age out.
     const unfinished = items.filter(item => item.phase === 'saved' && (item.message || item.observation?.status !== 'ready'));
-    if (unfinished.length >= 20) { notice = '調査中・要確認の写真が多くなっています。図鑑で確認してから追加してください。'; emit(); return null; }
+    if (unfinished.length >= 20) { notice = '調べている写真・確認が必要な写真が多くなっています。図鑑で確認してから追加してください。'; emit(); return null; }
     const completed = items.filter(item => item.phase === 'saved' && !item.message && item.observation?.status === 'ready').slice(-4);
     const id = crypto.randomUUID();
     items = [...pending, ...unfinished, ...completed, {
@@ -119,8 +119,8 @@ function blockSession() {
     items = items.map(item => ({
         ...item, phase: item.phase === 'saved' ? 'saved' : 'error', retryable: false,
         message: item.phase === 'saved'
-            ? 'ログイン状態が変わりました。ログインし直して解析状況を確認してください。'
-            : 'ログイン状態が変わりました。ログインし直して写真を選んでください。',
+            ? '写真は保存されています。ログインし直して、図鑑で確認してください。'
+            : 'ログイン状態が変わりました。ログインし直して図鑑を確認し、保存されていなければ写真を選び直してください。',
     }));
     emit();
 }
@@ -133,24 +133,24 @@ function fail(id: string, error: unknown) {
     }
     const terminal = [409, 410, 413, 422].includes(status ?? 0);
     const messages: Record<number, string> = {
-        409: '同じ送信IDの写真が既に保存されています。図鑑を確認してください。',
+        409: '保存状態を確認できませんでした。図鑑で写真を確認してください。',
         410: 'この写真の記録は削除されています。再送信しません。',
         413: '画像が大きすぎます。別の写真を選んでください。',
         422: '画像を送信できませんでした。JPEG・PNG・WebP・GIF形式で、圧縮後10MB以下の写真を選んでください。',
-        429: '送信が混み合っています。しばらく待ってから再試行してください。',
+        429: 'しばらく待ってから、もう一度お試しください。',
     };
     patch(id, {
         phase: !navigator.onLine && !terminal ? 'waiting' : 'error', retryable: !terminal,
         ...([410, 413, 422].includes(status ?? 0) ? { attempted: false } : {}),
-        message: messages[status ?? 0] ?? '送信結果を確認できませんでした。接続を確認して再試行してください。',
+        message: messages[status ?? 0] ?? '写真が保存されたか確認できていません。接続を確認して、もう一度お試しください。',
     });
 }
 async function pump() {
     if (running || ownerId === null || sessionBlocked) return;
     const item = items.find(item => item.phase === 'queued');
     if (!item) return;
-    if (!navigator.onLine) { patch(item.id, { phase: 'waiting', message: '接続が戻ると再開します。' }); void pump(); return; }
-    if (Date.now() < retryAfter) { patch(item.id, { phase: 'error', message: '少し待ってから再試行してください。' }); void pump(); return; }
+    if (!navigator.onLine) { patch(item.id, { phase: 'waiting', message: '接続が戻ると送信を再開します。' }); void pump(); return; }
+    if (Date.now() < retryAfter) { patch(item.id, { phase: 'error', message: 'しばらく待ってから、もう一度お試しください。' }); void pump(); return; }
     const epoch = generation;
     const active = () => epoch === generation && items.some(current => current.id === item.id);
     running = item.id;
@@ -167,13 +167,13 @@ async function pump() {
                 latitude = result.gps?.latitude ?? latitude;
                 longitude = result.gps?.longitude ?? longitude;
                 if (prepared.size > MAX_UPLOAD_BYTES) {
-                    patch(item.id, { phase: 'error', retryable: false, message: '圧縮後の画像が10MBを超えています。別の写真を選んでください。' }); return;
+                    patch(item.id, { phase: 'error', retryable: false, message: '写真を送信できるサイズにできませんでした。別の写真を選んでください。' }); return;
                 }
                 // Replace the original preview to release the large original File.
                 URL.revokeObjectURL(item.previewUrl);
                 patch(item.id, { file: null, prepared, latitude, longitude, previewUrl: URL.createObjectURL(prepared) });
             } catch {
-                if (active()) patch(item.id, { phase: 'error', retryable: false, message: '写真の準備に失敗しました。別の写真を選んでください。' });
+                if (active()) patch(item.id, { phase: 'error', retryable: false, message: '写真を準備できませんでした。別の写真を選んで、もう一度お試しください。' });
                 return;
             }
         }
@@ -260,7 +260,7 @@ export async function refreshSavedUploads(force = false) {
         if (status === 429 && Number.isFinite(retry) && retry > 0) statusRetryAfter = Date.now() + retry * 1000;
         nextStatusCheck = Date.now() + Math.max(Math.min(60000, 6000 * 2 ** Math.min(statusFailures, 4)), Number.isFinite(retry) ? retry * 1000 : 0);
         for (const item of pending) {
-            if (items.some(current => current.id === item.id)) patch(item.id, { message: '写真は保存済みですが、解析状況を確認できません。接続を確認して再確認してください。' });
+            if (items.some(current => current.id === item.id)) patch(item.id, { message: '写真は保存されています。結果を確認できません。接続を確認して、状態を確認してください。' });
         }
     } finally {
         if (statusController === abort) statusController = null;

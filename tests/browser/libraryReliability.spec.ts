@@ -28,10 +28,10 @@ test('failed pagination pauses automatic requests and lets the user retry withou
     await openLibrary(page);
     await page.getByText('最初の記録', { exact: true }).scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-    await expect(page.getByRole('alert')).toContainText('続きの記録を読み込めませんでした');
+    await expect(page.getByRole('alert')).toContainText('続きの写真を読み込めませんでした');
     await page.waitForTimeout(600);
     expect(requests).toBe(1);
-    await page.getByRole('button', { name: '再試行', exact: true }).click();
+    await page.getByRole('button', { name: 'もう一度読み込む', exact: true }).click();
     await expect(page.getByText('次の記録', { exact: true })).toBeVisible();
     await expect(page.getByText('最初の記録', { exact: true })).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
@@ -47,10 +47,10 @@ test('status failure has a recovery action and never changes the card to analysi
         ? route.fulfill({ json: { observations: [{ ...observation, title: '完成した記録' }] } })
         : route.fulfill({ status: 503, body: 'Unavailable' }));
     await openLibrary(page, true);
-    await expect(page.getByRole('alert')).toContainText('分析状況を確認できませんでした');
+    await expect(page.getByRole('alert')).toContainText('結果を確認できませんでした');
     await expect(page.getByText('調べています', { exact: true })).toBeVisible();
     healthy = true;
-    await page.getByRole('button', { name: '状態を再確認' }).click();
+    await page.getByRole('button', { name: '状態を確認する' }).click();
     await expect(page.getByText('完成した記録', { exact: true })).toBeVisible();
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(errors).toEqual([]);

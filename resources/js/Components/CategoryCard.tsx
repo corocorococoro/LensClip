@@ -39,7 +39,7 @@ export default function CategoryCard({ category, count, observations, isActive, 
                         <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: category.color }} />
                         <h3 className="truncate text-sm font-bold text-brand-ink">{category.name}</h3>
                     </div>
-                    <p className="mt-1 pl-4 text-xs font-medium text-brand-muted">{count}はっけん</p>
+                    <p className="mt-1 pl-4 text-xs font-medium text-brand-muted">{count}件の発見</p>
                     {nextThreshold && (
                         <div className="mt-1.5 pl-4">
                             <div className="h-1 w-full max-w-[120px] overflow-hidden rounded-full bg-brand-line">
@@ -49,7 +49,7 @@ export default function CategoryCard({ category, count, observations, isActive, 
                                 />
                             </div>
                             <p className="mt-1 text-[10px] font-medium text-brand-muted">
-                                あと{nextThreshold - count}で {nextThreshold}はっけん
+                                あと{nextThreshold - count}件で{nextThreshold}件の発見
                             </p>
                         </div>
                     )}

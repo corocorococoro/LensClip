@@ -395,9 +395,9 @@ function LibraryContent({
 
     const loadMoreFeedback = loadMoreError && (
         <div role="alert" className="py-4 text-center text-sm text-brand-muted">
-            <p>続きの記録を読み込めませんでした。</p>
+            <p>続きの写真を読み込めませんでした。</p>
             <button type="button" onClick={() => void loadMore()} className="mt-2 min-h-11 px-4 font-bold text-brand-primary-dark">
-                再試行
+                もう一度読み込む
             </button>
         </div>
     );
@@ -409,8 +409,8 @@ function LibraryContent({
             {/* Header with View Mode Switcher - hide in map view (switcher is inside map) */}
             {viewMode !== 'map' && (
                 <div className="mb-6">
-                    <p className="lens-kicker mb-1">Your collection</p>
-                    <h1 className="mb-5 text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">{isActivity ? '追加中・要確認' : '図鑑'}</h1>
+
+                    <h1 className="mb-5 text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">{isActivity ? '追加中・確認が必要な写真' : '図鑑'}</h1>
                     {!isActivity && <div className="max-w-sm">
                         <ViewModeSwitcher currentMode={viewMode} onModeChange={handleViewModeChange} />
                     </div>}
@@ -419,9 +419,9 @@ function LibraryContent({
 
             <div className={`shrink-0 ${viewMode === 'map' ? 'border-b border-brand-line bg-white px-4 py-2' : 'mb-5'}`}>
                 <Link href={isActivity ? libraryReturn : activityHref} className="inline-flex min-h-11 items-center gap-2 text-sm font-bold text-brand-primary-dark">
-                    {isActivity ? '← 図鑑の表示に戻る' : `追加中・要確認${activityCount + uploads.filter(item => item.phase !== 'saved').length > 0 ? ` ${activityCount + uploads.filter(item => item.phase !== 'saved').length}件` : ''} →`}
+                    {isActivity ? '← 図鑑の表示に戻る' : `追加中・確認が必要な写真${activityCount + uploads.filter(item => item.phase !== 'saved').length > 0 ? ` ${activityCount + uploads.filter(item => item.phase !== 'saved').length}件` : ''} →`}
                 </Link>
-                {isActivity && <p className="text-xs text-brand-muted">保存前の写真と、調査中・確認が必要な写真を表示しています。</p>}
+                {isActivity && <p className="text-xs text-brand-muted">保存前の写真と、調べている写真・確認が必要な写真を表示しています。</p>}
             </div>
 
             {/* Search - hide in map view */}
@@ -432,9 +432,9 @@ function LibraryContent({
                             type="search"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="なまえでさがす…"
+                            placeholder="名前で探す"
                             className="lens-field min-h-12 py-3 pl-11 pr-4"
-                            aria-label="観察記録を検索"
+                            aria-label="名前で探す"
                         />
                         <svg className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-brand-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
                     </div>
@@ -467,9 +467,9 @@ function LibraryContent({
 
             {statusError && (
                 <div role="alert" className="mb-4 rounded-xl bg-brand-sand-soft p-4 text-sm text-brand-muted">
-                    <p>分析状況を確認できませんでした。接続を確認して再試行してください。</p>
+                    <p>結果を確認できませんでした。接続を確認して、状態を確認してください。</p>
                     <button type="button" onClick={() => setStatusRetryKey((key) => key + 1)} className="mt-2 min-h-11 font-bold text-brand-primary-dark">
-                        状態を再確認
+                        状態を確認する
                     </button>
                 </div>
             )}
@@ -506,8 +506,8 @@ function LibraryContent({
                             icon="📭"
                             message={
                                 isActivity ? '追加中・確認が必要な写真はありません' : filters.q || filters.tag
-                                    ? 'みつからなかったよ'
-                                    : 'まだなにもないよ'
+                                    ? '条件に合う発見がありません。検索する言葉や条件を変えてみてください。'
+                                    : '最初の発見を、図鑑に。気になるものを写真から調べてみましょう。'
                             }
                             action={
                                 (filters.q || filters.tag) && (
@@ -515,7 +515,7 @@ function LibraryContent({
                                         onClick={handleClearFilters}
                                         className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
                                     >
-                                        フィルタをクリア
+                                        条件をクリア
                                     </button>
                                 )
                             }
@@ -589,7 +589,7 @@ function LibraryContent({
                             ) : (
                                 <EmptyState
                                     icon="📭"
-                                    message="このカテゴリにはまだなにもないよ"
+                                    message="このカテゴリの発見はまだありません。"
                                 />
                             )}
                             {loadMoreFeedback}

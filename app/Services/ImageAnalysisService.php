@@ -432,9 +432,12 @@ class ImageAnalysisService
         $categories = config('categories');
         $categoryIds = implode('|', array_column($categories, 'id'));
         $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
+        $writingGuidelines = $this->writingGuidelines();
 
         return <<<EOT
-あなたは子供向け図鑑アプリのAIです。この画像に写っている主な対象を同定し、3-6歳の子供に説明してください。
+あなたは親子でつくる図鑑アプリ LensClip の編集AIです。この画像に写っている主な対象を同定してください。
+
+{$writingGuidelines}
 
 **重要**: 可能性のある候補を最大3つまで挙げ、それぞれについてカード情報を生成してください。
 候補は確信度の高い順に並べてください。
@@ -479,11 +482,14 @@ EOT;
         $categoryIds = implode('|', array_column($categories, 'id'));
         $categoryHint = collect($categories)->map(fn ($c) => "{$c['id']}({$c['description']})")->implode(' / ');
         $confirmedName = json_encode($correctionName, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        $writingGuidelines = $this->writingGuidelines();
 
         return <<<EOT
-あなたは子供向け図鑑アプリの編集AIです。利用者が写真の対象を {$confirmedName} と確認しました。
+あなたは親子でつくる図鑑アプリ LensClip の編集AIです。利用者が写真の対象を {$confirmedName} と確認しました。
 この名前を変更・再判定せず、写真も参考にして、3-6歳の子供と親が読む図鑑情報を生成してください。
 分からない情報を推測で断定せず、危険や注意事項がある場合は必ず safety_notes に含めてください。
+
+{$writingGuidelines}
 
 以下のJSONフォーマットで返答してください。JSON以外は絶対に含めないでください。
 {
@@ -508,6 +514,16 @@ EOT;
     "tags": ["タグ"]
   }]
 }
+EOT;
+    }
+
+    private function writingGuidelines(): string
+    {
+        return <<<'EOT'
+LensClip は、親子で夢中になれることが日常に増える体験を目指します。親が操作し、3〜6歳の子どもと一緒に読みます。親自身も発見を楽しむ当事者です。
+summary は親向けの自然な日本語で簡潔に書いてください。kid_friendly は親が読み聞かせやすい短文にし、やさしい語彙とひらがなを中心にしてください。各項目の文字数制限を守り、具体的な特徴を伝えてください。
+questions は、写真や実物を安全に見て気づける特徴や、親子で話せる経験について書いてください。知識を試す問題や決まった答えへの誘導に偏らせず、親や子どもの能力を評価する言葉を加えないでください。
+画像から確定できない特徴・状況は、写っている事実として断定しないでください。安全上の注意は親へ短く明確に伝え、危険が考えられる対象に触る・食べる・近づく行動を促さないでください。
 EOT;
     }
 

@@ -51,16 +51,16 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
     };
 
     return (
-        <AppLayout title="はかせクイズ">
-            <Head title="はかせクイズ" />
+        <AppLayout title="発見クイズ">
+            <Head title="発見クイズ" />
 
             <div className="mx-auto max-w-xl">
                 <section className="mb-6">
-                    <p className="lens-kicker mb-2">Quiz time</p>
+
                     <div className="flex items-end justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">はかせクイズ</h1>
-                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">じぶんの ずかんから もんだいを だすよ。おやこで こたえあわせしてね。</p>
+                            <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">発見クイズ</h1>
+                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">図鑑の写真で「これ、なんだっけ？」。親子で答えを見てみよう。</p>
                         </div>
                         {questions.length > 0 && !finished && (
                             <span className="shrink-0 rounded-full bg-brand-primary-soft px-3 py-1.5 text-sm font-bold tabular-nums text-brand-primary-dark">
@@ -71,7 +71,7 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                 </section>
 
                 {/* カテゴリで絞り込み */}
-                <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="なかまで えらぶ">
+                <div className="mb-6 flex gap-2 overflow-x-auto pb-1 scrollbar-hide" role="group" aria-label="カテゴリで選ぶ">
                     <button
                         type="button"
                         onClick={() => selectCategory(null)}
@@ -79,7 +79,7 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                             ? 'bg-brand-primary text-white shadow-sm'
                             : 'border border-brand-line bg-white text-brand-ink hover:border-brand-sand'}`}
                     >
-                        ぜんぶ
+                        すべて
                     </button>
                     {categories.map((cat) => (
                         <button
@@ -101,9 +101,9 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                             icon="?"
                             message={
                                 activeCategory ? (
-                                    <>この なかまの はっけんが 3 こ たまったら<br />クイズで あそべるよ。</>
+                                    <>このカテゴリで、名前がついた調べ終わった写真が3件たまると遊べます。</>
                                 ) : (
-                                    <>はっけんが 3 こ たまったら<br />クイズで あそべるよ。</>
+                                    <>名前がついた、調べ終わった写真が3件たまると遊べます。</>
                                 )
                             }
                         />
@@ -114,40 +114,40 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                                     onClick={() => selectCategory(null)}
                                     className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary"
                                 >
-                                    ぜんぶから もんだいを だす
+                                    すべてのカテゴリから遊ぶ
                                 </button>
                             )}
                             <Link
                                 href="/dashboard"
                                 className="rounded-full bg-brand-primary px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-dark active:scale-95"
                             >
-                                あたらしい はっけんを しにいく
+                                ホームへ戻る
                             </Link>
                         </div>
                     </>
                 ) : finished ? (
                     <section className="lens-surface flex flex-col items-center gap-4 px-6 py-12 text-center">
                         <span className="text-5xl" aria-hidden="true">🎉</span>
-                        <h2 className="text-2xl font-bold text-brand-ink">よくできました!</h2>
-                        <p className="text-sm leading-relaxed text-brand-muted">{questions.length} もん、ぜんぶ めくったよ。<br />また あそぼうね。</p>
+                        <h2 className="text-2xl font-bold text-brand-ink">また見返そう</h2>
+                        <p className="text-sm leading-relaxed text-brand-muted">図鑑の写真を{questions.length}件見返しました。</p>
                         <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
                             <button
                                 type="button"
                                 onClick={handleRestart}
                                 className="rounded-full bg-brand-primary px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-brand-primary-dark active:scale-95"
                             >
-                                もういちど あそぶ
+                                もう一度遊ぶ
                             </button>
                             <Link
                                 href="/library"
                                 className="rounded-full border border-brand-line bg-white px-6 py-2.5 text-sm font-bold text-brand-ink transition hover:border-brand-sand active:scale-95"
                             >
-                                図鑑を みる
+                                図鑑を見る
                             </Link>
                         </div>
                     </section>
                 ) : (
-                    <section aria-label={`もんだい ${currentIndex + 1}`} className={flipped ? 'pb-24' : undefined}>
+                    <section aria-label={`写真 ${currentIndex + 1}`} className={flipped ? 'pb-24' : undefined}>
                         <QuizFlipCard
                             key={question.id}
                             question={question}
@@ -168,12 +168,12 @@ export default function Quiz({ questions, eligibleCount, categories, filters }: 
                                     onClick={handleNext}
                                     className="pointer-events-auto w-full max-w-xs rounded-full bg-brand-primary px-8 py-3 text-base font-bold text-white shadow-lift ring-4 ring-brand-canvas/90 transition hover:bg-brand-primary-dark active:scale-95"
                                 >
-                                    {isLast ? 'おしまい!' : 'つぎの もんだい'}
+                                    {isLast ? '終わる' : '次の写真へ'}
                                 </button>
                             </div>
                         ) : (
                             <div className="mt-6 flex justify-center">
-                                <p className="text-sm font-semibold text-brand-muted">しゃしんを タップして こたえを みてね</p>
+                                <p className="text-sm font-semibold text-brand-muted">写真をタップすると、答えが見られます。</p>
                             </div>
                         )}
                     </section>

@@ -35,7 +35,7 @@ test('selected photo progresses through saving, analysis, and result in the same
     await page.route('**/observations/new-photo/stream', route => { ready = true; return route.fulfill({ contentType: 'text/event-stream', body: 'event: ready\ndata: {}\n\n' }); });
     await page.goto('/library');
     await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
-    await expect(page.getByRole('heading', { name: /写真を送信中|保存を確認中/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /写真を送っています|保存を確認しています/ })).toBeVisible();
     const before = await page.getByRole('img', { name: '選んだ写真' }).boundingBox();
     await expect(page.getByRole('button', { name: '追加を取り消す' })).toHaveCount(0);
     release();
@@ -86,7 +86,7 @@ test('leaving while saving retains one card without navigating on completion', a
     await page.route('**/library*', route => respond(route, 'Library', { ...library, dateGroups: saved ? [{ yearMonth: '2026-09', label: '2026年9月', observations: [{ ...photo, status: 'ready' }] }] : [] }));
     await page.goto('/library');
     await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
-    await expect(page.getByRole('heading', { name: /写真を送信中|保存を確認中/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /写真を送っています|保存を確認しています/ })).toBeVisible();
     // The primary navigation is always reachable, including after scrolling.
     await page.getByRole('navigation').getByRole('link', { name: /図鑑/ }).click();
     await expect(page.locator('[data-upload-id]')).toHaveCount(1);
@@ -104,9 +104,9 @@ test('a failed transition after saving leaves the photo and a recovery link with
     await page.route('**/observations/new-photo?*', route => route.fulfill({ status: 503, body: 'Unavailable' }));
     await page.goto('/library');
     await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
-    await expect(page.getByRole('link', { name: '写真の画面を開く' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '写真を開く' })).toBeVisible();
     const retryResponse = page.waitForResponse(response => response.url().includes('/observations/new-photo?'));
-    await page.getByRole('link', { name: '写真の画面を開く' }).click();
+    await page.getByRole('link', { name: '写真を開く' }).click();
     await retryResponse;
     await expect(page.locator('iframe')).toHaveCount(0);
     await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
@@ -128,7 +128,7 @@ test('saving during a slow library navigation does not override the chosen desti
     await page.route('**/observations/new-photo?*', route => { photoVisits++; return respond(route, 'Observations/Show', { observation: { ...photo, status: 'ready' }, categories: [] }); });
     await page.goto('/library');
     await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
-    await expect(page.getByRole('heading', { name: /写真を送信中|保存を確認中/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /写真を送っています|保存を確認しています/ })).toBeVisible();
     const libraryRequest = page.waitForRequest(request => new URL(request.url()).pathname === '/library' && !!request.headers()['x-inertia']);
     await page.getByRole('navigation').getByRole('link', { name: /図鑑/ }).click();
     await libraryRequest;
@@ -153,7 +153,7 @@ for (const failure of ['server', 'network'] as const) {
         });
         await page.route('**/observations/new-photo/stream', route => route.fulfill({ contentType: 'text/event-stream', body: 'event: ready\ndata: {}\n\n' }));
         await page.goto('/observations/new-photo?return_to=%2Flibrary');
-        const retry = page.getByRole('button', { name: '状態を再確認' });
+        const retry = page.getByRole('button', { name: '状態を確認する' });
         await expect(retry).toBeVisible();
         await expect(page.locator('iframe')).toHaveCount(0);
         await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
@@ -222,7 +222,7 @@ for (const recover of [false, true]) {
         const scroll = await page.evaluate(() => scrollY);
         expect(scroll).toBeGreaterThan(0);
         await page.locator('input[type=file]').setInputFiles({ name: 'photo.png', mimeType: 'image/png', buffer: tinyPng });
-        const recovery = page.getByRole('link', { name: '写真の画面を開く' });
+        const recovery = page.getByRole('link', { name: '写真を開く' });
         await expect(recovery).toBeVisible();
         if (recover) {
             healthy = true;

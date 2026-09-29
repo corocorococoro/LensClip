@@ -80,12 +80,12 @@ export default function ProcessingView({ observation }: { observation: Observati
         <div className="flex flex-col items-center">
             <ObservationPhoto src={observation.original_url || observation.thumb_url} />
             <div className="w-full max-w-xl" aria-live="polite">
-                <p className="mb-2 text-sm font-semibold text-brand-primary-dark">図鑑に保存済み</p>
-                <h1 className="text-2xl font-bold text-brand-ink">{isCorrection ? observation.title || '図鑑情報を更新しています' : 'これは何かな？ 調べています'}</h1>
+                <p className="mb-2 text-sm font-semibold text-brand-primary-dark">写真は図鑑に保存されています</p>
+                <h1 className="text-2xl font-bold text-brand-ink">{isCorrection ? '図鑑の説明を更新しています' : '名前や特徴を調べています'}</h1>
                 <p className="mt-3 text-sm leading-relaxed text-brand-muted">{isCorrection ? '正しい名前に合わせて説明を更新しています。' : '写真から名前や特徴を調べています。'}図鑑に戻って、ほかの写真を見ることもできます。</p>
                 {(needsCheck || queued?.message) && <div role="alert" className="mt-5 rounded-xl bg-brand-cream-soft p-4 text-sm">
                     <p>{queued?.message || 'まだ結果を確認できていません。写真は保存されています。'}</p>
-                    {queued?.retryable !== false && <Button className="mt-3" variant="secondary" onClick={() => { void refreshSavedUploads(true); setAttempt(value => value + 1); }}>状態を再確認</Button>}
+                    {queued?.retryable !== false && <Button className="mt-3" variant="secondary" onClick={() => { void refreshSavedUploads(true); setAttempt(value => value + 1); }}>状態を確認する</Button>}
                 </div>}
             </div>
         </div>

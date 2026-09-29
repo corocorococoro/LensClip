@@ -142,7 +142,7 @@ for (const failure of ['decode', 'encode']) {
             if (failure === 'encode') HTMLCanvasElement.prototype.toBlob = function (callback) { callback(null); };
             api.mountUpload(file);
         }, failure);
-        await expect(page.getByRole('alert')).toContainText('写真の準備に失敗しました');
+        await expect(page.getByRole('alert')).toContainText('写真を準備できませんでした');
         expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(0);
         await page.getByRole('button', { name: '追加を取り消す' }).click();
         expect(await page.evaluate(() => (window as any).activeUrls.size)).toBe(0);
@@ -167,7 +167,7 @@ test('leaving during encoding continues the first upload and queues the next pho
         api.finishEncoding();
     });
     await page.waitForFunction(() => (window as any).calls.posts.length === 1);
-    await expect(page.getByText('保存待ち', { exact: true })).toBeVisible();
+    await expect(page.getByText('写真の送信待ち', { exact: true })).toBeVisible();
     finish();
     await page.waitForFunction(() => (window as any).getUploads().every((item: any) => item.phase === 'saved'));
     expect(count).toBe(2);
