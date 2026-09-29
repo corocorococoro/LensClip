@@ -13,7 +13,7 @@ export default function UploadCard({ item }: { item: UploadItem }) {
         </div>
         <div className="px-3 py-2.5">
             <p className="text-sm font-bold text-brand-ink">{uploadLabel(item)}</p>
-            <p className="mt-1 text-xs text-brand-muted">{item.attempted ? '保存の確認が終わるまで写真を保持します' : 'この端末で写真を保持しています'}</p>
+            <p className="mt-1 text-xs text-brand-muted">{item.attempted ? '保存の確認が終わるまで写真を保持します' : 'このタブで写真を保持しています'}</p>
         </div>
     </Link>;
 }

@@ -9,20 +9,20 @@ interface Props {
 
 export default function Index({ issues }: Props) {
     return (
-        <AppLayout title="月刊マイずかん">
-            <Head title="月刊マイずかん" />
+        <AppLayout title="月刊図鑑">
+            <Head title="月刊図鑑" />
 
             <div className="mx-auto max-w-3xl">
                 <section className="mb-8">
-                    <p className="lens-kicker mb-2">Monthly issues</p>
-                    <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">月刊マイずかん</h1>
-                    <p className="mt-2 text-sm leading-relaxed text-brand-muted">まいつきの はっけんが、1さつの ずかんに なっていくよ。</p>
+
+                    <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink">月刊図鑑</h1>
+                    <p className="mt-2 text-sm leading-relaxed text-brand-muted">ひと月の発見を、一冊に。印刷して楽しむこともできます。</p>
                 </section>
 
                 {issues.length === 0 ? (
                     <EmptyState
                         icon="⌕"
-                        message={<>はっけんが たまると、まいつきの ずかんが できるよ。<br />まずは 気になったものを しらべてみよう。</>}
+                        message={<>調べ終わった写真が、月ごとの図鑑になります。<br />気になるものを写真から調べてみましょう。</>}
                     />
                 ) : (
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
@@ -46,7 +46,7 @@ export default function Index({ issues }: Props) {
                                 </div>
                                 <div className="px-3.5 py-3">
                                     <p className="text-sm font-bold text-brand-ink">{issue.label}号</p>
-                                    <p className="mt-0.5 text-xs font-semibold text-brand-muted">はっけん {issue.count} けん</p>
+                                    <p className="mt-0.5 text-xs font-semibold text-brand-muted">発見 {issue.count}件</p>
                                 </div>
                             </Link>
                         ))}

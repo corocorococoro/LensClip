@@ -100,7 +100,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                                 ">
                                     ${obs.thumb_url
                                 ? `<img src="${escapeHtml(obs.thumb_url)}" style="width: 100%; height: 100%; object-fit: cover;" />`
-                                : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #766B62; background: #F4F0E4;">Photo</div>`
+                                : `<div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #766B62; background: #F4F0E4;">写真</div>`
                             }
                                 </div>
                                 <div style="
@@ -139,7 +139,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                                 font-size: 13px;
                                 font-weight: 500;
                                 border-radius: 8px;
-                            ">くわしくみる</a>
+                            ">写真を見る</a>
                         </div>
                     `;
 
@@ -205,10 +205,10 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
                         <svg className="h-9 w-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15" /></svg>
                     </div>
                     <p className="mb-2 text-lg font-bold text-brand-ink">
-                        位置情報がある記録がありません
+                        場所がわかる写真はまだありません
                     </p>
                     <p className="text-sm leading-relaxed text-brand-muted">
-                        写真に位置情報が含まれていると<br />
+                        位置情報が保存された写真が<br />
                         地図に表示されます
                     </p>
                 </div>
@@ -243,7 +243,7 @@ export default function LibraryMap({ observations, onModeChange }: LibraryMapPro
             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[1000]">
                 <div className="rounded-full border border-brand-line bg-white/95 px-4 py-2 shadow-surface backdrop-blur-lg">
                     <span className="text-sm font-bold text-brand-ink">
-                        {withLocation.length}件の記録
+                        {withLocation.length}件の発見
                     </span>
                 </div>
             </div>

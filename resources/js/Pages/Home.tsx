@@ -60,13 +60,13 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
 
             <div className="mx-auto max-w-3xl">
                 <section className="mb-8 sm:mb-10">
-                    <p className="lens-kicker mb-2">My field guide</p>
+
                     <div className="flex items-end justify-between gap-4">
                         <div>
-                            <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">わたしの図鑑</h1>
-                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">見つけたものが、ここに少しずつ育っていきます。</p>
+                            <h1 className="text-3xl font-bold tracking-[-0.04em] text-brand-ink sm:text-4xl">図鑑</h1>
+                            <p className="mt-2 text-sm leading-relaxed text-brand-muted">見つけた写真が、自分たちの図鑑になっていきます。</p>
                         </div>
-                        <Link href="/library" className="hidden text-sm font-bold text-brand-primary-dark hover:text-brand-primary sm:block">すべて見る</Link>
+                        <Link href="/library" className="hidden text-sm font-bold text-brand-primary-dark hover:text-brand-primary sm:block">図鑑を見る</Link>
                     </div>
                 </section>
 
@@ -81,11 +81,11 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                         </div>
                         <div className="flex flex-col justify-center p-4 text-center sm:p-6">
                             <span className="tabular-nums text-2xl font-bold text-brand-primary-dark sm:text-3xl">{stats.today}</span>
-                            <span className="mt-1 text-xs font-semibold text-brand-muted">きょう</span>
+                            <span className="mt-1 text-xs font-semibold text-brand-muted">今日</span>
                         </div>
                         <div className={`flex flex-col justify-center p-4 text-center sm:p-6 ${stats.processing > 0 ? 'bg-brand-cream-soft' : ''}`}>
                             <span className={`tabular-nums text-2xl font-bold sm:text-3xl ${stats.processing > 0 ? 'text-amber-700' : 'text-brand-muted'}`}>{stats.processing}</span>
-                            <span className="mt-1 text-xs font-semibold text-brand-muted">しらべ中</span>
+                            <span className="mt-1 text-xs font-semibold text-brand-muted">調べている写真</span>
                         </div>
                     </div>
                 </section>
@@ -98,7 +98,7 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                 >
                     <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/15 transition group-hover:bg-white/20 sm:h-16 sm:w-16"><CameraIcon /></span>
                     <span className="min-w-0 flex-1">
-                        <span className="block text-lg font-bold">新しいものをしらべる</span>
+                        <span className="block text-lg font-bold">写真を撮る・選ぶ</span>
                         <span className="mt-0.5 block text-sm text-white/80">撮影するか、端末の写真から選べます</span>
                     </span>
                     <svg className="h-5 w-5 shrink-0 opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
@@ -110,24 +110,24 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                     <section>
                         <div className="mb-4 flex items-end justify-between gap-4">
                             <div>
-                                <p className="lens-kicker mb-1">Recent finds</p>
-                                <h2 className="lens-section-title">さいきんのはっけん</h2>
+
+                                <h2 className="lens-section-title">最近の発見</h2>
                             </div>
-                            <Link href="/library" className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary">もっとみる</Link>
+                            <Link href="/library" className="text-sm font-bold text-brand-primary-dark hover:text-brand-primary">図鑑を見る</Link>
                         </div>
                         <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
                             {discoveries.map(entry => <DiscoveryCard key={entry.key} entry={entry} size="sm" />)}
                         </div>
                     </section>
                 ) : stats.total === 0 ? (
-                    <EmptyState icon="⌕" message={<>まだはっけんがありません。<br />気になったものを、最初の1枚に残してみましょう。</>} />
+                    <EmptyState icon="⌕" message={<>気になるものを、最初の1枚に。<br />写真を撮るか選ぶと、名前や特徴を調べられます。</>} />
                 ) : null}
 
                 {lookback && (
                     <section className="mt-10">
                         <div className="mb-4">
-                            <p className="lens-kicker mb-1">Remember this?</p>
-                            <h2 className="lens-section-title">あのときの はっけん</h2>
+
+                            <h2 className="lens-section-title">あのときの発見</h2>
                         </div>
                         <Link
                             href={lookbackHref}
@@ -167,8 +167,8 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                 {quizAvailable && (
                     <section className="mt-10">
                         <div className="mb-4">
-                            <p className="lens-kicker mb-1">Quiz time</p>
-                            <h2 className="lens-section-title">はかせクイズ</h2>
+
+                            <h2 className="lens-section-title">発見クイズ</h2>
                         </div>
                         <Link
                             href="/quiz"
@@ -178,8 +178,8 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                                 🧠
                             </span>
                             <div className="min-w-0 flex-1">
-                                <p className="text-lg font-bold text-brand-ink">これ なんだっけ?</p>
-                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">じぶんの ずかんから クイズを だすよ。おやこで こたえあわせ してみよう。</p>
+                                <p className="text-lg font-bold text-brand-ink">これ、なんだっけ？</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">見つけた写真で「これ、なんだっけ？」。親子で答えを見てみよう。</p>
                             </div>
                             <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                         </Link>
@@ -189,8 +189,8 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                 {magazine && (
                     <section className="mt-10">
                         <div className="mb-4">
-                            <p className="lens-kicker mb-1">Monthly issue</p>
-                            <h2 className="lens-section-title">月刊マイずかん</h2>
+
+                            <h2 className="lens-section-title">月刊図鑑</h2>
                         </div>
                         <Link
                             href={`/magazine/${magazine.yearMonth}`}
@@ -200,8 +200,8 @@ export default function Home({ stats, recent, lookback, quizAvailable, magazine 
                                 📖
                             </span>
                             <div className="min-w-0 flex-1">
-                                <p className="text-lg font-bold text-brand-ink">{magazine.label}号が よめるよ</p>
-                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">はっけん {magazine.count} けんが ずかんの 1さつに。いんさつも できるよ。</p>
+                                <p className="text-lg font-bold text-brand-ink">{magazine.label}号</p>
+                                <p className="mt-0.5 text-xs leading-relaxed text-brand-muted">{magazine.count}件の発見を、一冊に。印刷して楽しむこともできます。</p>
                             </div>
                             <svg className="h-5 w-5 shrink-0 text-brand-muted opacity-75 transition group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
                         </Link>

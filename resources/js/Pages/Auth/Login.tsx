@@ -29,11 +29,10 @@ export default function Login({
         <GuestLayout>
             <Head title="ログイン" />
 
-            <p className="lens-kicker mb-2 text-center">Welcome back</p>
             <h1 className="mb-2 text-center text-2xl font-bold tracking-tight text-brand-ink">
                 ログイン
             </h1>
-            <p className="mb-6 text-center text-sm text-brand-muted">あなたの発見の続きを見にいきましょう。</p>
+            <p className="mb-6 text-center text-sm text-brand-muted">見つけたものを、また見返そう。</p>
 
             {status && (
                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-sm font-medium text-green-700 text-center">

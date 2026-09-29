@@ -27,7 +27,7 @@ interface Props {
 
 /**
  * めくり式クイズカード。答えを表示しても、出題時と同じ大きさで写真を見せる。
- * 正誤判定はせず、「おぼえてた!」は演出のみ(保存しない)。
+ * 正誤判定はせず、「おぼえてた！」は演出のみ(保存しない)。
  */
 export default function QuizFlipCard({ question, flipped, onFlip, category, playTts, ttsLoading, ttsError }: Props) {
     const [remembered, setRemembered] = useState(false);
@@ -47,18 +47,18 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
                 {question.image_url ? (
                     <img
                         src={question.image_url}
-                        alt="これなんだっけ?"
+                        alt="これ、なんだっけ？"
                         className="aspect-square w-full object-cover"
                         loading="eager"
                     />
                 ) : (
-                    <div className="flex aspect-square w-full items-center justify-center bg-brand-sand-soft text-6xl" role="img" aria-label="しゃしん">
+                    <div className="flex aspect-square w-full items-center justify-center bg-brand-sand-soft text-6xl" role="img" aria-label="写真">
                         📷
                     </div>
                 )}
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-5 pb-5 pt-14 text-center">
-                    <span className="text-2xl font-bold text-white drop-shadow-sm">これ なんだっけ?</span>
-                    <span className="mt-1 block text-sm font-semibold text-white/85">タップして こたえを みる</span>
+                    <span className="text-2xl font-bold text-white drop-shadow-sm">これ、なんだっけ？</span>
+                    <span className="mt-1 block text-sm font-semibold text-white/85">タップして答えを見る</span>
                 </div>
             </button>
         );
@@ -114,7 +114,7 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
                     {remembered ? (
                         <span className="inline-flex animate-bounce items-center gap-1.5 rounded-full bg-brand-primary-soft px-5 py-2 text-sm font-bold text-brand-primary-dark">
                             <span aria-hidden="true">🌟</span>
-                            やったね!おぼえてたね!
+                            おぼえてたね！
                         </span>
                     ) : (
                         <button
@@ -122,7 +122,7 @@ export default function QuizFlipCard({ question, flipped, onFlip, category, play
                             onClick={() => setRemembered(true)}
                             className="rounded-full border-2 border-brand-primary/40 bg-white px-5 py-2 text-sm font-bold text-brand-primary-dark transition hover:bg-brand-primary-soft active:scale-95"
                         >
-                            おぼえてた!
+                            おぼえてた！
                         </button>
                     )}
                 </div>

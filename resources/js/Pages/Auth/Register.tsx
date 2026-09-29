@@ -22,13 +22,12 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="新規登録" />
+            <Head title="アカウントを作成" />
 
-            <p className="lens-kicker mb-2 text-center">Start your collection</p>
             <h1 className="mb-2 text-center text-2xl font-bold tracking-tight text-brand-ink">
-                新規登録
+                アカウントを作成
             </h1>
-            <p className="mb-6 text-center text-sm text-brand-muted">今日の「これなに？」を、最初の1枚に。</p>
+            <p className="mb-6 text-center text-sm text-brand-muted">最初の「これなに？」を、図鑑の1枚に。</p>
 
             <form onSubmit={submit} className="space-y-4">
                 <div>
@@ -36,7 +35,7 @@ export default function Register() {
                         htmlFor="name"
                         className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                        おなまえ
+                        名前
                     </label>
                     <input
                         id="name"

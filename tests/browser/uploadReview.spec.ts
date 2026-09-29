@@ -32,11 +32,11 @@ test('status failures are visible, back off, and can be retried without resendin
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'photo.gif', { type: 'image/gif' })));
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
-    await expect(page.getByRole('alert')).toContainText('解析状況を確認できません');
+    await expect(page.getByRole('alert')).toContainText('結果を確認できません');
     await page.evaluate(async () => { for (let n = 0; n < 4; n++) await (window as any).refreshSavedUploads(); });
     expect(checks).toBe(1);
     healthy = true;
-    await page.getByRole('button', { name: '状態を再確認' }).click();
+    await page.getByRole('button', { name: '状態を確認する' }).click();
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.observation?.status === 'ready'));
     expect(posts).toBe(1);
     await expect(page.getByRole('alert')).toHaveCount(0);
@@ -69,7 +69,7 @@ test('expired status polling stops pending uploads and further polling', async (
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'one.gif', { type: 'image/gif' })));
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
-    await expect(page.getByRole('alert')).toContainText('ログイン状態が変わりました');
+    await expect(page.getByRole('alert')).toContainText('ログインし直して、図鑑で確認してください');
     expect(await page.evaluate(() => (window as any).enqueueUpload(new File(['GIF89a'], 'two.gif', { type: 'image/gif' }), null, null))).toBeNull();
     await page.evaluate(() => (window as any).refreshSavedUploads(true));
     expect(checks).toBe(1); expect(posts).toBe(1);
@@ -113,7 +113,7 @@ test('background refresh failures are scoped, reported, and recovered after reco
         return [unrelated.defaultPrevented, invalid.defaultPrevented, exception.defaultPrevented];
     });
     expect(result).toEqual([false, true, true]);
-    await expect(page.getByRole('alert')).toContainText('一覧を更新できませんでした');
+    await expect(page.getByRole('alert')).toContainText('図鑑の表示を更新できませんでした');
     await page.getByRole('button', { name: '閉じる', exact: true }).click();
     await page.waitForTimeout(300);
     expect(await page.evaluate(() => (window as any).calls.reloads)).toBe(1);
@@ -132,13 +132,13 @@ test('manual status checks respect Retry-After and malformed replies retain save
     await page.evaluate(() => (window as any).mountUpload(new File(['GIF89a'], 'one.gif', { type: 'image/gif' })));
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     await page.evaluate(() => (window as any).refreshSavedUploads());
-    await page.getByRole('button', { name: '状態を再確認' }).click();
+    await page.getByRole('button', { name: '状態を確認する' }).click();
     expect(checks).toBe(1);
     rateLimited = false;
     await page.evaluate(() => { const later = Date.now() + 61000; Date.now = () => later; });
-    await page.getByRole('button', { name: '状態を再確認' }).click();
+    await page.getByRole('button', { name: '状態を確認する' }).click();
     await expect.poll(() => checks).toBe(2);
     await expect(page.getByRole('img', { name: '選んだ写真' })).toBeVisible();
     expect(await page.evaluate(() => (window as any).getUploads()[0].phase)).toBe('saved');
-    await expect(page.getByRole('alert')).toContainText('解析状況を確認できません');
+    await expect(page.getByRole('alert')).toContainText('結果を確認できません');
 });

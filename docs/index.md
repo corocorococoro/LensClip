@@ -22,6 +22,7 @@
 | 文書 | 責務 | 更新する条件 |
 |---|---|---|
 | [product-principles.md](product-principles.md) | 誰のどんな課題を解くか、体験上の原則 | 対象利用者、提供価値、体験原則が変わる |
+| [brand-language.md](brand-language.md) | 読み手、言葉の意味、ブランド表現の境界 | 話者、用語の意味、伝える約束が変わる |
 | [user-flows.md](user-flows.md) | 複数画面をまたぐ導線と状態遷移の意図 | 導線、状態の意味、失敗後の復帰方法が変わる |
 | [ai-architecture.md](ai-architecture.md) | AI 処理の責務分担と設計理由 | 同期・非同期境界、外部サービス、保存責務が変わる |
 | [security-invariants.md](security-invariants.md) | 常に守るセキュリティ・プライバシー制約 | 制約を追加・変更するときだけ |

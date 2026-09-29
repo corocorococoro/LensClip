@@ -16,7 +16,7 @@ test('lost response reconciles the saved record without a second POST, even afte
     await page.route('**/observations', route => { posts++; return route.abort('failed'); });
     await page.route('**/observations/uploads/*', route => { lookups++; return route.fulfill({ json: { id: 'already-saved', status: 'ready', title: 'Ladybug' } }); });
     await start(page);
-    await expect(page.getByRole('button', { name: '再試行', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'もう一度試す', exact: true })).toBeVisible();
     await page.getByRole('link', { name: '図鑑へ戻る' }).click();
     await page.evaluate(() => { const api = window as any; const id = api.getUploads()[0].id; api.retryUpload(id); api.retryUpload(id); api.retryUpload(id); });
     await expect(page.getByRole('link', { name: /Ladybug/ })).toBeVisible();
@@ -30,7 +30,7 @@ test('missing receipt resends the same ID and compressed file', async ({ page })
     await page.route('**/observations', route => ++posts === 1 ? route.abort('failed') : route.fulfill({ json: { id: 'saved', status: 'processing', title: null } }));
     await page.route('**/observations/uploads/*', route => route.fulfill({ status: 404, json: {} }));
     await start(page);
-    await page.getByRole('button', { name: '再試行', exact: true }).click();
+    await page.getByRole('button', { name: 'もう一度試す', exact: true }).click();
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
     expect(await page.evaluate(() => {
         const posts = (window as any).calls.posts;
@@ -45,7 +45,7 @@ test('100 percent means awaiting server confirmation, not saved', async ({ page 
     await start(page);
     await page.waitForFunction(() => (window as any).calls.posts.length === 1);
     await page.evaluate(() => (window as any).calls.posts[0].options.onUploadProgress({ loaded: 100, total: 100 }));
-    await expect(page.getByText('保存を確認中')).toBeVisible();
+    await expect(page.getByText('保存を確認しています')).toBeVisible();
     expect(await page.evaluate(() => (window as any).getUploads()[0].file !== null || (window as any).getUploads()[0].prepared !== null)).toBe(true);
     finish();
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.observation?.status === 'ready'));
@@ -58,7 +58,7 @@ test('offline queue resumes when connection returns', async ({ page, context }) 
     await page.route('**/observations', route => route.fulfill({ json: { id: 'saved', status: 'processing', title: null } }));
     await context.setOffline(true);
     await start(page);
-    await expect(page.getByText('接続待ち', { exact: true })).toBeVisible();
+    await expect(page.getByText('接続を待っています', { exact: true })).toBeVisible();
     expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(0);
     await context.setOffline(false);
     await page.waitForFunction(() => (window as any).getUploads().some((item: any) => item.phase === 'saved' && item.observation.status === 'processing'));
@@ -73,7 +73,7 @@ test('an expired session stops subsequent photos and does not loop', async ({ pa
     });
     await expect(page.getByRole('alert').first()).toContainText('ログイン状態が変わりました');
     expect(await page.evaluate(() => (window as any).calls.posts.length)).toBe(1);
-    await expect(page.getByRole('button', { name: '再試行', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'もう一度試す', exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => (window as any).enqueueUpload(new File(['GIF89a'], 'three.gif'), null, null))).toBeNull();
 });
 
@@ -124,8 +124,8 @@ for (const status of [410, 422, 429]) {
         await page.route('**/observations', route => { posts++; return route.fulfill({ status, headers: { 'Retry-After': '60' }, json: {} }); });
         await start(page);
         await expect(page.getByRole('alert')).toBeVisible();
-        if (status === 429) await page.getByRole('button', { name: '再試行', exact: true }).click();
-        else await expect(page.getByRole('button', { name: '再試行', exact: true })).toHaveCount(0);
+        if (status === 429) await page.getByRole('button', { name: 'もう一度試す', exact: true }).click();
+        else await expect(page.getByRole('button', { name: 'もう一度試す', exact: true })).toHaveCount(0);
         expect(posts).toBe(1);
     });
 }
@@ -150,7 +150,7 @@ for (const viewMode of ['date', 'category', 'map']) {
             (window as any).mountLibrary({ observations: { data: [] }, tags: [], filters: { q: 'search' }, viewMode, dateGroups: [], categories: [], pagination: { hasMore: false, nextCursor: null } });
         }, viewMode);
         await page.locator('input[type=file]').setInputFiles({ name: 'photo.gif', mimeType: 'image/gif', buffer: Buffer.from('GIF89a') });
-        await expect(page.getByText('接続待ち', { exact: true })).toBeVisible();
+        await expect(page.getByText('接続を待っています', { exact: true })).toBeVisible();
         await page.evaluate(viewMode => {
             (window as any).mountLibrary({ observations: { data: [] }, tags: [], filters: { q: 'search' }, viewMode, dateGroups: [], categories: [], pagination: { hasMore: false, nextCursor: null } });
         }, viewMode);
@@ -194,8 +194,8 @@ test('a photo remains in the activity view when it completes', async ({ page, co
     await page.route('**/observations', route => route.fulfill({ json: { id: 'saved', status: 'ready', title: '完成した写真' } }));
     await start(page);
     await page.evaluate(() => (window as any).mountLibrary({ observations: { data: [] }, tags: [], filters: { activity: '1' }, dateGroups: [], pagination: { hasMore: false, nextCursor: null } }));
-    await expect(page.getByText('接続待ち', { exact: true })).toBeVisible();
+    await expect(page.getByText('接続を待っています', { exact: true })).toBeVisible();
     await context.setOffline(false);
     await expect(page.getByText('完成した写真', { exact: true })).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: '追加中・要確認' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '追加中・確認が必要な写真' })).toBeVisible();
 });
