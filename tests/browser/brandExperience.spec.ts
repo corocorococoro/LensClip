@@ -42,7 +42,7 @@ async function setup(page: Page, signedIn = false) {
     return errors;
 }
 
-for (const width of [320, 1280]) {
+for (const width of [320, 390, 768, 1280]) {
     test(`landing page at ${width}px keeps images, registration, and login usable`, async ({ page }, testInfo) => {
         const errors = await setup(page);
         await page.setViewportSize({ width, height: 900 });
@@ -55,7 +55,7 @@ for (const width of [320, 1280]) {
         await page.evaluate(() => window.scrollTo(0, 0));
         await page.screenshot({ path: testInfo.outputPath(`landing-hero-${width}.png`) });
         await page.screenshot({ path: testInfo.outputPath(`landing-${width}.png`), fullPage: true });
-        await page.getByRole('link', { name: '図鑑づくりをはじめる' }).first().click();
+        await page.getByRole('link', { name: '親子の図鑑をはじめる', exact: true }).first().click();
         await expect(page).toHaveURL(/\/register$/);
         await expect(page.getByRole('textbox', { name: '名前', exact: true })).toBeVisible();
         await page.getByRole('link', { name: 'ログイン', exact: true }).click();
@@ -73,7 +73,7 @@ test('signed-in landing returns to Home and accommodates enlarged text', async (
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await page.addStyleTag({ content: 'html { font-size: 200%; }' });
-    await expect(page.getByRole('link', { name: '図鑑づくりをはじめる' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '親子の図鑑をはじめる', exact: true })).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath('landing-large-text.png') });
     const overflowing = await page.locator('body *').evaluateAll(elements => elements.filter(element => element.getBoundingClientRect().right > innerWidth + 1).map(element => ({ tag: element.tagName, class: element.className, text: element.textContent?.slice(0, 40) })).slice(0, 10));
     expect(overflowing).toEqual([]);
