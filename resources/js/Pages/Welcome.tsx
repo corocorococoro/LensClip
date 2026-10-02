@@ -23,7 +23,6 @@ export default function Welcome({ auth }: PageProps) {
         <div className="landing">
             <Head title="LensClip｜写真でつくる、親子の図鑑">
                 <meta name="description" content="いつもの散歩に、親子で夢中になる発見を。LensClipは、見つけたものを写真から調べて、自分たちの図鑑をつくるアプリです。スマホにある写真からも始められます。" />
-                <link rel="preload" href="/fonts/lp-serif.woff" as="font" type="font/woff" crossOrigin="anonymous" />
                 <link rel="preload" href="/fonts/lp-sans.woff" as="font" type="font/woff" crossOrigin="anonymous" />
             </Head>
             <a href="#main-content" className="landing-skip">本文へ移動</a>
