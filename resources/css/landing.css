@@ -7,13 +7,7 @@
     font-display: swap;
     src: url('/fonts/lp-sans.woff') format('woff');
 }
-@font-face {
-    font-family: 'LensClip LP Serif';
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url('/fonts/lp-serif.woff') format('woff');
-}
+
 
 .landing {
     --lp-paper: #fffefb;
@@ -28,10 +22,10 @@
     line-height: 1.85;
 }
 .landing h1, .landing-heading {
-    font-family: 'LensClip LP Serif', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+    font-family: inherit;
     font-weight: 600;
-    letter-spacing: -.045em;
-    line-height: 1.65;
+    letter-spacing: -.025em;
+    line-height: 1.55;
     text-wrap: balance;
 }
 .landing h1 { font-size: clamp(1.45rem, 7.3vw, 1.85rem); }
