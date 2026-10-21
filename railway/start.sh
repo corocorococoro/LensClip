@@ -1,6 +1,11 @@
 #!/bin/bash
 set -Eeuo pipefail
 
+# Check the real runtime before migrations or either long-running process starts.
+# Unlike config.platform, this cannot pretend an unpatched PHP is supported.
+composer check-platform-reqs --no-dev
+php -r 'printf("LensClip runtime: PHP %s (%s)\n", PHP_VERSION, PHP_SAPI);'
+
 mkdir -p /app/storage/app/public/observations /app/storage/app/private/pending
 
 # A failed migration must fail deployment instead of serving against an old schema.
