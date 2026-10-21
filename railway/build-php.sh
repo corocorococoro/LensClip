@@ -3,8 +3,7 @@ set -eu
 
 # Temporary source build while the fixed official PHP Docker image is publishing.
 # Release/checksum source: https://github.com/docker-library/php/blob/master/versions.json
-# Reuse the official base's configure flags to preserve its extensions and SAPIs.
-configure_options="$(php-config --configure-options)"
+# Configure flags follow the official 8.4 Alpine CLI recipe.
 
 apk add --no-cache --virtual .php-security-build-deps \
     $PHPIZE_DEPS \
@@ -30,9 +29,30 @@ docker-php-source extract
 # Match the official Alpine recipe: use GNU iconv instead of musl iconv.
 rm -f /usr/include/iconv.h
 export CFLAGS="$PHP_CFLAGS" CPPFLAGS="$PHP_CPPFLAGS" LDFLAGS="$PHP_LDFLAGS"
+export PHP_BUILD_PROVIDER='https://github.com/docker-library/php' PHP_UNAME='Linux - Docker'
 cd /usr/src/php
-# The quoted flags come only from php-config in the pinned official base image.
-eval "./configure $configure_options"
+./configure \
+    --build="$(dpkg-architecture --query DEB_BUILD_GNU_TYPE)" \
+    --sysconfdir="${PHP_INI_DIR%/php}" \
+    --with-config-file-path="$PHP_INI_DIR" \
+    --with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
+    --enable-option-checking=fatal \
+    --with-mhash \
+    --with-pic \
+    --enable-mbstring \
+    --enable-mysqlnd \
+    --with-password-argon2 \
+    --with-sodium=shared \
+    --with-pdo-sqlite=/usr \
+    --with-sqlite3=/usr \
+    --with-curl \
+    --with-iconv=/usr \
+    --with-openssl \
+    --with-readline \
+    --with-zlib \
+    --enable-phpdbg \
+    --enable-phpdbg-readline \
+    --with-pear
 make -j "$(nproc)"
 make install
 find /usr/local -type f -perm /0111 -exec strip --strip-all '{}' + 2>/dev/null || true
