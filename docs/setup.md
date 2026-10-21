@@ -48,6 +48,14 @@ npm run build
 ./vendor/bin/sail test
 ```
 
+PHP のセキュリティ更新時は、既存の Sail イメージも作り直す。既存イメージの再起動だけでは PHP は更新されない。再ビルド後に実際の実行要件を確認し、不一致なら起動した開発用 Web サーバーを公開しない。
+
+```bash
+./vendor/bin/sail build --pull --no-cache
+./vendor/bin/sail up -d
+./vendor/bin/sail composer check-platform-reqs
+```
+
 ブラウザテストを初めて実行する環境では、Playwright 用の Chromium と WebKit を準備する。
 
 ```bash

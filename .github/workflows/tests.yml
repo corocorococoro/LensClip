@@ -15,14 +15,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.4.27'
           extensions: gd, exif, intl, mbstring, pdo_sqlite, pcntl
           coverage: none
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
+      - run: composer validate --strict
       - run: composer install --no-interaction --prefer-dist
+      - run: composer check-platform-reqs
       - run: npm ci
       - run: npm run build
       - run: php vendor/bin/phpunit
@@ -31,3 +33,19 @@ jobs:
       - run: npm run test:frontend
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:browser
+
+  production-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the production image with a fresh base image
+        run: docker build --pull --tag lensclip:ci .
+      - name: Verify the actual production PHP and upload configuration
+        run: |
+          docker run --rm lensclip:ci composer check-platform-reqs --no-dev
+          docker run --rm lensclip:ci php -r '
+            printf("PHP %s\n", PHP_VERSION);
+            if (PHP_VERSION !== "8.4.27" || ini_get("session.upload_progress.enabled")) {
+                exit(1);
+            }
+          '
