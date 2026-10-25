@@ -307,8 +307,7 @@ class ObservationController extends Controller
     }
 
     /**
-     * Serve the thumbnail while it is still on local disk (before GCS upload).
-     * Once the job uploads to GCS, thumb_url switches to the GCS URL automatically.
+     * Serve thumbnails only after checking ownership, including cloud storage.
      */
     public function thumb(Observation $observation)
     {
@@ -318,24 +317,16 @@ class ObservationController extends Controller
             abort(404);
         }
 
-        if (! str_starts_with($observation->thumb_path ?? '', 'local:') && config('filesystems.default') !== 'local') {
-            if (! $observation->thumb_url) {
-                abort(404);
-            }
-
-            return redirect($observation->thumb_url);
-        }
-
-        $localPath = str_starts_with($observation->thumb_path, 'local:')
+        $staged = str_starts_with($observation->thumb_path, 'local:');
+        $path = $staged
             ? substr($observation->thumb_path, 6) : $observation->thumb_path;
 
-        return $this->localImageResponse($localPath);
+        return $this->imageResponse($path, $staged ? 'local' : config('filesystems.default'));
     }
 
     public function image(Observation $observation, string $variant)
     {
         $this->authorize('view', $observation);
-        abort_unless(config('filesystems.default') === 'local', 404);
         $path = match ($variant) {
             'original' => $observation->original_path,
             'cropped' => $observation->cropped_path,
@@ -344,20 +335,20 @@ class ObservationController extends Controller
         // Raw staging images may contain EXIF and must never be served.
         abort_if(! $path || str_starts_with($path, 'local:'), 404);
 
-        return $this->localImageResponse($path);
+        return $this->imageResponse($path, config('filesystems.default'));
     }
 
-    private function localImageResponse(string $localPath)
+    private function imageResponse(string $path, string $disk)
     {
 
-        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($localPath)) {
+        if (! \Illuminate\Support\Facades\Storage::disk($disk)->exists($path)) {
             abort(404);
         }
 
         return response(
-            \Illuminate\Support\Facades\Storage::disk('local')->get($localPath),
+            \Illuminate\Support\Facades\Storage::disk($disk)->get($path),
             200,
-            ['Content-Type' => 'image/webp', 'Cache-Control' => 'private, max-age=60']
+            ['Content-Type' => 'image/webp', 'Cache-Control' => 'private, no-store', 'X-Content-Type-Options' => 'nosniff']
         );
     }
 

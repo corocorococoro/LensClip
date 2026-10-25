@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class Observation extends Model
 {
@@ -76,9 +75,7 @@ class Observation extends Model
         return $this->belongsToMany(Tag::class, 'observation_tag');
     }
 
-    // Accessors for image URLs.
-    // Paths prefixed with "local:" are stored on local disk (pending GCS upload by the job).
-    // In that case we serve the thumbnail via a dedicated route instead of a GCS URL.
+    // All images pass through the owner-authorized routes, including cloud objects.
 
     public function getOriginalUrlAttribute(): ?string
     {
@@ -90,9 +87,7 @@ class Observation extends Model
             return null; // Not yet on GCS; not needed until analysis completes
         }
 
-        return config('filesystems.default') === 'local'
-            ? route('observations.image', ['observation' => $this->id, 'variant' => 'original'])
-            : Storage::url($this->original_path);
+        return route('observations.image', ['observation' => $this->id, 'variant' => 'original']);
     }
 
     public function getCroppedUrlAttribute(): ?string
@@ -101,9 +96,7 @@ class Observation extends Model
             return null;
         }
 
-        return config('filesystems.default') === 'local'
-            ? route('observations.image', ['observation' => $this->id, 'variant' => 'cropped'])
-            : Storage::url($this->cropped_path);
+        return route('observations.image', ['observation' => $this->id, 'variant' => 'cropped']);
     }
 
     public function getThumbUrlAttribute(): ?string
@@ -112,11 +105,7 @@ class Observation extends Model
             return null;
         }
 
-        if (str_starts_with($this->thumb_path, 'local:') || config('filesystems.default') === 'local') {
-            return route('observations.thumb', $this->id);
-        }
-
-        return Storage::url($this->thumb_path);
+        return route('observations.thumb', $this->id);
     }
 
     // Scopes
